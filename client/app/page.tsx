@@ -22,7 +22,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans">
-      {/* Hero gradient background */}
+      
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black pointer-events-none" />
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-20 pointer-events-none" />
 
@@ -70,7 +70,7 @@ export default function Home() {
           transition={{ delay: 0.4, duration: 0.8 }}
           className="mt-28 relative"
         >
-          {/* Glow effect behind the image */}
+       
           <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-70" />
 
           <div className="relative rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
@@ -82,7 +82,7 @@ export default function Home() {
               className="w-full object-cover bg-gray-900"
             />
 
-            {/* Overlay gradient */}
+           
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
         </motion.div>
@@ -94,7 +94,7 @@ export default function Home() {
           className="mt-32 mb-16 text-center"
         >
           <h2 className="text-3xl font-bold mb-16 bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">
-            Why Choose TreeTrace
+            Why Choose TreeTrace?
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
