@@ -4,6 +4,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Leaf, Users, BookOpen } from "lucide-react"
+import Link from "next/link"
 
 export default function Home() {
   const fadeIn = {
@@ -48,12 +49,13 @@ export default function Home() {
           </motion.p>
 
           <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button
-              size="lg"
-              className="bg-white text-black hover:bg-gray-200 transition-colors rounded-full px-8 font-medium"
-            >
-              Start Your Tree <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+          <Link href="/auth/login">
+      <Button size="lg" className="bg-white text-black hover:bg-gray-200 transition-colors rounded-full px-8 font-medium flex items-center">
+        Start Your Tree
+        <ChevronRight className="ml-2 h-4 w-4" />
+      </Button>
+    </Link>
+
             <Button
               size="lg"
               variant="outline"
