@@ -77,7 +77,7 @@ export default function Home() {
 
           <div className="relative rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
             <Image
-              src="/placeholder.svg?height=600&width=1200"
+              src="/treetrace.png?height=600&width=1200"
               alt="TreeTrace Preview"
               width={1200}
               height={600}
