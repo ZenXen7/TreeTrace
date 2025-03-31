@@ -104,7 +104,7 @@ export default function Home() {
           transition={{ delay: 0.8 }}
           className="mt-32 mb-16"
         >
-          <h2 className="text-4xl font-bold mb-16 bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400 text-center">
+          <h2 className="text-5xl font-bold mb-16 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-100 text-center">
             TreeTrace Features
           </h2>
 
