@@ -61,7 +61,7 @@ export default function Register() {
               Create Your Account
             </CardTitle>
             <CardDescription className="text-center text-gray-400">
-              Start building your family tree today
+              Start building your family tree today!
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

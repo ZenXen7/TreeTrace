@@ -3,8 +3,17 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ChevronRight, Leaf, Users, BookOpen } from "lucide-react"
+import { ChevronRight, BookOpen, Shield, MessageSquare, Heart, Database, Lock, Share2 } from "lucide-react"
 import Link from "next/link"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import { Card, CardContent } from "@/components/ui/card"
+import { Dna, Trees, Network, FileSearch, ShieldCheck } from "lucide-react"
 
 export default function Home() {
   const fadeIn = {
@@ -93,53 +102,206 @@ export default function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-32 mb-16 text-center"
+          className="mt-32 mb-16"
         >
-          <h2 className="text-3xl font-bold mb-16 bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">
-            Why Choose TreeTrace?
+          <h2 className="text-4xl font-bold mb-16 bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400 text-center">
+            TreeTrace Features
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.9 + index * 0.2, duration: 0.6 }}
-                className="p-8 rounded-2xl bg-gradient-to-b from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-800/50 hover:border-gray-700/50 transition-all group"
-              >
-                <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-3 rounded-xl inline-flex mb-6 group-hover:from-gray-600 group-hover:to-gray-700 transition-all">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-100">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full max-w-5xl mx-auto"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {carouselFeatures.map((feature, index) => (
+                <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.1 * index }}
+                  >
+                    <Card className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border-gray-800 hover:border-gray-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/5">
+                      <CardContent className="p-6">
+                        <div className={`w-12 h-12 rounded-xl mb-6 flex items-center justify-center ${feature.colorClass}`}>
+                          {feature.icon}
+                        </div>
+                        <h3 className="text-xl font-semibold mb-3 text-gray-100">
+                          {feature.title}
+                        </h3>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                          {feature.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-400" />
+            <CarouselNext className="hidden md:flex bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-400" />
+          </Carousel>
         </motion.div>
+
+        
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="py-24 relative"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <motion.div
+                initial={{ x: -50 }}
+                animate={{ x: 0 }}
+                transition={{ delay: 1.4 }}
+              >
+                <h2 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-red-300 to-red-100">
+                  Track Health History
+                </h2>
+                <p className="text-gray-400 text-lg mb-8">
+                  Understand your family's health background better. Track hereditary conditions and share important health information with family members securely.
+                </p>
+                <div className="space-y-4">
+                  {healthFeatures.map((feature, index) => (
+                    <motion.div
+                      key={feature.title}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1.6 + index * 0.1 }}
+                      className="flex items-start space-x-3"
+                    >
+                      <div className="mt-1 bg-red-900/20 p-1.5 rounded-lg">
+                        <Heart className="h-4 w-4 text-red-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-200">{feature.title}</h3>
+                        <p className="text-sm text-gray-400">{feature.description}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ x: 50 }}
+                animate={{ x: 0 }}
+                transition={{ delay: 1.4 }}
+                className="relative"
+              >
+                <div className="absolute -inset-4 bg-gradient-to-r from-red-500/10 to-purple-500/10 rounded-xl blur-xl" />
+                <div className="relative rounded-xl overflow-hidden border border-gray-800">
+                  <Image
+                    src="/health-tracking.png"
+                    alt="Health Tracking Feature"
+                    width={600}
+                    height={400}
+                    className="w-full"
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.section>
       </div>
     </div>
   )
 }
 
-const features = [
+const healthFeatures = [
   {
-    title: "Easy Tree Building",
-    description:
-      "Intuitive tools to create and manage your family tree with just a few clicks. Add relatives, photos, and stories seamlessly.",
-    icon: <Leaf className="h-6 w-6 text-green-400" />,
+    title: "Medical History Tracking",
+    description: "Record and track hereditary conditions across generations"
   },
   {
-    title: "Smart Connections",
-    description:
-      "Discover potential family links through our advanced matching system that helps you find missing branches in your family tree.",
-    icon: <Users className="h-6 w-6 text-blue-400" />,
+    title: "Secure Sharing",
+    description: "Share medical history with family members and healthcare providers"
   },
   {
-    title: "Preserve History",
-    description:
-      "Save stories, photos, and documents to keep your family heritage alive for generations to come with secure cloud storage.",
-    icon: <BookOpen className="h-6 w-6 text-purple-400" />,
+    title: "Health Insights",
+    description: "Understand patterns and potential health risks in your family"
+  }
+]
+
+const privacyFeatures = [
+  {
+    title: "Data Encryption",
+    description: "Your family data is encrypted and securely stored",
+    icon: <Shield className="h-6 w-6 text-blue-400" />
+  },
+  {
+    title: "Privacy Controls",
+    description: "Granular control over who can see your family information",
+    icon: <Lock className="h-6 w-6 text-blue-400" />
+  },
+  {
+    title: "Regular Backups",
+    description: "Automatic backups ensure your family history is never lost",
+    icon: <Database className="h-6 w-6 text-blue-400" />
+  }
+]
+
+const collaborationFeatures = [
+  {
+    title: "Real-time Updates",
+    description: "See changes as they happen",
+    icon: <Share2 className="h-5 w-5 text-green-400" />
+  },
+  {
+    title: "Family Chat",
+    description: "Discuss and share memories",
+    icon: <MessageSquare className="h-5 w-5 text-green-400" />
+  },
+  {
+    title: "Photo Sharing",
+    description: "Share and preserve photos",
+    icon: <BookOpen className="h-5 w-5 text-green-400" />
+  },
+  {
+    title: "Access Control",
+    description: "Manage who can contribute",
+    icon: <Lock className="h-5 w-5 text-green-400" />
+  }
+]
+
+const carouselFeatures = [
+  {
+    title: "Family Tree Builder",
+    description: "Create beautiful, interactive family trees with our intuitive drag-and-drop interface. Add important dates with ease.",
+    icon: <Trees className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-green-500/20 to-green-600/20 text-green-400",
+  },
+  {
+    title: "DNA Matching",
+    description: "Connect with relatives through our advanced DNA matching system. Find common ancestors and expand your family network.",
+    icon: <Dna className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-400",
+  },
+  {
+    title: "Health Tracking",
+    description: "Monitor hereditary health patterns and share important medical history with family members securely.",
+    icon: <Heart className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-red-500/20 to-red-600/20 text-red-400",
+  },
+  {
+    title: "Smart Search",
+    description: "Find ancestors quickly with our intelligent search system that understands name variations and historical contexts.",
+    icon: <FileSearch className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400",
+  },
+  {
+    title: "Network Analysis",
+    description: "Visualize and analyze complex family relationships with our advanced network visualization tools.",
+    icon: <Network className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-400",
+  },
+  {
+    title: "Privacy Control",
+    description: "Maintain complete control over your family data with granular privacy settings and encrypted storage.",
+    icon: <ShieldCheck className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 text-indigo-400",
   },
 ]
 
