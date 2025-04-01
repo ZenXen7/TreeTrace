@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <!-- Horizontal lines -->
+  <line x1="0" y1="100" x2="800" y2="100" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="0" y1="300" x2="800" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="0" y1="500" x2="800" y2="500" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="0" y1="700" x2="800" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <!-- Vertical lines -->
+  <line x1="100" y1="0" x2="100" y2="800" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="300" y1="0" x2="300" y2="800" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="500" y1="0" x2="500" y2="800" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="700" y1="0" x2="700" y2="800" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <!-- Connection lines -->
+  <line x1="100" y1="100" x2="300" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="300" y1="100" x2="100" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="500" y1="100" x2="700" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="700" y1="100" x2="500" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <line x1="100" y1="500" x2="300" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="300" y1="500" x2="100" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="500" y1="500" x2="700" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="700" y1="500" x2="500" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <!-- Vertical connection lines -->
+  <line x1="200" y1="100" x2="200" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="400" y1="100" x2="400" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="600" y1="100" x2="600" y2="300" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <line x1="200" y1="500" x2="200" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="400" y1="500" x2="400" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="600" y1="500" x2="600" y2="700" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <!-- Horizontal connection lines -->
+  <line x1="100" y1="200" x2="300" y2="200" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="500" y1="200" x2="700" y2="200" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <line x1="100" y1="600" x2="300" y2="600" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <line x1="500" y1="600" x2="700" y2="600" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  
+  <!-- Connection nodes -->
+  <circle cx="100" cy="100" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="300" cy="100" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="500" cy="100" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="700" cy="100" r="4" fill="white" fill-opacity="0.4" />
+  
+  <circle cx="100" cy="300" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="300" cy="300" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="500" cy="300" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="700" cy="300" r="4" fill="white" fill-opacity="0.4" />
+  
+  <circle cx="100" cy="500" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="300" cy="500" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="500" cy="500" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="700" cy="500" r="4" fill="white" fill-opacity="0.4" />
+  
+  <circle cx="100" cy="700" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="300" cy="700" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="500" cy="700" r="4" fill="white" fill-opacity="0.4" />
+  <circle cx="700" cy="700" r="4" fill="white" fill-opacity="0.4" />
+</svg>
+
