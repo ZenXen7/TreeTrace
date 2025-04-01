@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { ChevronLeft, Eye, EyeOff, CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
+import { AnimatedBackground } from "@/components/AnimatedBackground"
+
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
@@ -40,33 +42,7 @@ export default function Register() {
 
      
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-white/30"
-            initial={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              scale: 0,
-              opacity: 0,
-            }}
-            animate={{
-              scale: [0, 1, 1, 0],
-              opacity: [0, 0.5, 0.5, 0],
-            }}
-            transition={{
-              duration: Math.random() * 5 + 8,
-              repeat: Number.POSITIVE_INFINITY,
-              delay: Math.random() * 5,
-              ease: "easeInOut",
-            }}
-            style={{
-              width: `${Math.random() * 8 + 4}px`,
-              height: `${Math.random() * 8 + 4}px`,
-              boxShadow: "0 0 8px 2px rgba(255, 255, 255, 0.3)",
-            }}
-          />
-        ))}
+      <AnimatedBackground />
       </div>
 
     
