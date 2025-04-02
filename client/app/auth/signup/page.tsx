@@ -16,6 +16,7 @@ import { format } from "date-fns"
 import { AnimatedBackground } from "@/components/AnimatedBackground"
 
 
+
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -141,48 +142,7 @@ export default function Register() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-sm font-medium text-gray-300">
-                    Gender
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="birthday" className="text-sm font-medium text-gray-300">
-                    Birthday
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="h-10 w-full justify-start text-left font-normal bg-gray-800/50 border-gray-700/50 text-white hover:bg-gray-700/70"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, "PPP") : <span className="text-gray-500">Select date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        initialFocus
-                        className="bg-gray-800 text-white"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+             
 
            
               <div className="space-y-1 pt-2">
