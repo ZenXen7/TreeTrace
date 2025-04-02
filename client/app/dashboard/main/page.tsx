@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { dashboardStats } from "@/config/dashboard-stats"
+import { quickActions } from "@/config/quick-actions"
 import {
   Users,
   Trees,
@@ -48,6 +49,7 @@ import {
   Eye,
 } from "lucide-react"
 import { Sidebar } from "@/components/dashboard/sidebar"
+
 
 const recentActivity = [
   {
@@ -146,39 +148,6 @@ const insights = [
     description: "12 people are missing birth dates or locations",
     icon: <FileSearch className="h-4 w-4 text-amber-400" />,
     bgColor: "bg-gradient-to-br from-amber-500/20 to-orange-500/20",
-  },
-]
-
-const quickActions = [
-  {
-    title: "Add Member",
-    icon: <UserPlus className="h-5 w-5 text-blue-400" />,
-    bgColor: "bg-gradient-to-br from-blue-500/20 to-indigo-500/20",
-  },
-  {
-    title: "Search Records",
-    icon: <FileSearch className="h-5 w-5 text-amber-400" />,
-    bgColor: "bg-gradient-to-br from-amber-500/20 to-orange-500/20",
-  },
-  {
-    title: "Import Data",
-    icon: <FileUp className="h-5 w-5 text-emerald-400" />,
-    bgColor: "bg-gradient-to-br from-emerald-500/20 to-teal-500/20",
-  },
-  {
-    title: "View Timeline",
-    icon: <Calendar className="h-5 w-5 text-purple-400" />,
-    bgColor: "bg-gradient-to-br from-purple-500/20 to-indigo-500/20",
-  },
-  {
-    title: "Share Tree",
-    icon: <Share2 className="h-5 w-5 text-cyan-400" />,
-    bgColor: "bg-gradient-to-br from-cyan-500/20 to-blue-500/20",
-  },
-  {
-    title: "Add Story",
-    icon: <BookOpen className="h-5 w-5 text-red-400" />,
-    bgColor: "bg-gradient-to-br from-red-500/20 to-pink-500/20",
   },
 ]
 
