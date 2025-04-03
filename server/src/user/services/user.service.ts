@@ -14,7 +14,6 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      // Check if user exists
       const existingUser = await this.userModel.findOne({
         email: createUserDto.email,
       });
@@ -25,10 +24,8 @@ export class UserService {
         );
       }
 
-      // Hash password
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-      // Create new user
       const newUser = new this.userModel({
         ...createUserDto,
         password: hashedPassword,
