@@ -10,12 +10,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import Link from "next/link"
 import { ChevronLeft, Eye, EyeOff } from "lucide-react"
 import { AnimatedBackground } from "@/components/AnimatedBackground"
-import { createUser } from "@/services/api"
+import { useAuthStore } from "@/store/useAuthStore"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
 export default function Register() {
   const router = useRouter()
+  const { register, isLoading } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [password, setPassword] = useState("")
@@ -24,7 +25,6 @@ export default function Register() {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [registrationSuccess, setRegistrationSuccess] = useState(false)
 
@@ -41,7 +41,6 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    setIsLoading(true)
 
     try {
       if (!passwordsMatch) {
@@ -55,21 +54,16 @@ export default function Register() {
         password,
       }
 
-      const response = await createUser(userData)
+      await register(userData)
       setRegistrationSuccess(true)
-      toast.success("Account created successfully!")
 
-      // Add a delay before redirecting to login
+      
       setTimeout(() => {
         router.push("/auth/login")
       }, 2500)
     } catch (err: any) {
       setError(err.message)
       toast.error(err.message || "Registration failed")
-    } finally {
-      if (!registrationSuccess) {
-        setIsLoading(false)
-      }
     }
   }
 
@@ -101,16 +95,16 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans relative flex items-center justify-center py-12 px-4">
-      {/* Background with tree connection patterns */}
+     
       <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
       <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
 
-      {/* Animated connection nodes */}
+    
       <div className="absolute inset-0 overflow-hidden">
         <AnimatedBackground />
       </div>
 
-      {/* Back button */}
+  
       <Link href="/" className="absolute top-8 left-8 z-10">
         <Button variant="ghost" className="text-gray-400 hover:text-white group flex items-center gap-2">
           <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -118,7 +112,7 @@ export default function Register() {
         </Button>
       </Link>
 
-      {/* TreeTrace Logo */}
+     
       <div className="absolute top-8 right-8 flex items-center gap-2">
         <div className="h-6 w-6">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
@@ -133,7 +127,7 @@ export default function Register() {
         <span className="font-medium text-white text-lg tracking-tight">TreeTrace</span>
       </div>
 
-      {/* Registration card */}
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -141,7 +135,7 @@ export default function Register() {
         className="relative w-full max-w-md my-10"
       >
         <Card className="bg-gray-900/30 backdrop-blur-sm border border-gray-800/50 shadow-xl overflow-hidden">
-          {/* Decorative tree branch elements */}
+         
           <div className="absolute -top-10 -right-10 w-40 h-40 opacity-10">
             <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -164,7 +158,7 @@ export default function Register() {
           {registrationSuccess ? (
             <div className="p-8">
               <div className="flex flex-col items-center justify-center py-8">
-                {/* Success animation */}
+               
                 <div className="relative w-48 h-48 mb-8">
                   <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -173,9 +167,9 @@ export default function Register() {
                     className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full"
                   />
 
-                  {/* Growing tree animation */}
+                 
                   <svg viewBox="0 0 100 100" className="w-full h-full">
-                    {/* Tree trunk */}
+                   
                     <motion.path
                       d="M50 90V50"
                       stroke="url(#registerSuccessGradient)"
@@ -188,7 +182,7 @@ export default function Register() {
                       fill="none"
                     />
 
-                    {/* Main branches */}
+                   
                     <motion.path
                       d="M50 50L30 30"
                       stroke="url(#registerSuccessGradient)"
@@ -212,7 +206,7 @@ export default function Register() {
                       fill="none"
                     />
 
-                    {/* Secondary branches */}
+                   
                     <motion.path
                       d="M30 30L20 20"
                       stroke="url(#registerSuccessGradient)"
@@ -258,7 +252,7 @@ export default function Register() {
                       fill="none"
                     />
 
-                    {/* Leaves/small branches */}
+                   
                     <motion.path
                       d="M20 20L15 15"
                       stroke="url(#registerSuccessGradient)"
@@ -348,7 +342,7 @@ export default function Register() {
                       fill="none"
                     />
 
-                    {/* Roots */}
+                   
                     <motion.path
                       d="M50 90L35 95"
                       stroke="url(#registerSuccessGradient)"
@@ -380,7 +374,7 @@ export default function Register() {
                     </defs>
                   </svg>
 
-                  {/* Pulsing circle around the tree */}
+                 
                   <motion.div
                     className="absolute inset-0 rounded-full"
                     initial={{ boxShadow: "0 0 0 0 rgba(16, 185, 129, 0)" }}

@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/services/user.service';
@@ -14,7 +19,9 @@ export class AuthService {
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<LoginResponse> {
-    const existingUser = await this.userService.findByEmail(createUserDto.email);
+    const existingUser = await this.userService.findByEmail(
+      createUserDto.email,
+    );
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
@@ -26,7 +33,7 @@ export class AuthService {
     });
 
     const payload: UserPayload = {
-      _id: user._id.toString(),  
+      _id: user._id.toString(),
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -47,18 +54,18 @@ export class AuthService {
     }
 
     return {
-      _id: user._id.toString(),  // Correctly access _id
+      _id: user._id.toString(),
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
     };
   }
 
-  async login(user: UserPayload): Promise<LoginResponse> {
+  login(user: UserPayload): Promise<LoginResponse> {
     const payload = { sub: user._id, email: user.email };
-    return {
+    return Promise.resolve({
       access_token: this.jwtService.sign(payload),
       user,
-    };
+    });
   }
 }

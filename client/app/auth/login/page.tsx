@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,53 +9,40 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import Link from "next/link"
 import { ChevronLeft, Eye, EyeOff } from "lucide-react"
 import { AnimatedBackground } from "@/components/AnimatedBackground"
-import { loginUser } from "@/services/api"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export default function Login() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { login, isLoading, loginSuccess } = useAuthStore();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("")
-  const [loginSuccess, setLoginSuccess] = useState(false)
+
+  useEffect(() => {
+    if (loginSuccess) {
+      const timer = setTimeout(() => {
+        router.push("/dashboard/main");
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [loginSuccess, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
 
-    try {
-      if (!email || !password) {
-        throw new Error("Please fill in all fields")
-      }
-
-      const response = await loginUser({ email, password })
-
-      if (response.access_token) {
-        setLoginSuccess(true)
-        toast.success("Login successful!")
-        // Add a small delay before navigation
-        setTimeout(() => {
-          router.push("/dashboard/main")
-          router.refresh() // Force refresh to update navigation state
-        }, 2000)
-      } else {
-        throw new Error("Invalid response from server")
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Login failed")
-      setError(err.message)
-    } finally {
-      if (!loginSuccess) {
-        setIsLoading(false)
-      }
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
     }
-  }
 
-  // Tree connection animation variants
+    await login({ email, password });
+  };
+
+  
   const treeConnectionVariants = {
     hidden: { pathLength: 0, opacity: 0 },
     visible: {
@@ -337,4 +322,5 @@ export default function Login() {
     </div>
   )
 }
+
 
