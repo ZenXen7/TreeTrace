@@ -1,9 +1,9 @@
 import React from 'react'
 
-export default function TreeView() {
+export default function Connections() {
   return (
     <div>
-      Test
+      test
     </div>
   )
 }

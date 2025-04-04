@@ -21,9 +21,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
 const mainNavItems = [
-  { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "/dashboard" },
-  { title: "My Trees", icon: <Trees className="h-5 w-5" />, href: "/trees", badge: "3" },
-  { title: "Find Connections", icon: <GitMerge className="h-5 w-5" />, href: "/connections" },
+  { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "./main" },
+  { title: "My Trees", icon: <Trees className="h-5 w-5" />, href: "./treeview", badge: "3" },
+  { title: "Find Connections", icon: <GitMerge className="h-5 w-5" />, href: "./connections" },
   { title: "Family Members", icon: <Users className="h-5 w-5" />, href: "/members" },
 ]
 
@@ -53,7 +53,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
       } ${mounted ? "opacity-100" : "opacity-0"}`}
     >
       <div className="p-6 h-full flex flex-col">
-        {/* Logo */}
+       
         <div className="flex items-center gap-3 mb-8">
           <div className="h-10 w-10 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl opacity-20 animate-pulse" />
@@ -118,7 +118,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
           </div>
         </div>
 
-        {/* Navigation */}
+       
         <nav className="space-y-1 mb-6">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-2">Main</p>
           {mainNavItems.map((item, index) => (
