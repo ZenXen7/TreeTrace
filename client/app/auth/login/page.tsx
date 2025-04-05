@@ -11,38 +11,41 @@ import { ChevronLeft, Eye, EyeOff } from "lucide-react"
 import { AnimatedBackground } from "@/components/AnimatedBackground"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { loginSchema, type LoginInput } from "@/lib/validations/auth"
 
 export default function Login() {
-  const router = useRouter();
-  const { login, isLoading, loginSuccess } = useAuthStore();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("")
+  const router = useRouter()
+  const { login, isLoading, loginSuccess } = useAuthStore()
+  const [showPassword, setShowPassword] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  })
 
   useEffect(() => {
     if (loginSuccess) {
       const timer = setTimeout(() => {
-        router.push("/dashboard/main");
-      }, 2000);
-      return () => clearTimeout(timer);
+        router.push("/dashboard/main")
+      }, 2000)
+      return () => clearTimeout(timer)
     }
-  }, [loginSuccess, router]);
+  }, [loginSuccess, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
+  const onSubmit = async (data: LoginInput) => {
+    try {
+      await login(data)
+    } catch (error: any) {
+      toast.error(error.message || "Login failed")
     }
+  }
 
-    await login({ email, password });
-  };
-
-  
   const treeConnectionVariants = {
     hidden: { pathLength: 0, opacity: 0 },
     visible: {
@@ -198,7 +201,7 @@ export default function Login() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <motion.div
                   className="space-y-4"
                   initial={{ opacity: 0 }}
@@ -210,14 +213,15 @@ export default function Login() {
                       Email
                     </Label>
                     <Input
-                      id="email"
+                      {...register("email")}
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
                       className="h-11 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 transition-all"
                       disabled={isLoading}
                     />
+                    {errors.email && (
+                      <p className="text-red-400 text-sm">{errors.email.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -234,10 +238,8 @@ export default function Login() {
                     </div>
                     <div className="relative">
                       <Input
-                        id="password"
+                        {...register("password")}
                         type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className="h-11 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pr-10 transition-all"
                         disabled={isLoading}
@@ -252,6 +254,16 @@ export default function Login() {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {errors.password && (
+                      <motion.p
+                        className="text-red-400 text-sm"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {errors.password.message}
+                      </motion.p>
+                    )}
                   </div>
                 </motion.div>
                 <Button
@@ -290,16 +302,6 @@ export default function Login() {
                     </>
                   )}
                 </Button>
-                {error && (
-                  <motion.p
-                    className="text-red-400 text-sm text-center"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {error}
-                  </motion.p>
-                )}
               </form>
             )}
           </CardContent>
