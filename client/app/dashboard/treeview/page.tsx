@@ -365,7 +365,7 @@ export default function TreeView() {
     setIsDialogOpen(true)
   }
 
-  // Handle deleting a family member
+  
   const handleDelete = (id: string) => {
     const memberToDelete = familyMembers.find((m) => m.id === id)
     if (!memberToDelete) return
@@ -374,7 +374,7 @@ export default function TreeView() {
     toast.success(`Removed ${memberToDelete.name} from your family tree`)
   }
 
-  // Generate a sample family tree
+  
   const generateSampleTree = () => {
     const sampleTree: FamilyMember[] = [
       {

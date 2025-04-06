@@ -9,9 +9,9 @@ import {
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
-import { UserService } from '../services/user.service';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserService } from './user.service';
 
 @Controller('/auth/register')
 export class UserController {
@@ -29,6 +29,7 @@ export class UserController {
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'Error creating user',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
