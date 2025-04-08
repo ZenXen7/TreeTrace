@@ -1,96 +1,175 @@
-import { create } from 'zustand';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { create } from "zustand";
+import axios, { AxiosError } from "axios";
+import { toast } from "react-hot-toast";
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/', 
+  baseURL: "http://localhost:3001",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 interface FamilyMember {
-  id: string;
+  _id: string;
   name: string;
-  relation: string;
-  parentId: string | null;
+  birthDate?: Date;
+  deathDate?: Date;
+  relationship: string;
+  gender?: string;
+  medicalConditions?: string[];
+  userId: string;
+  fatherId?: string;
+  motherId?: string;
+  children: string[];
 }
 
-interface FamilyTreeState {
-  members: FamilyMember[];
+interface FamilyTreeNode extends FamilyMember {
+  father?: FamilyTreeNode | null;
+  mother?: FamilyTreeNode | null;
+  childNodes?: FamilyTreeNode[];
+}
+
+interface CreateFamilyMemberDto {
+  name: string;
+  birthDate?: Date;
+  deathDate?: Date;
+  relationship: string;
+  gender?: string;
+  medicalConditions?: string[];
+  fatherId?: string;
+  motherId?: string;
+}
+
+interface TreeState {
+  familyMembers: FamilyMember[];
+  currentFamilyTree: FamilyTreeNode | null;
   isLoading: boolean;
   error: string | null;
-  addMember: (member: FamilyMember) => Promise<void>;
-  updateMember: (id: string, updatedInfo: Partial<FamilyMember>) => Promise<void>;
-  removeMember: (id: string) => Promise<void>;
-  fetchFamilyTree: () => Promise<void>;
+  fetchAllFamilyMembers: () => Promise<void>;
+  getFamilyTree: (id: string) => Promise<void>;
+  createFamilyMember: (member: CreateFamilyMemberDto) => Promise<void>;
+  updateFamilyMember: (id: string, member: Partial<CreateFamilyMemberDto>) => Promise<void>;
+  deleteFamilyMember: (id: string) => Promise<void>;
+  clearError: () => void;
 }
 
-export const useTreeStore = create<FamilyTreeState>((set) => ({
-  members: [],
+const useTreeStore = create<TreeState>((set) => ({
+  // State
+  familyMembers: [],
+  currentFamilyTree: null,
   isLoading: false,
   error: null,
 
-  // Action to add a family member
-  addMember: async (member: FamilyMember) => {
-    set({ isLoading: true });
+  // Actions
+  fetchAllFamilyMembers: async () => {
+    set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/add', member);
-      toast.success('Family member added successfully!');
-      set((state) => ({
-        members: [...state.members, response.data],
-      }));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add family member');
-    } finally {
-      set({ isLoading: false });
+      const response = await api.get("/family-members");
+      set({ 
+        familyMembers: response.data.data, 
+        isLoading: false 
+      });
+      toast.success("Family members loaded successfully");
+    } catch (error: unknown) {
+      const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || "Failed to fetch family members";
+      toast.error(errorMessage);
+      set({ 
+        error: errorMessage,
+        isLoading: false 
+      });
     }
   },
 
-  // Action to update a family member's details
-  updateMember: async (id: string, updatedInfo: Partial<FamilyMember>) => {
-    set({ isLoading: true });
+  getFamilyTree: async (id: string) => {
+    set({ isLoading: true, error: null });
     try {
-      const response = await api.put(`/update/${id}`, updatedInfo);
-      toast.success('Family member updated successfully!');
+      const response = await api.get(`/family-members/${id}/family-tree`);
+      set({ 
+        currentFamilyTree: response.data.data, 
+        isLoading: false 
+      });
+      toast.success("Family tree loaded successfully");
+    } catch (error: unknown) {
+      const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || "Failed to fetch family tree";
+      toast.error(errorMessage);
+      set({ 
+        error: errorMessage,
+        isLoading: false 
+      });
+    }
+  },
+
+  createFamilyMember: async (member: CreateFamilyMemberDto) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post("/family-members", member);
+      const newMember = response.data.data;
       set((state) => ({
-        members: state.members.map((member) =>
-          member.id === id ? { ...member, ...updatedInfo } : member
+        familyMembers: [...state.familyMembers, newMember],
+        isLoading: false
+      }));
+      toast.success("Family member created successfully");
+    } catch (error: unknown) {
+      const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || "Failed to create family member";
+      toast.error(errorMessage);
+      set({ 
+        error: errorMessage,
+        isLoading: false 
+      });
+    }
+  },
+
+  updateFamilyMember: async (id: string, member: Partial<CreateFamilyMemberDto>) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.patch(`/family-members/${id}`, member);
+      const updatedMember = response.data.data;
+      set((state) => ({
+        familyMembers: state.familyMembers.map((m) => 
+          m._id === updatedMember._id ? updatedMember : m
         ),
+        isLoading: false
       }));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update family member');
-    } finally {
-      set({ isLoading: false });
+      toast.success("Family member updated successfully");
+    } catch (error: unknown) {
+      const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || "Failed to update family member";
+      toast.error(errorMessage);
+      set({ 
+        error: errorMessage,
+        isLoading: false 
+      });
     }
   },
 
-  // Action to remove a family member
-  removeMember: async (id: string) => {
-    set({ isLoading: true });
+  deleteFamilyMember: async (id: string) => {
+    set({ isLoading: true, error: null });
     try {
-      await api.delete(`/remove/${id}`);
-      toast.success('Family member removed successfully!');
+      await api.delete(`/family-members/${id}`);
       set((state) => ({
-        members: state.members.filter((member) => member.id !== id),
+        familyMembers: state.familyMembers.filter((m) => m._id.toString() !== id),
+        isLoading: false
       }));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to remove family member');
-    } finally {
-      set({ isLoading: false });
+      toast.success("Family member deleted successfully");
+    } catch (error: unknown) {
+      const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || "Failed to delete family member";
+      toast.error(errorMessage);
+      set({ 
+        error: errorMessage,
+        isLoading: false 
+      });
     }
   },
 
-  // Action to fetch the full family tree
-  fetchFamilyTree: async () => {
-    set({ isLoading: true });
-    try {
-      const response = await api.get('/tree');
-      set({ members: response.data });
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch family tree');
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  clearError: () => set({ error: null })
 }));
+
+export default useTreeStore;

@@ -1,101 +1,123 @@
+// app/tree/page.tsx
 'use client';
 
-import React, { useEffect } from 'react';
-import { useTreeStore } from '@/store/useTreeStore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tree, TreeNode } from 'react-organizational-chart';
-import { useRouter } from 'next/navigation';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { useEffect, useState } from 'react';
+import useTreeStore from '@/store/useTreeStore';
+import { toast } from 'react-hot-toast';
 
-export default function TreeView() {
-  const { members, isLoading, error, fetchFamilyTree } = useTreeStore();
-  const { toast } = useToast();
-  const router = useRouter();
+interface FamilyMember {
+  _id: string;
+  name: string;
+  relationship: string;
+  children?: string[];
+}
 
-  useEffect(() => {
-    fetchFamilyTree();
-  }, [fetchFamilyTree]);
+interface FamilyTreeNode extends FamilyMember {
+  childNodes?: FamilyTreeNode[];
+}
 
-  const renderFamilyMember = (member: any) => {
-    return (
-      <Card className="w-[200px] hover:shadow-lg transition-shadow">
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-lg">{member.name}</h3>
-          <p className="text-sm text-muted-foreground">{member.relation}</p>
-        </CardContent>
-      </Card>
-    );
+interface TreeNodeProps {
+  member: FamilyTreeNode;
+  level: number;
+}
+
+const TreeNode = ({ member, level }: TreeNodeProps) => {
+  const { getFamilyTree } = useTreeStore();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleExpand = async () => {
+    if (!isExpanded && member._id) {
+      await getFamilyTree(member._id);
+    }
+    setIsExpanded(!isExpanded);
   };
 
-  const buildTree = (members: any[]) => {
-    const rootMember = members.find(member => !member.parentId);
-    if (!rootMember) return null;
+  return (
+    <div className="ml-4">
+      <div 
+        className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+        onClick={handleExpand}
+      >
+        <div className="w-4 h-4 flex items-center justify-center">
+          {member.children && member.children.length > 0 && (
+            <span>{isExpanded ? '▼' : '▶'}</span>
+          )}
+        </div>
+        <div className="flex flex-col">
+          <span className="font-medium">{member.name}</span>
+          <span className="text-sm text-gray-500">{member.relationship}</span>
+        </div>
+      </div>
+      {isExpanded && member.childNodes && (
+        <div className="border-l-2 border-gray-200 ml-2">
+          {member.childNodes.map((child) => (
+            <TreeNode key={child._id} member={child} level={level + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
-    const renderNode = (member: any) => {
-      const children = members.filter(m => m.parentId === member.id);
+export default function TreeViewPage() {
+  const { familyMembers, currentFamilyTree, isLoading, fetchAllFamilyMembers, getFamilyTree } = useTreeStore();
+  const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
 
-      return (
-        <TreeNode label={renderFamilyMember(member)} key={member.id}>
-          {children.map(child => renderNode(child))}
-        </TreeNode>
-      );
-    };
+  useEffect(() => {
+    fetchAllFamilyMembers();
+  }, []);
 
-    return renderNode(rootMember);
+  const handleMemberSelect = async (member: FamilyMember) => {
+    setSelectedMember(member);
+    await getFamilyTree(member._id);
   };
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <div className="flex justify-center mb-8">
-          <Skeleton className="h-10 w-[200px]" />
-        </div>
-        <div className="flex justify-center">
-          <Skeleton className="h-[400px] w-[800px]" />
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  if (error) {
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: error,
-    });
-    return null;
-  }
-
   return (
-    <div className="p-8">
-      <div className="flex justify-center gap-4 mb-8">
-        <Button onClick={() => router.push('/dashboard/add-member')}>
-          Add Family Member
-        </Button>
-        <Button variant="outline" onClick={() => router.push('/dashboard/edit-tree')}>
-          Edit Tree
-        </Button>
-      </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Family Tree</h1>
       
-      {members.length > 0 ? (
-        <div className="flex justify-center overflow-x-auto">
-          <Tree
-            lineWidth={'2px'}
-            lineColor={'#e2e8f0'}
-            lineBorderRadius={'10px'}
-            label={renderFamilyMember(members[0])}
-          >
-            {buildTree(members)}
-          </Tree>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Family Members List */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-xl font-semibold mb-4">Family Members</h2>
+          <div className="space-y-2">
+            {familyMembers.map((member) => (
+              <div
+                key={member._id}
+                className={`p-3 rounded cursor-pointer ${
+                  selectedMember?._id === member._id
+                    ? 'bg-blue-100'
+                    : 'hover:bg-gray-100'
+                }`}
+                onClick={() => handleMemberSelect(member)}
+              >
+                <div className="font-medium">{member.name}</div>
+                <div className="text-sm text-gray-500">{member.relationship}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="text-center p-8">
-          <h2 className="text-2xl font-semibold mb-2">No family members found</h2>
-          <p className="text-muted-foreground">Start by adding your first family member</p>
+
+        {/* Family Tree Visualization */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-xl font-semibold mb-4">Tree View</h2>
+          {currentFamilyTree ? (
+            <TreeNode member={currentFamilyTree} level={0} />
+          ) : (
+            <div className="text-gray-500 text-center py-8">
+              Select a family member to view their family tree
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

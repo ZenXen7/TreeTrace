@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
@@ -14,7 +13,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/jwt/jwt-auth.guard';
-import { FamilyService } from './family.service';
+import { FamilyService, FamilyTreeNode } from './family.service';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 
 @Controller('family-members')
@@ -158,6 +157,24 @@ export class FamilyController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error deleting family member',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/family-tree')
+  async getFamilyTree(
+    @Param('id') id: string,
+  ): Promise<{ message: string; data: FamilyTreeNode }> {
+    try {
+      const familyTree = await this.familyService.getFamilyTree(id);
+      return {
+        message: 'Family tree retrieved successfully',
+        data: familyTree,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error fetching family tree',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
