@@ -1,40 +1,39 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Post,
   Body,
   Get,
+  Param,
+  Patch,
+  Delete,
   HttpStatus,
   HttpException,
+  UseGuards,
   Request,
 } from '@nestjs/common';
-import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/jwt/jwt-auth.guard';
 import { FamilyService } from './family.service';
+import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 
 @Controller('family-members')
+@UseGuards(JwtAuthGuard)
 export class FamilyController {
-  constructor(private readonly familyMemberService: FamilyService) {}
+  constructor(private readonly familyService: FamilyService) {}
 
-  // Create a family member and associate it with a user
+  // Create a family member
   @Post()
-  @UseGuards(JwtAuthGuard)
   async create(
     @Body() createFamilyMemberDto: CreateFamilyMemberDto,
     @Request() req,
   ) {
     try {
-      console.log('Authenticated user:', req.user); // Debugging line
-
-      // Extract userId from the authenticated user's token
-      const userId = String(req.user.id);
-
-      // Pass the userId and family member data to the service
-      const familyMember = await this.familyMemberService.createFamilyMember(
+      const userId = req.user.id; // Extract userId from the authenticated user's token
+      const familyMember = await this.familyService.createFamilyMember(
         userId,
         createFamilyMemberDto,
       );
-
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Family member created successfully',
@@ -48,21 +47,18 @@ export class FamilyController {
     }
   }
 
-  // Get all family members linked to the authenticated user
+  // Get all family members for the authenticated user
   @Get()
-  @UseGuards(JwtAuthGuard) // Ensure only authenticated users can access this route
-  async findByUser(@Request() req) {
+  async findAll(@Request() req) {
     try {
-      const userId = req.user.id; // Get the authenticated user's ID from the token
-      const familyMembers = await this.familyMemberService.findByUser(userId);
-
+      const userId = req.user.id;
+      const familyMembers = await this.familyService.findAll(userId);
       if (!familyMembers || familyMembers.length === 0) {
         throw new HttpException(
           'No family members found',
           HttpStatus.NOT_FOUND,
         );
       }
-
       return {
         statusCode: HttpStatus.OK,
         message: 'Family members found',
@@ -71,6 +67,97 @@ export class FamilyController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error fetching family members',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Get a single family member by ID
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    try {
+      const familyMember = await this.familyService.findOne(id);
+      if (!familyMember) {
+        throw new HttpException(
+          'Family member not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Family member found',
+        data: familyMember,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error fetching family member',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Get a family member with their children
+  @Get(':id/with-children')
+  async findFamilyMemberWithChildren(@Param('id') id: string) {
+    try {
+      const familyMember =
+        await this.familyService.findFamilyMemberWithChildren(id);
+      if (!familyMember) {
+        throw new HttpException(
+          'Family member not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Family member with children found',
+        data: familyMember,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error fetching family member with children',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Update a family member
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateFamilyMemberDto: Partial<CreateFamilyMemberDto>,
+  ) {
+    try {
+      const updatedFamilyMember = await this.familyService.update(
+        id,
+        updateFamilyMemberDto,
+      );
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Family member updated successfully',
+        data: updatedFamilyMember,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error updating family member',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Delete a family member
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    try {
+      const deletedFamilyMember = await this.familyService.remove(id);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Family member deleted successfully',
+        data: deletedFamilyMember,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error deleting family member',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

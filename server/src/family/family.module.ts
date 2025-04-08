@@ -5,6 +5,7 @@ import { FamilyService } from './family.service';
 import { FamilyController } from './family.controller';
 import { UserModule } from 'src/user/user.module';
 import { User, UserSchema } from 'src/user/schemas/user.schema';
+
 @Module({
   imports: [
     MongooseModule.forFeature([

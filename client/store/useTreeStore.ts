@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/', // Adjust the base URL to match your NestJS API
+  baseURL: 'http://localhost:3001/', 
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from 'src/user/schemas/user.schema';
 
 export type FamilyMemberDocument = FamilyMember & Document;
 
@@ -13,6 +12,9 @@ export class FamilyMember {
   birthDate: Date;
 
   @Prop()
+  deathDate: Date;
+
+  @Prop()
   medicalConditions: string[];
 
   @Prop({ required: true })
@@ -21,7 +23,17 @@ export class FamilyMember {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  _id: string;
+  @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
+  fatherId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
+  motherId: Types.ObjectId;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'FamilyMember' }] })
+  children: Types.ObjectId[];
+
+  @Prop()
+  gender: string;
 }
 
 export const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMember);
