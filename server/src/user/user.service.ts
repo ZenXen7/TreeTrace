@@ -48,23 +48,64 @@ export class UserService {
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.userModel.findById(id).exec();
-    if (!user) {
-      throw new Error(`User with id ${id} not found`);
+    try {
+      if (!id) {
+        throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      const user = await this.userModel.findById(id).exec();
+      if (!user) {
+        throw new HttpException(
+          `User with id ${id} not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Error finding user',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-    return user;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
-      .exec();
+    try {
+      if (!id) {
+        throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
+      }
 
-    if (!updatedUser) {
-      throw new Error(`User with id ${id} not found`);
+      const updateData = { ...updateUserDto };
+      
+      if (updateData.password) {
+        const hashedPassword = await bcrypt.hash(updateData.password, 10);
+        updateData.password = hashedPassword;
+      }
+
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(id, updateData, { new: true })
+        .exec();
+
+      if (!updatedUser) {
+        throw new HttpException(
+          `User with id ${id} not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      return updatedUser;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Error updating user',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-
-    return updatedUser;
   }
 
   async remove(id: string): Promise<User> {

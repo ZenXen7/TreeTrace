@@ -41,7 +41,7 @@ api.interceptors.request.use((config) => {
 })
 
 interface AuthState {
-  user: any
+  user: UserData | null
   isLoading: boolean
   isAuthenticated: boolean
   loginSuccess: boolean
@@ -51,6 +51,13 @@ interface AuthState {
   checkAuth: () => Promise<void>
   fetchUserProfile: () => Promise<void>
   updateUserProfile: (userData: UpdateUserData) => Promise<void>
+}
+
+interface UserData {
+  _id: string
+  firstName: string
+  lastName: string
+  email: string
 }
 
 interface RegisterData {
@@ -72,7 +79,7 @@ interface UpdateUserData {
   password?: string
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   isLoading: false,
   isAuthenticated: false,
@@ -139,14 +146,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (token) {
       try {
         const userStr = safeLocalStorage.getItem("user")
-        if (userStr) {
+        if (userStr && userStr !== "undefined") {
           const user = JSON.parse(userStr)
+          set({
+            user,
+            isAuthenticated: true,
+          })
+        } else {
+          // If user data is invalid, fetch it from the server
+          const response = await api.get("/users/profile")
+          const user = response.data.data
+          safeLocalStorage.setItem("user", JSON.stringify(user))
           set({
             user,
             isAuthenticated: true,
           })
         }
       } catch (error) {
+        safeLocalStorage.removeItem("token")
+        safeLocalStorage.removeItem("user")
         set({
           user: null,
           isAuthenticated: false,
@@ -154,24 +172,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
   },
-
-  // Fetch user profile from the backend
+  // Fetch user profile
   fetchUserProfile: async () => {
     set({ isLoading: true })
     try {
       const response = await api.get("/users/profile")
-      const user = response.data
-
-      // Update localStorage with new user data
+      const user = response.data.data
       safeLocalStorage.setItem("user", JSON.stringify(user))
-
       set({
         user,
         isAuthenticated: true,
-        isLoading: false,
       })
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to fetch user profile")
+      toast.error(error.response?.data?.message || "Failed to fetch profile")
+      set({ isAuthenticated: false })
+    } finally {
       set({ isLoading: false })
     }
   },
@@ -180,47 +195,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateUserProfile: async (userData) => {
     set({ isLoading: true })
     try {
-      // Update the user profile via the API
       const response = await api.patch("/users/profile", userData)
-  
-      // Assuming the response structure is something like { data: { user: updatedUser } }
-      const updatedUser = response.data.user
-  
-      // Update localStorage with the new user data
-      safeLocalStorage.setItem("user", JSON.stringify(updatedUser))
-  
+      const user = response.data.data
+      safeLocalStorage.setItem("user", JSON.stringify(user))
       set({
-        user: updatedUser,
+        user,
         isAuthenticated: true,
       })
-  
-      toast.success("Profile updated successfully!")
-  
-      // Refetch the user profile after update
-      await useAuthStore.getState().fetchUserProfile()
+      toast.success("Profile updated successfully")
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to update profile")
     } finally {
       set({ isLoading: false })
     }
-  }
-  
+  },
 }))
-
-// Initialize the store with data from localStorage on the client side
-if (typeof window !== "undefined") {
-  const userStr = safeLocalStorage.getItem("user")
-  const token = safeLocalStorage.getItem("token")
-
-  if (userStr && token) {
-    try {
-      const user = JSON.parse(userStr)
-      useAuthStore.setState({
-        user,
-        isAuthenticated: true,
-      })
-    } catch (error) {
-      console.error("Error parsing user data from localStorage", error)
-    }
-  }
-}

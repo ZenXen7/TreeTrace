@@ -54,25 +54,45 @@ const ProfileSettings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
   
-    // Simple client-side password validation: check if password is at least 6 characters long
     if (formData.password && formData.password.length < 6) {
       toast.error("Password must be at least 6 characters long.")
       return
     }
   
     const updatedData = { ...formData }
-    if (!formData.password) {
+    if (!formData.password?.trim()) {
       delete updatedData.password
     }
   
     try {
       await updateUserProfile(updatedData)
-      toast.success("Profile updated successfully!")
-    } catch (error) {
-      toast.error("Failed to update profile")
+      // Don't show success message here as it's handled in the store
+    } catch (error: any) {
+      console.error('Profile update error:', error)
+      toast.error(
+        error.response?.data?.message || 
+        "Server error occurred. Please try again later."
+      )
     }
   }
-  
+
+  // Add error handling to profile fetch
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        if (!user) {
+          await fetchUserProfile()
+        }
+      } catch (error: any) {
+        console.error('Profile fetch error:', error)
+        toast.error(
+          error.response?.data?.message || 
+          "Failed to load profile. Please refresh the page."
+        )
+      }
+    }
+    loadProfile()
+  }, [user, fetchUserProfile])
 
   return (
     <div className="p-4 max-w-md mx-auto">

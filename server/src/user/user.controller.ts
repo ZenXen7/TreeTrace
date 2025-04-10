@@ -37,15 +37,25 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req) {
     try {
-      const user = await this.userService.findOne(req.user.id); // assuming user is authenticated and req.user contains the current user
-      return user;
+      const user = await this.userService.findOne(req.user.id);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Profile retrieved successfully',
+        data: {
+          id: user._id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      };
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'An unexpected error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -54,20 +64,21 @@ export class UserController {
   @Patch('profile')
   async update(@Request() req, @Body() updateUserDto: UpdateUserDto) {
     try {
-      const userId = req.user.id; // Get the authenticated user's ID
-      const updatedUser = await this.userService.update(userId, updateUserDto);
-      if (!updatedUser) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
+      const updatedUser = await this.userService.update(req.user.id, updateUserDto);
       return {
         statusCode: HttpStatus.OK,
         message: 'Profile updated successfully',
-        data: updatedUser,
+        data: {
+          id: updatedUser._id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+        },
       };
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'An unexpected error occurred',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
