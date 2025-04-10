@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useAuthStore } from "@/store/useAuthStore"
 
 const mainNavItems = [
   { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "./main" },
@@ -30,8 +31,7 @@ const mainNavItems = [
 const toolsNavItems = [
   
   { title: "Health Tracking", icon: <Heart className="h-5 w-5" />, href: "/health" },
-  { title: "Timeline", icon: <Calendar className="h-5 w-5" />, href: "/timeline" },
-  { title: "Settings", icon: <Settings className="h-5 w-5" />, href: "/settings" },
+  { title: "Settings", icon: <Settings className="h-5 w-5" />, href: "/tools/settings" },
 ]
 
 interface SidebarProps {
@@ -40,6 +40,14 @@ interface SidebarProps {
 
 export function Sidebar({ sidebarOpen }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
+  const { user, fetchUserProfile, isAuthenticated } = useAuthStore((state) => state) // Access user data from the store
+
+  useEffect(() => {
+    setMounted(true)
+    if (isAuthenticated) {
+      fetchUserProfile() // Fetch user profile data on mount if authenticated
+    }
+  }, [isAuthenticated, fetchUserProfile])
 
   
   useEffect(() => {
@@ -91,7 +99,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">KC</p>
+                  <p className="text-sm font-medium text-white">{user ? user.firstName : "Loading..."}</p>
                   <Badge className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">
                     PRO
                   </Badge>

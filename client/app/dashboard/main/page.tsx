@@ -49,6 +49,7 @@ import {
   Eye,
 } from "lucide-react"
 import { Sidebar } from "@/components/dashboard/sidebar"
+import { useAuthStore } from "@/store/useAuthStore"
 
 
 const recentActivity = [
@@ -152,12 +153,19 @@ const insights = [
 ]
 
 export default function Dashboard() {
+  const { user, fetchUserProfile, isAuthenticated } = useAuthStore((state) => state);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTree, setActiveTree] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [animatedNodes, setAnimatedNodes] = useState<Array<{id: number, x: number, y: number, size: number, delay: number}>>([]);
-  
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserProfile(); // Fetch the user profile if authenticated
+    }
+  }, [isAuthenticated, fetchUserProfile]);
+
   // Generate random nodes for the animated background
   useEffect(() => {
     const nodes = Array.from({ length: 30 }, (_, i) => ({
@@ -179,11 +187,13 @@ export default function Dashboard() {
   
   
   const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (!user) return "Hello!";
+    const hour = new Date().getHours();
+    if (hour < 12) return `Good Morning, ${user.firstName}`;
+    if (hour < 18) return `Good Afternoon, ${user.firstName}`;
+    return `Good Evening, ${user.firstName}`;
   };
+
   
   return (
     <div className="min-h-screen bg-black text-white font-sans relative">
@@ -255,7 +265,7 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                  {getGreeting()}, KC
+                  {getGreeting()}
                 </h1>
                 <div className="hidden md:flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-2 py-0.5 rounded-full text-xs">
                   <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
