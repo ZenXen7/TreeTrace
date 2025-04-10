@@ -10,6 +10,7 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserPayload, LoginResponse } from './interfaces/user.interface';
 import { UserDocument } from '../user/schemas/user.schema';
 import { UserService } from 'src/user/user.service';
+import { JwtPayload } from './jwt/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
