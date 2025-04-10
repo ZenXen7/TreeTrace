@@ -63,7 +63,13 @@ export class AuthService {
   }
 
   login(user: UserPayload): Promise<LoginResponse> {
-    const payload = { sub: user._id, email: user.email };
+    const payload: JwtPayload = {
+      sub: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName
+    };
+    
     return Promise.resolve({
       access_token: this.jwtService.sign(payload),
       user,
