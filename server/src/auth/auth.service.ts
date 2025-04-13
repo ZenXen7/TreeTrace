@@ -20,27 +20,43 @@ export class AuthService {
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<LoginResponse> {
-    const existingUser = await this.userService.findByEmail(
-      createUserDto.email,
-    );
-    if (existingUser) {
-      throw new ConflictException('Email already exists');
+    try {
+      try {
+        const existingUser = await this.userService.findByEmail(
+          createUserDto.email,
+        );
+        if (existingUser) {
+          throw new ConflictException('Email already exists');
+        }
+      } catch (error) {
+        if (
+          error.message !== `User with email ${createUserDto.email} not found`
+        ) {
+          throw error;
+        }
+      }
+
+      // Create new user
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+      const user = await this.userService.create({
+        ...createUserDto,
+        password: hashedPassword,
+      });
+
+      const payload: UserPayload = {
+        _id: user._id.toString(),
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      };
+
+      return this.login(payload);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new Error('Registration failed: ' + error.message);
     }
-
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = await this.userService.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
-
-    const payload: UserPayload = {
-      _id: user._id.toString(),
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    };
-
-    return this.login(payload);
   }
 
   async validateUser(email: string, password: string): Promise<UserPayload> {
@@ -67,9 +83,9 @@ export class AuthService {
       sub: user._id,
       email: user.email,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
     };
-    
+
     return Promise.resolve({
       access_token: this.jwtService.sign(payload),
       user,
