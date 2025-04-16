@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -158,6 +159,19 @@ export default function Dashboard() {
   const [activeTree, setActiveTree] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/auth/login');
+      return;
+    }
+    
+    if (isAuthenticated) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated, fetchUserProfile, router]);
+
   const [animatedNodes, setAnimatedNodes] = useState<Array<{id: number, x: number, y: number, size: number, delay: number}>>([]);
 
   useEffect(() => {

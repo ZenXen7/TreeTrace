@@ -15,7 +15,7 @@ export class User {
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, select: false }) 
   password: string;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'FamilyMember' }] })

@@ -40,9 +40,17 @@ export default function Login() {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      await login(data)
+      const loginData = {
+        email: data.email.toLowerCase().trim(),
+        password: data.password
+      };
+      await login(loginData);
     } catch (error: any) {
-      toast.error(error.message || "Login failed")
+      const errorMessage = error.response?.data?.message || "Invalid email or password";
+      toast.error(errorMessage, {
+        duration: 3000,
+        position: "top-center",
+      });
     }
   }
 
