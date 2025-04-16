@@ -117,10 +117,25 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) {
-      throw new Error(`User with email ${email} not found`);
+    try {
+      const user = await this.userModel.findOne({ 
+        email: email.toLowerCase().trim() 
+      })
+      .select('+password')
+      .exec();
+      
+      if (!user) {
+        throw new HttpException(
+          'Invalid email or password',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
+      return user;
+    } catch (error) {
+      throw new HttpException(
+        'Invalid email or password',
+        HttpStatus.UNAUTHORIZED
+      );
     }
-    return user;
   }
 }
