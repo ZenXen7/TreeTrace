@@ -193,7 +193,10 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
           >
             
             <Link href="/">
-              <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+              <button 
+                onClick={() => useAuthStore.getState().logout()}
+                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
                 <LogOut className="h-5 w-5" />
                 <span>Log Out</span>
               </button>
