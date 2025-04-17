@@ -12,10 +12,12 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   firstName: z.string()
     .min(1, "First name is required")
-    .min(2, "First name must be at least 2 characters"),
+    .min(2, "First name must be at least 2 characters")
+    .regex(/^[A-Za-z]+$/, "First name must contain only letters"),
   lastName: z.string()
     .min(1, "Last name is required")
-    .min(2, "Last name must be at least 2 characters"),
+    .min(2, "Last name must be at least 2 characters")
+    .regex(/^[A-Za-z]+$/, "Last name must contain only letters"),
   email: z.string()
     .min(1, "Email is required")
     .email("Invalid email address"),
