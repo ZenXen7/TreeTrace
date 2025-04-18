@@ -23,30 +23,35 @@ interface FamilyMember {
   name: string;
   birthDate?: Date;
   deathDate?: Date;
-  relationship: string;
+ status: string;
   gender?: string;
   medicalConditions?: string[];
   userId: string;
   fatherId?: string;
   motherId?: string;
+  partnerId?: string;
   children: string[];
 }
 
 interface FamilyTreeNode extends FamilyMember {
   father?: FamilyTreeNode | null;
   mother?: FamilyTreeNode | null;
+  partner?: FamilyTreeNode | null;
   childNodes?: FamilyTreeNode[];
 }
 
 interface CreateFamilyMemberDto {
+
   name: string;
-  birthDate?: Date;
-  deathDate?: Date;
-  relationship: string;
+  birthDate?: string;
+  deathDate?: string;
+  // relationship: string;
   gender?: string;
   medicalConditions?: string[];
   fatherId?: string;
   motherId?: string;
+  status?: string;
+  partnerId?: string;
 }
 
 interface TreeState {
