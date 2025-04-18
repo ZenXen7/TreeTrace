@@ -1,39 +1,42 @@
 import {
   IsString,
   IsOptional,
-  IsArray,
   IsMongoId,
   IsDateString,
+  IsNotEmpty,
+  IsEnum,
 } from 'class-validator';
 
 export class CreateFamilyMemberDto {
   @IsString()
+  @IsNotEmpty()
   name: string;
 
-  @IsOptional()
   @IsDateString()
-  birthDate?: Date;
+  @IsNotEmpty()
+  birthDate: Date;
 
   @IsOptional()
   @IsDateString()
   deathDate?: Date;
 
-  @IsOptional()
-  @IsArray()
-  medicalConditions?: string[];
-
-  @IsString()
-  relationship: string;
-
-  @IsOptional()
-  @IsMongoId()
-  fatherId?: string;
-
-  @IsOptional()
-  @IsMongoId()
-  motherId?: string;
+  @IsEnum(['alive', 'dead', 'unknown'])
+  @IsNotEmpty()
+  status: string;
 
   @IsOptional()
   @IsString()
   gender?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  fatherId?: string; // Foreign key to FamilyMember
+
+  @IsOptional()
+  @IsMongoId()
+  motherId?: string; // Foreign key to FamilyMember
+
+  @IsOptional()
+  @IsMongoId()
+  partnerId?: string; // Foreign key to FamilyMember
 }
