@@ -21,14 +21,13 @@ import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 export class FamilyController {
   constructor(private readonly familyService: FamilyService) {}
 
-  // Create a family member
   @Post()
   async create(
     @Body() createFamilyMemberDto: CreateFamilyMemberDto,
     @Request() req,
   ) {
     try {
-      const userId = req.user.id; // Extract userId from the authenticated user's token
+      const userId = req.user.id;
       const familyMember = await this.familyService.createFamilyMember(
         userId,
         createFamilyMemberDto,
@@ -46,7 +45,6 @@ export class FamilyController {
     }
   }
 
-  // Get all family members for the authenticated user
   @Get()
   async findAll(@Request() req) {
     try {
@@ -71,7 +69,6 @@ export class FamilyController {
     }
   }
 
-  // Get a single family member by ID
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -95,32 +92,6 @@ export class FamilyController {
     }
   }
 
-  // Get a family member with their children
-  @Get(':id/with-children')
-  async findFamilyMemberWithChildren(@Param('id') id: string) {
-    try {
-      const familyMember =
-        await this.familyService.findFamilyMemberWithChildren(id);
-      if (!familyMember) {
-        throw new HttpException(
-          'Family member not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Family member with children found',
-        data: familyMember,
-      };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error fetching family member with children',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Update a family member
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -144,7 +115,6 @@ export class FamilyController {
     }
   }
 
-  // Delete a family member
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {

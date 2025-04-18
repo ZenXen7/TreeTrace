@@ -5,8 +5,18 @@ export type FamilyMemberDocument = FamilyMember & Document;
 
 @Schema({ timestamps: true })
 export class FamilyMember {
+  // Remove explicit id field, Mongoose will handle it automatically
+  // @Prop({ type: Types.ObjectId, required: true, unique: true, auto: true })
+  // id: Types.ObjectId; // Primary Key
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId; // Foreign Key to User
+
   @Prop({ required: true })
   name: string;
+
+  @Prop({ enum: ['alive', 'dead', 'unknown'], default: 'unknown' })
+  status: string; // Status: alive, dead, or unknown
 
   @Prop()
   birthDate: Date;
@@ -15,13 +25,7 @@ export class FamilyMember {
   deathDate: Date;
 
   @Prop()
-  medicalConditions: string[];
-
-  @Prop({ required: true })
-  relationship: string;
-
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: Types.ObjectId;
+  gender: string;
 
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
   fatherId: Types.ObjectId;
@@ -29,11 +33,8 @@ export class FamilyMember {
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
   motherId: Types.ObjectId;
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'FamilyMember' }] })
-  children: Types.ObjectId[];
-
-  @Prop()
-  gender: string;
+  @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
+  partnerId: Types.ObjectId; // Partner ID
 }
 
 export const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMember);
