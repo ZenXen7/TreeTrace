@@ -11,7 +11,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Login",
+  title: "TreeTrace",
   description: "Login to your account",
 };
 
@@ -20,5 +20,11 @@ export default function TreeViewLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className={`min-h-screen bg-black antialiased ${outfit.variable} ${outfit.className}`}>{children}</div>;
+  return (
+    <div
+      className={`min-h-screen bg-black antialiased ${outfit.variable} ${outfit.className}`}
+    >
+      {children}
+    </div>
+  );
 }

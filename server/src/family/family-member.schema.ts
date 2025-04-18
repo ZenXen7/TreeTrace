@@ -34,7 +34,7 @@ export class FamilyMember {
   motherId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
-  partnerId: Types.ObjectId; // Partner ID
+  partnerId: Types.ObjectId[]; // Partner ID
 }
 
 export const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMember);
