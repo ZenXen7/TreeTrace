@@ -38,6 +38,8 @@ export default function Login() {
     }
   }, [loginSuccess, router])
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   const onSubmit = async (data: LoginInput) => {
     try {
       const loginData = {
@@ -46,11 +48,17 @@ export default function Login() {
       };
       await login(loginData);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Invalid email or password";
-      toast.error(errorMessage, {
-        duration: 3000,
-        position: "top-center",
-      });
+      let errorMessage = "An error occurred during login";
+      
+      if (error.response?.status === 401) {
+        errorMessage = "Invalid email or password";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Email not found. Please check your email address.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      setErrorMessage(errorMessage);
     }
   }
 
@@ -262,14 +270,14 @@ export default function Login() {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors.password && (
+                    {errorMessage && (
                       <motion.p
-                        className="text-red-400 text-sm"
+                        className="text-red-400 text-sm text-center"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        {errors.password.message}
+                        {errorMessage}
                       </motion.p>
                     )}
                   </div>

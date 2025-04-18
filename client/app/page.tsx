@@ -324,7 +324,7 @@ export default function Home() {
             <p className="text-gray-400 text-lg mb-8">
               Join thousands of families who are discovering, preserving, and sharing their heritage with TreeTrace.
             </p>
-            <Link href="/auth/register">
+            <Link href="/auth/signup">
               <Button
                 size="lg"
                 className="bg-white text-black hover:bg-gray-200 transition-colors rounded-full px-8 py-6 font-medium text-lg"
