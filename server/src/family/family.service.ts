@@ -14,7 +14,7 @@ export interface FamilyTreeNode {
   userId: Types.ObjectId;
   fatherId?: Types.ObjectId;
   motherId?: Types.ObjectId;
-  partnerId?: Types.ObjectId;
+  partnerId?: Types.ObjectId[]; // Updated to be an array of ObjectIds
   __v?: number;
 }
 
@@ -68,15 +68,17 @@ export class FamilyService {
         throw new NotFoundException(`Family member with ID ${id} not found`);
       }
 
-      // If partnerId is being updated, update the partner's partnerId as well
-      if (updateFamilyMemberDto.partnerId) {
-        await this.familyMemberModel
-          .findByIdAndUpdate(
-            updateFamilyMemberDto.partnerId,
-            { partnerId: id },
-            { new: true },
-          )
-          .session(session);
+      // If partnerId is being updated, update the partners' partnerId as well
+      if (updateFamilyMemberDto.partnerId && updateFamilyMemberDto.partnerId.length > 0) {
+        for (const partnerId of updateFamilyMemberDto.partnerId) {
+          await this.familyMemberModel
+            .findByIdAndUpdate(
+              partnerId,
+              { $addToSet: { partnerId: id } }, // Add the current ID to the partner's partnerId array
+              { new: true },
+            )
+            .session(session);
+        }
       }
 
       await session.commitTransaction();
