@@ -16,14 +16,14 @@
   <body>
     <div id="tree"></div>
     <script>
-      var chart = new FamilyTree(document.getElementById("tree"), {
-        nodes: [
-          { id: 1, pids: [2], name: "John Doe", title: "Father" },
-          { id: 2, pid: [1], name: "Jane Doe", title: "Mother" },
-          { id: 3, fid: 1, mid: 2, name: "Sam Doe", title: "Son" },
-          { id: 4, fid: 1, mid: 2, name: "Sara Doe", title: "Daughter" },
-        ],
-      });
+      fetch('/api/familytree')
+        .then(response => response.json())
+        .then(data => {
+          var chart = new FamilyTree(document.getElementById("tree"), {
+            nodes: data.nodes,
+          });
+        })
+        .catch(error => console.error('Error fetching family tree data:', error));
     </script>
   </body>
 </html>
