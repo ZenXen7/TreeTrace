@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Family Tree</title>
+    <script src="https://balkan.app/js/FamilyTree.js"></script>
+    <style>
+      #tree {
+        width: 100%;
+        height: 600px;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="tree"></div>
+    <script>
+      var chart = new FamilyTree(document.getElementById("tree"), {
+        nodes: [
+          { id: 1, pids: [2], name: "John Doe", title: "Father" },
+          { id: 2, pid: [1], name: "Jane Doe", title: "Mother" },
+          { id: 3, fid: 1, mid: 2, name: "Sam Doe", title: "Son" },
+          { id: 4, fid: 1, mid: 2, name: "Sara Doe", title: "Daughter" },
+        ],
+      });
+    </script>
+  </body>
+</html>
