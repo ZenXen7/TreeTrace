@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="familytree.js"></script>
+  </head>
+  <body>
+    <div id="tree"></div>
+    <script>
+      let family = new FamilyTree("#tree", {
+        // options
+        nodeBinding: {
+          field_0: "name",
+          field_1: "gender",
+          field_2: "birthDate",
+          img_0: "img",
+          field_3: "occupation",
+          field_4: "hobby",
+          field_5: "healthCondition", // Add custom field for health condition
+        },
+        nodes: [
+          {
+            id: 1,
+            pids: [2],
+            fid: 7,
+            mid: 8,
+            name: "Amber McKenzie",
+            gender: "female",
+            birthDate: "1980-04-22",
+            img: "https://cdn.balkan.app/shared/1.jpg",
+            occupation: "Engineer",
+            hobby: "Painting",
+            healthCondition: "Healthy", // Add custom data for health condition
+          },
+          {
+            id: 2,
+            pids: [1],
+            name: "Ava Field",
+            gender: "male",
+            birthDate: "1985-05-10",
+            img: "https://example.com/images/ava.jpg",
+            occupation: "Doctor",
+            hobby: "Cycling",
+            healthCondition: "Diabetic",
+          },
+          {
+            id: 3,
+            mid: 1,
+            fid: 2,
+            name: "Peter Stevens",
+            gender: "male",
+            birthDate: "2005-09-15",
+            img: "https://example.com/images/peter.jpg",
+          },
+          {
+            id: 4,
+            mid: 1,
+            fid: 2,
+            name: "Isabella Stewart",
+            gender: "female",
+            birthDate: "2007-11-23",
+            img: "https://example.com/images/isabella.jpg",
+          },
+          {
+            id: 5,
+            mid: 1,
+            fid: 2,
+            name: "Sophia Turner",
+            gender: "female",
+            birthDate: "2010-02-17",
+            img: "https://example.com/images/sophia.jpg",
+          },
+          {
+            id: 6,
+            mid: 1,
+            fid: 2,
+            pids: [9],
+            name: "Mia Clark",
+            gender: "female",
+            birthDate: "2012-06-30",
+            img: "https://example.com/images/mia.jpg",
+          },
+          {
+            id: 7,
+            pids: [8],
+            name: "John Doe",
+            gender: "male",
+            birthDate: "1978-01-12",
+            img: "https://example.com/images/john.jpg",
+          },
+          {
+            id: 8,
+            pids: [7],
+            mid: null,
+            fid: null,
+            name: "Jane Smith",
+            gender: "female",
+            birthDate: "1982-03-05",
+            img: "https://example.com/images/jane.jpg",
+          },
+          {
+            id: 9,
+            pids: [6],
+            mid: 10,
+            fid: 11,
+            name: "David Johnson",
+            gender: "male",
+            birthDate: "1990-07-28",
+            img: "",
+          },
+          {
+            id: 10,
+            pids: [11],
+            name: "Emily Brown",
+            gender: "female",
+            birthDate: "1995-10-14",
+            img: "",
+          },
+          {
+            id: 11,
+            pids: [10],
+            name: "Michael Wilson",
+            gender: "male",
+            birthDate: "2000-01-01",
+            img: "",
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>
