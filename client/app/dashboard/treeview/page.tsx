@@ -98,7 +98,48 @@ function Familytree(props: {
           },
         },
       });
-
+      family.editUI.on("save", (sender, editedData) => {
+        (async () => {
+          try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("No authentication token found");
+      
+            console.log("editUI editedData:", editedData);
+      
+            const rawData = editedData.data || editedData;
+            const resolvedId =
+              rawData.id ||
+              rawData._id ||
+              rawData._state?.id ||
+              rawData._state?._id;
+      
+            if (!resolvedId) {
+              console.error("No valid ID found in edited data", editedData);
+              throw new Error("No valid ID found in edited data");
+            }
+      
+            const updatedData = {
+              name: rawData.name,
+              gender: rawData.gender,
+              status: rawData.status,
+              birthDate: rawData.birthDate,
+              deathDate: rawData.deathDate,
+            };
+      
+            console.log("Resolved ID for update:", resolvedId);
+            await updateFamilyMember(token, resolvedId, updatedData);
+            await props.fetchData();
+          } catch (error) {
+            console.error("Error saving updated member:", error);
+          }
+        })();
+      
+        return true;
+      });
+      
+      
+      
+      
       family.nodeCircleMenuUI.on("show", function (sender, args) {
         var node = family.getNode(args.nodeId);
         delete args.menu.father;

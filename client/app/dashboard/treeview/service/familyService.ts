@@ -30,11 +30,8 @@ async function addFamilyMember(token: string, memberData: any) {
   return response.json();
 }
 
-async function updateFamilyMember(
-  token: string,
-  memberId: string,
-  memberData: any
-) {
+
+async function updateFamilyMember(token: string, memberId: string, memberData: any) {
   const response = await fetch(`${API_URL}/${memberId}`, {
     method: "PATCH",
     headers: {
@@ -44,9 +41,12 @@ async function updateFamilyMember(
     body: JSON.stringify(memberData),
   });
   if (!response.ok) {
+    const errorDetails = await response.text();
+    console.error("API Error Details:", errorDetails);
     throw new Error("Failed to update family member");
   }
   return response.json();
 }
+
 
 export { fetchFamilyMembers, addFamilyMember, updateFamilyMember };
