@@ -2,64 +2,13 @@
 
 import { useEffect, useState } from "react";
 import FamilyTree from "@balkangraph/familytree.js";
-import { addFamilyMember, updateFamilyMember } from "./service/familyService";
+import { handleAddMember, updateFamilyMember, deleteFamilyMember } from "./service/familyService";
 
 function Familytree(props: {
   nodeBinding: any;
   nodes: any;
-  fetchData: () => void;
+  fetchData: () => Promise<void>;
 }) {
-
-  async function handleAddMember(node: any, relation: string) {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-
-      let newMemberData: any = { name: "Unknown" };
-      let updateCurrentNode: any = {};
-
-      switch (relation) {
-        case "father":
-          newMemberData.gender = "male";
-          newMemberData.partnerId = node.mid ? [node.mid] : [];
-          const father = await addFamilyMember(token, newMemberData);
-          updateCurrentNode.fatherId = father.id;
-          break;
-
-        case "mother":
-          newMemberData.gender = "female";
-          newMemberData.partnerId = node.fid ? [node.fid] : [];
-          const mother = await addFamilyMember(token, newMemberData);
-          updateCurrentNode.motherId = mother.id;
-          break;
-
-        case "wife":
-          newMemberData.gender = "female";
-          newMemberData.partnerId = [node.id];
-          const wife = await addFamilyMember(token, newMemberData);
-          updateCurrentNode.partnerId = [...(node.pids || []), wife.id];
-          break;
-
-        case "husband":
-          newMemberData.gender = "male";
-          newMemberData.partnerId = [node.id];
-          const husband = await addFamilyMember(token, newMemberData);
-          updateCurrentNode.partnerId = [...(node.pids || []), husband.id];
-          break;
-
-        default:
-          return;
-      }
-
-      // Update the existing node to reflect the new relationship
-      await updateFamilyMember(token, node.id, updateCurrentNode);
-
-      await props.fetchData(); // Refresh the tree
-    } catch (error) {
-      console.error("Error adding family member:", error);
-    }
-  }
-
   useEffect(() => {
     const treeElement = document.getElementById("tree");
     if (treeElement) {
@@ -67,7 +16,7 @@ function Familytree(props: {
         FamilyTree.templates.tommy_female.nodeCircleMenuButton =
         FamilyTree.templates.tommy_male.nodeCircleMenuButton =
           {
-            radius: 25,
+            radius: 20,
             x: 230,
             y: 60,
             color: "#fff",
@@ -96,6 +45,11 @@ function Familytree(props: {
             color: "#fff",
             draggable: true,
           },
+          deleteNode: {
+            icon: FamilyTree.icon.remove(30, 30, "#ff0000"),
+            text: "Delete Member",
+            color: "white",
+          },
         },
       });
       family.editUI.on("save", (sender, editedData) => {
@@ -103,21 +57,18 @@ function Familytree(props: {
           try {
             const token = localStorage.getItem("token");
             if (!token) throw new Error("No authentication token found");
-      
-            console.log("editUI editedData:", editedData);
-      
+
             const rawData = editedData.data || editedData;
             const resolvedId =
               rawData.id ||
               rawData._id ||
               rawData._state?.id ||
               rawData._state?._id;
-      
+
             if (!resolvedId) {
-              console.error("No valid ID found in edited data", editedData);
               throw new Error("No valid ID found in edited data");
             }
-      
+
             const updatedData = {
               name: rawData.name,
               gender: rawData.gender,
@@ -125,21 +76,39 @@ function Familytree(props: {
               birthDate: rawData.birthDate,
               deathDate: rawData.deathDate,
             };
-      
-            console.log("Resolved ID for update:", resolvedId);
+
             await updateFamilyMember(token, resolvedId, updatedData);
             await props.fetchData();
           } catch (error) {
             console.error("Error saving updated member:", error);
           }
         })();
-      
+
         return true;
       });
-      
-      
-      
-      
+
+      const canDeleteMember = (node: any) => {
+        const hasPartner = node.pids && node.pids.length > 0;
+        const hasChildren = props.nodes.some(
+          (member: any) => member.fid === node.id || member.mid === node.id
+        );
+        const hasParents = node.fid || node.mid;
+
+        // Case 1: Child without spouse/children
+        if (hasParents && !hasPartner && !hasChildren) return true;
+
+        // Case 2: Root couple with descendants
+        if (hasChildren && hasPartner && !hasParents) return true;
+
+        // Case 3: Root single parent with descendants
+        if (hasChildren && !hasPartner && !hasParents) return true;
+
+        // Case 4: Root couple without children
+        if (!hasChildren && hasPartner && !hasParents) return true;
+
+        return false;
+      };
+
       family.nodeCircleMenuUI.on("show", function (sender, args) {
         var node = family.getNode(args.nodeId);
         delete args.menu.father;
@@ -147,6 +116,7 @@ function Familytree(props: {
         delete args.menu.wife;
         delete args.menu.husband;
 
+        // Add parent options
         if (FamilyTree.isNEU(node.mid)) {
           args.menu.mother = {
             icon: FamilyTree.icon.mother(30, 30, "#F57C00"),
@@ -163,56 +133,131 @@ function Familytree(props: {
           };
         }
 
-        if (node.gender == "male") {
-          args.menu.wife = {
-            icon: FamilyTree.icon.wife(30, 30, "#F57C00"),
-            text: "Add wife",
+        // Check if node has a partner
+        const hasPartner = node.pids && node.pids.length > 0;
+        const partner = hasPartner ? family.getNode(node.pids[0]) : null;
+
+        // Add children options
+        if (hasPartner) {
+          args.menu.addSon = {
+            icon: FamilyTree.icon.son(30, 30, "#039BE5"),
+            text: `Add Son with partner`,
             color: "white",
           };
-        } else if (node.gender == "female") {
-          args.menu.husband = {
-            icon: FamilyTree.icon.husband(30, 30, "#F57C00"),
-            text: "Add husband",
+          args.menu.addDaughter = {
+            icon: FamilyTree.icon.daughter(30, 30, "#F57C00"),
+            text: `Add Daughter with partner`,
             color: "white",
           };
         } else {
-          args.menu.wife = {
-            icon: FamilyTree.icon.wife(30, 30, "#F57C00"),
-            text: "Add wife",
+          args.menu.addSon = {
+            icon: FamilyTree.icon.son(30, 30, "#039BE5"),
+            text: "Add Son",
             color: "white",
           };
-          args.menu.husband = {
-            icon: FamilyTree.icon.husband(30, 30, "#039BE5"),
-            text: "Add husband",
+          args.menu.addDaughter = {
+            icon: FamilyTree.icon.daughter(30, 30, "#F57C00"),
+            text: "Add Daughter",
             color: "white",
           };
         }
+
+        // Add partner option if no partner exists
+        if (!hasPartner) {
+          if (node.gender === "male") {
+            args.menu.wife = {
+              icon: FamilyTree.icon.wife(30, 30, "#F57C00"),
+              text: "Add wife",
+              color: "white",
+            };
+          } else if (node.gender === "female") {
+            args.menu.husband = {
+              icon: FamilyTree.icon.husband(30, 30, "#F57C00"),
+              text: "Add husband",
+              color: "white",
+            };
+          }
+        }
       });
 
-      family.nodeCircleMenuUI.on("click", function (sender, args) {
+      family.nodeCircleMenuUI.on("click", async function (sender, args) {
         let node = family.getNode(args.nodeId);
-        switch (args.menuItemName) {
-          case "father":
-            handleAddMember(node, "father");
-            break;
-          case "mother":
-            handleAddMember(node, "mother");
-            break;
-          case "wife":
-            handleAddMember(node, "wife");
-            break;
-          case "husband":
-            handleAddMember(node, "husband");
-            break;
-          case "PDFProfile":
-            family.exportPDFProfile({
-              id: args.nodeId,
-            });
-            break;
-          case "editNode":
-            family.editUI.show(args.nodeId);
-            break;
-          default:
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        try {
+          switch (args.menuItemName) {
+            case "deleteNode": {
+              if (!canDeleteMember(node)) {
+                alert(
+                  "Cannot delete this member as it would break the family tree structure."
+                );
+                return;
+              }
+
+              if (
+                !confirm("Are you sure you want to delete this family member?")
+              ) {
+                return;
+              }
+
+              await deleteFamilyMember(token, node.id);
+              await props.fetchData();
+              break;
+            }
+            case "addSon":
+            case "addDaughter": {
+              const gender = args.menuItemName === "addSon" ? "male" : "female";
+              const newMemberData = {
+                name: "Unknown",
+                gender: gender,
+              };
+
+              if (node.gender === "male") {
+                newMemberData.fatherId = node.id;
+                if (node.pids && node.pids[0]) {
+                  newMemberData.motherId = node.pids[0];
+                }
+              } else {
+                newMemberData.motherId = node.id;
+                if (node.pids && node.pids[0]) {
+                  newMemberData.fatherId = node.pids[0];
+                }
+              }
+
+              await handleAddMember(
+                token,
+                node,
+                gender === "male" ? "son" : "daughter",
+                props.fetchData,
+                newMemberData
+              );
+              break;
+            }
+            case "father":
+              await handleAddMember(token, node, "father", props.fetchData);
+              break;
+            case "mother":
+              await handleAddMember(token, node, "mother", props.fetchData);
+              break;
+            case "wife":
+              await handleAddMember(token, node, "wife", props.fetchData);
+              break;
+            case "husband":
+              await handleAddMember(token, node, "husband", props.fetchData);
+              break;
+            case "PDFProfile":
+              family.exportPDFProfile({
+                id: args.nodeId,
+              });
+              break;
+            case "editNode":
+              family.editUI.show(args.nodeId);
+              break;
+            default:
+          }
+        } catch (error) {
+          console.error("Error handling member addition:", error);
         }
       });
     }
