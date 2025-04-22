@@ -71,12 +71,18 @@ async function handleAddMember(
 ) {
   try {
     if (relation === "son" || relation === "daughter") {
-      const child = await addFamilyMember(token, newMemberData);
+      const child = await addFamilyMember(token, {
+        ...newMemberData,
+        status: "alive"
+      });
       await fetchData();
       return;
     }
 
-    let memberData: any = { name: "Unknown" };
+    let memberData: any = { 
+      name: "Unknown",
+      status: "alive"
+    };
     let updateCurrentNode: any = {};
     let existingParentUpdate: any = null;
 

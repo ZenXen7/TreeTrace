@@ -13,12 +13,15 @@ import { UserPayload, LoginResponse } from './interfaces/user.interface';
 import { UserDocument } from '../user/schemas/user.schema';
 import { UserService } from 'src/user/user.service';
 import { JwtPayload } from './jwt/jwt-payload.interface';
+import { FamilyService } from 'src/family/family.service';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly familyService: FamilyService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<LoginResponse> {
@@ -27,6 +30,16 @@ export class AuthService {
         ...createUserDto,
         email: createUserDto.email.toLowerCase().trim(),
       });
+      const userID = new Types.ObjectId(user._id);
+      // Automatically create a family member node for the new user
+      await this.familyService.createFamilyMember(
+        userID,
+        {
+          name: `${user.firstName} ${user.lastName}`,
+          gender: user.gender,
+          status: 'alive',
+        },
+      );
 
       const payload: UserPayload = {
         _id: user._id.toString(),

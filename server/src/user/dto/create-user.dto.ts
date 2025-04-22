@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsIn } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -17,4 +17,9 @@ export class CreateUserDto {
   @IsNotEmpty()
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
   readonly password: string;
+  
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['male', 'female'], { message: 'Gender must be either male or female' })
+  readonly gender: string;
 }

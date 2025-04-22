@@ -50,8 +50,10 @@ function Familytree(props: {
             text: "Delete Member",
             color: "white",
           },
+          
         },
       });
+      
       family.editUI.on("save", (sender, editedData) => {
         (async () => {
           try {
@@ -266,6 +268,7 @@ function Familytree(props: {
   return null;
 }
 
+
 export default function TreeViewPage() {
   const [data, setData] = useState([]);
 
@@ -284,15 +287,16 @@ export default function TreeViewPage() {
         },
       });
       const result = await response.json();
-      const members = Array.isArray(result) ? result : result.data;
-
+      const members = Array.isArray(result) ? result : (Array.isArray(result.data) ? result.data : []);
+      console.log("API raw result:", result);
+      console.log("API members:", members);
       setData(
         members.map((member: any) => ({
           id: member._id,
           name: member.name,
-          pids: member.partnerId || [],
-          mid: member.motherId,
-          fid: member.fatherId,
+          pids: Array.isArray(member.partnerId) ? member.partnerId : [],
+          mid: member.motherId ? member.motherId.toString() : undefined,
+          fid: member.fatherId ? member.fatherId.toString() : undefined,
           gender: member.gender,
           status: member.status,
           birthDate: member.birthDate,
@@ -300,12 +304,35 @@ export default function TreeViewPage() {
         }))
       );
     } catch (error) {
+      
       console.error("Error fetching family tree data:", error);
     }
+    
   }
 
   useEffect(() => {
     fetchData();
+    
+    // Set up event listener for auth events to refresh tree data
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' && e.newValue) {
+        // New login or registration detected, refresh data
+        fetchData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Check if we just logged in or registered
+    const justLoggedIn = sessionStorage.getItem('justAuthenticated');
+    if (justLoggedIn) {
+      fetchData();
+      sessionStorage.removeItem('justAuthenticated');
+    }
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const nodeBinding = {

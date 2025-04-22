@@ -15,7 +15,7 @@ import {
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { FamilyService, FamilyTreeNode } from './family.service';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
-
+import { Model, Types } from 'mongoose';
 @Controller('family-members')
 @UseGuards(JwtAuthGuard)
 export class FamilyController {
@@ -68,6 +68,23 @@ export class FamilyController {
       );
     }
   }
+//   @Get()
+// async findAll(@Request() req) {
+//   try {
+//     const userId = req.user.id;
+//     const familyMembers = await this.familyService.findAll(userId);
+//     return {
+//       statusCode: HttpStatus.OK,
+//       message: 'Family members fetched successfully',
+//       data: familyMembers, // can be empty array
+//     };
+//   } catch (error) {
+//     throw new HttpException(
+//       error.message || 'Error fetching family members',
+//       error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+//     );
+//   }
+// }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {

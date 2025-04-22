@@ -43,8 +43,8 @@ interface FamilyTreeNode extends FamilyMember {
 interface CreateFamilyMemberDto {
 
   name: string;
-  birthDate?: string;
-  deathDate?: string;
+  birthDate?: Date;
+  deathDate?: Date;
   // relationship: string;
   gender?: string;
   medicalConditions?: string[];

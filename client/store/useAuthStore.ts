@@ -65,6 +65,7 @@ interface RegisterData {
   lastName: string;
   email: string;
   password: string;
+  gender: string;
 }
 
 interface LoginCredentials {
@@ -94,6 +95,15 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       safeLocalStorage.setItem("token", access_token);
       safeLocalStorage.setItem("user", JSON.stringify(user));
+      
+      // Set flag to trigger tree view refresh
+      sessionStorage.setItem('justAuthenticated', 'true');
+      
+      // Dispatch storage event to notify other components
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'token',
+        newValue: access_token
+      }));
 
       set({
         user,
@@ -123,6 +133,15 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       safeLocalStorage.setItem("token", access_token);
       safeLocalStorage.setItem("user", JSON.stringify(user));
+      
+      // Set flag to trigger tree view refresh
+      sessionStorage.setItem('justAuthenticated', 'true');
+      
+      // Dispatch storage event to notify other components
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'token',
+        newValue: access_token
+      }));
 
       set({
         user,
