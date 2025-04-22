@@ -342,7 +342,30 @@ export default function TreeViewPage() {
     field_3: "birthDate",
     field_4: "deathDate",
   };
-
+  /* TO BE CONTINUED DIJD GANA MUINGON RAG OBJECT OBJECT  */
+  // const nodeBinding = {
+  //   field_0: { type: 'textbox', label: 'Full Name', binding: 'name' },
+  //   field_1: {
+  //     type: 'radio',
+  //     label: 'Status',
+  //     binding: 'status',
+  //     options: [
+  //       { value: 'alive', text: 'Alive' },
+  //       { value: 'deceased', text: 'Deceased' }
+  //     ]
+  //   },
+  //   field_2:  {
+  //     type: 'radio',
+  //     label: 'Gender',
+  //     binding: 'gender',
+  //     options: [
+  //       { value: 'male', text: 'Male' },
+  //       { value: 'female', text: 'Female' }
+  //     ]
+  //   },
+  //   field_3:   { type: 'date', label: 'Birth Date', binding: 'birthDate' },
+  //   field_4:   { type: 'date', label: 'Death Date', binding: 'deathDate' },
+  // };
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Our Family Tree</h1>
