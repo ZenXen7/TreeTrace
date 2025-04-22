@@ -18,6 +18,9 @@ export class User {
   @Prop({ required: true, select: false }) 
   password: string;
 
+  @Prop({ required: true, enum: ['male', 'female'] })
+  gender: string;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'FamilyMember' }] })
   familyTree: Types.Array<Types.ObjectId>;
 

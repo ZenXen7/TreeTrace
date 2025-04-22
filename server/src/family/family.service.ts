@@ -25,23 +25,39 @@ export class FamilyService {
     private familyMemberModel: Model<FamilyMemberDocument>,
   ) {}
 
+  // async createFamilyMember(
+  //   userId: string | Types.ObjectId,
+  //   createFamilyMemberDto: CreateFamilyMemberDto,
+  // ): Promise<FamilyMember> {
+  //   const userObjectId = new Types.ObjectId(userId.toString());
+  
+  //   const createdFamilyMember = new this.familyMemberModel({ 
+  //     ...createFamilyMemberDto,userId: userObjectId, 
+  //   });
+
+  //   const savedFamilyMember = await createdFamilyMember.save();
+  
+  //   return savedFamilyMember;
+  // }
+
   async createFamilyMember(
-    userId: string,
+    userId: Types.ObjectId,
     createFamilyMemberDto: CreateFamilyMemberDto,
   ): Promise<FamilyMember> {
-    const createdFamilyMember = new this.familyMemberModel({
+    const createdFamilyMember = new this.familyMemberModel({ 
       ...createFamilyMemberDto,
       userId,
     });
-
-    const savedFamilyMember = await createdFamilyMember.save();
-
-    return savedFamilyMember;
+  
+    return createdFamilyMember.save();
   }
+  
 
   async findAll(userId: string): Promise<FamilyMember[]> {
+    // Convert string userId to ObjectId before querying
+    const userObjectId = new Types.ObjectId(userId);
     // Fetch all family members associated with the given userId
-    return this.familyMemberModel.find({ userId }).exec();
+    return this.familyMemberModel.find({ userId: userObjectId }).exec();
   }
 
   async findOne(id: string): Promise<FamilyMember> {

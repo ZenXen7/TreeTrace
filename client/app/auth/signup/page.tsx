@@ -145,6 +145,35 @@ export default function Register() {
                     )}
                   </div>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <div className="flex gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id="male"
+                        value="male"
+                        {...register("gender")}
+                        className="h-4 w-4 mr-2"
+                      />
+                      <Label htmlFor="male" className="cursor-pointer">Male</Label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id="female"
+                        value="female"
+                        {...register("gender")}
+                        className="h-4 w-4 mr-2"
+                      />
+                      <Label htmlFor="female" className="cursor-pointer">Female</Label>
+                    </div>
+                  </div>
+                  {errors.gender && (
+                    <p className="text-red-400 text-sm">{errors.gender.message}</p>
+                  )}
+                </div>
 
                 <div className="space-y-1 pt-2">
                   <h3 className="text-sm font-medium text-gray-300">Account Information</h3>
