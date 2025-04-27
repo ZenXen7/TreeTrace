@@ -2,10 +2,10 @@ import {
   IsString,
   IsOptional,
   IsMongoId,
-  IsDateString,
   IsNotEmpty,
   IsEnum,
   IsArray,
+  IsDate,
 } from 'class-validator';
 
 export class CreateFamilyMemberDto {
@@ -14,11 +14,11 @@ export class CreateFamilyMemberDto {
   name?: string;
 
   @IsOptional()
-  @IsDateString()
+  @IsDate()
   birthDate?: Date;
 
   @IsOptional()
-  @IsDateString()
+  @IsDate()
   deathDate?: Date;
 
   @IsOptional()
@@ -28,6 +28,14 @@ export class CreateFamilyMemberDto {
   @IsString()
   @IsNotEmpty()
   gender: string;
+
+  @IsOptional()
+  @IsString()
+  occupation?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
 
   @IsOptional()
   @IsMongoId()

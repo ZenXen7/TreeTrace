@@ -73,7 +73,9 @@ async function handleAddMember(
     if (relation === "son" || relation === "daughter") {
       const child = await addFamilyMember(token, {
         ...newMemberData,
-        status: "alive"
+        status: "alive",
+        country: newMemberData?.country || "",
+        occupation: newMemberData?.occupation || ""
       });
       await fetchData();
       return;
@@ -81,7 +83,9 @@ async function handleAddMember(
 
     let memberData: any = { 
       name: "Unknown",
-      status: "alive"
+      status: "alive",
+      country: "",
+      occupation: ""
     };
     let updateCurrentNode: any = {};
     let existingParentUpdate: any = null;

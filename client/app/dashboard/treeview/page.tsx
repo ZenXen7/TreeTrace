@@ -45,11 +45,29 @@ function Familytree(props: {
       const femaleAvatar =
         "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzgwMzQ2RCIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzRBMUY0MCIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiM0QTFGNDAiLz48L3N2Zz4="
 
-      // Update the node templates to be bigger, cleaner and more modern
+      // Update the text styling and positioning for the larger cards
+      const nameStyle =
+        'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;" fill="#F3F4F6"'
+      const roleStyle =
+        'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 400;" fill="#D1D5DB"'
+      const detailStyle =
+        'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 400;" fill="#9CA3AF"'
+
+      // Position text elements for the larger card
+      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="35">{val}</text>`
+      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${roleStyle} x="95" y="55">{val}</text>`
+      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${detailStyle} x="95" y="72">{val}</text>`
+      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-5" ${detailStyle} x="95" y="87">🌍 {val}</text>`
+      FamilyTree.templates.tommy.field_6 = `<text class="bft-field-6" ${detailStyle} x="190" y="87">💼 {val}</text>`
+      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
+      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
+      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
+
+      // Make the node bigger to accommodate more fields
       FamilyTree.templates.tommy.node = `
 <g filter="url(#card-shadow)">
   <!-- Card background with rounded corners -->
-  <rect x="0" y="0" height="120" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
+  <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card -->
   <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#6366F1"/>
@@ -63,7 +81,7 @@ function Familytree(props: {
       FamilyTree.templates.tommy_female.node = `
 <g filter="url(#card-shadow)">
   <!-- Card background with rounded corners -->
-  <rect x="0" y="0" height="120" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
+  <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card with female color -->
   <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#EC4899"/>
@@ -77,7 +95,7 @@ function Familytree(props: {
       FamilyTree.templates.tommy_male.node = `
 <g filter="url(#card-shadow)">
   <!-- Card background with rounded corners -->
-  <rect x="0" y="0" height="120" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
+  <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card with male color -->
   <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#3B82F6"/>
@@ -88,35 +106,24 @@ function Familytree(props: {
 </g>
 `
 
-      // Update the text styling and positioning for the larger cards
-      const nameStyle =
-        'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;" fill="#F3F4F6"'
-      const roleStyle =
-        'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 400;" fill="#D1D5DB"'
-      const detailStyle =
-        'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 400;" fill="#9CA3AF"'
-
-      // Position text elements for the larger card
-      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="40">{val}</text>`
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${roleStyle} x="95" y="65">{val}</text>`
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${detailStyle} x="95" y="85">{val}</text>`
-
-      // Add birth/death dates as small text at bottom
-      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
-
       // Apply the same styling to male and female templates
       FamilyTree.templates.tommy_female.field_0 = FamilyTree.templates.tommy.field_0
       FamilyTree.templates.tommy_female.field_1 = FamilyTree.templates.tommy.field_1
       FamilyTree.templates.tommy_female.field_2 = FamilyTree.templates.tommy.field_2
       FamilyTree.templates.tommy_female.field_3 = FamilyTree.templates.tommy.field_3
       FamilyTree.templates.tommy_female.field_4 = FamilyTree.templates.tommy.field_4
+      FamilyTree.templates.tommy_female.field_5 = FamilyTree.templates.tommy.field_5
+      FamilyTree.templates.tommy_female.field_6 = FamilyTree.templates.tommy.field_6
+      FamilyTree.templates.tommy_female.field_7 = FamilyTree.templates.tommy.field_7
 
       FamilyTree.templates.tommy_male.field_0 = FamilyTree.templates.tommy.field_0
       FamilyTree.templates.tommy_male.field_1 = FamilyTree.templates.tommy.field_1
       FamilyTree.templates.tommy_male.field_2 = FamilyTree.templates.tommy.field_2
       FamilyTree.templates.tommy_male.field_3 = FamilyTree.templates.tommy.field_3
       FamilyTree.templates.tommy_male.field_4 = FamilyTree.templates.tommy.field_4
+      FamilyTree.templates.tommy_male.field_5 = FamilyTree.templates.tommy.field_5
+      FamilyTree.templates.tommy_male.field_6 = FamilyTree.templates.tommy.field_6
+      FamilyTree.templates.tommy_male.field_7 = FamilyTree.templates.tommy.field_7
 
       // Update the node menu button position for the larger card
       FamilyTree.templates.tommy.nodeCircleMenuButton =
@@ -160,6 +167,42 @@ function Familytree(props: {
             color: "#1F2937",
           },
         },
+        // Fix the editForm configuration to use standard form elements
+        editForm: {
+          readOnly: false,
+          titleBinding: "name",
+          generateElementsFromFields: false,
+          elements: [
+            { type: 'textbox', label: 'Full Name', binding: 'name'},
+            { type: 'select', options: [
+                {value: 'alive', text: 'Alive'},
+                {value: 'deceased', text: 'Deceased'},
+                {value: 'unknown', text: 'Unknown'}
+              ], 
+              label: 'Status', binding: 'status' },
+              [
+                { type: 'date', label: 'Birth Date', binding: 'birthDate' },
+                { type: 'date', label: 'Death Date', binding: 'deathDate' },
+              ],
+            
+            { type: 'select', options: [
+                {value: 'us', text: 'United States'},
+                {value: 'ph', text: 'Philippines'},
+                {value: 'ca', text: 'Canada'},
+                {value: 'uk', text: 'United Kingdom'},
+                {value: 'au', text: 'Australia'},
+                {value: 'jp', text: 'Japan'},
+                {value: 'sg', text: 'Singapore'},
+                {value: 'hk', text: 'Hong Kong'}
+              ], 
+              label: 'Country', binding: 'country' },
+           
+            { type: 'textbox', label: 'Occupation', binding: 'occupation' },
+            
+            // Hidden field for gender to prevent editing but still keep it in the form data
+            // { type: 'hidden', binding: 'gender' }
+          ]
+        },
         // Improved tree layout and spacing for the new node size
         levelSeparation: 100,
         siblingSeparation: 60,
@@ -197,13 +240,26 @@ function Familytree(props: {
               throw new Error("No valid ID found in edited data")
             }
 
+      
+            let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
+            let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
+            
+            console.log("Edit form raw data:", rawData);
+            console.log("Country value:", rawData.country);
+            console.log("Occupation value:", rawData.occupation);
+            
             const updatedData = {
               name: rawData.name,
               gender: rawData.gender,
               status: rawData.status,
-              birthDate: rawData.birthDate,
-              deathDate: rawData.deathDate,
+              birthDate: birthDate,
+              deathDate: deathDate,
+              country: rawData.country,
+              occupation: rawData.occupation,
+              tags: rawData.tags
             }
+            
+            console.log("Data being sent to API:", updatedData);
 
             await updateFamilyMember(token, resolvedId, updatedData)
             await props.fetchData()
@@ -214,6 +270,13 @@ function Familytree(props: {
 
         return true
       })
+      
+      // Using the default edit form provided by FamilyTree.js
+      // Custom form field configurations were causing errors
+      // Form fields will be based on the data properties of the nodes
+
+      // Update the node binding to include the new fields
+      const nodeBinding = props.nodeBinding
 
       const canDeleteMember = (node: any) => {
         const hasPartner = node.pids && node.pids.length > 0
@@ -417,20 +480,28 @@ export default function TreeViewPage() {
 
       const result = await response.json()
       const members = Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : []
-      console.log("API raw result:", result)
-      console.log("API members:", members)
-
-      const processedData = members.map((member: any) => ({
-        id: member._id,
-        name: member.name,
-        pids: Array.isArray(member.partnerId) ? member.partnerId : [],
-        mid: member.motherId ? member.motherId.toString() : undefined,
-        fid: member.fatherId ? member.fatherId.toString() : undefined,
-        gender: member.gender,
-        status: member.status,
-        birthDate: member.birthDate,
-        deathDate: member.deathDate,
-      }))
+      // console.log("API raw result:", result)
+      // console.log("API members:", members)
+      const processedData = members.map((member: any) => {
+        // Format dates properly for display and edit form
+        const formattedBirthDate = member.birthDate ? new Date(member.birthDate).toISOString().split('T')[0] : "";
+        const formattedDeathDate = member.deathDate ? new Date(member.deathDate).toISOString().split('T')[0] : "";
+        
+        return {
+          id: member._id,
+          name: member.name,
+          pids: Array.isArray(member.partnerId) ? member.partnerId : [],
+          mid: member.motherId ? member.motherId.toString() : undefined,
+          fid: member.fatherId ? member.fatherId.toString() : undefined,
+          gender: member.gender,
+          status: member.status || 'alive',
+          birthDate: formattedBirthDate,
+          deathDate: formattedDeathDate,
+          country: member.country || '',
+          occupation: member.occupation || '',
+          tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
+        };
+      })
 
       setData(processedData)
 
@@ -517,6 +588,9 @@ export default function TreeViewPage() {
     field_2: "status",
     field_3: "birthDate",
     field_4: "deathDate",
+    field_5: "country",
+    field_6: "occupation",
+    field_7: "tags",
   }
 
   return (

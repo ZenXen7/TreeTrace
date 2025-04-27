@@ -12,4 +12,7 @@ export interface FamilyMember {
   gender?: string;
   notes?: string;
   photoUrl?: string;
+  occupation?: string;
+  country?: string;
+  status?: string;
 } 
