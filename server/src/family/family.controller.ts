@@ -28,6 +28,13 @@ export class FamilyController {
   ) {
     try {
       const userId = req.user.id;
+
+      if (createFamilyMemberDto.birthDate && typeof createFamilyMemberDto.birthDate === 'string') {
+        createFamilyMemberDto.birthDate = new Date(createFamilyMemberDto.birthDate);
+      }
+      if (createFamilyMemberDto.deathDate && typeof createFamilyMemberDto.deathDate === 'string') {
+        createFamilyMemberDto.deathDate = new Date(createFamilyMemberDto.deathDate);
+      }
       const familyMember = await this.familyService.createFamilyMember(
         userId,
         createFamilyMemberDto,
@@ -38,6 +45,7 @@ export class FamilyController {
         data: familyMember,
       };
     } catch (error) {
+      console.error('Error creating family member:', error);
       throw new HttpException(
         error.message || 'Error creating family member',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

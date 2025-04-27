@@ -23,6 +23,9 @@ interface FamilyMember {
   name: string;
   birthDate?: Date;
   deathDate?: Date;
+  occupation?: string;
+  country?: string;
+  tags?: string[];
  status: string;
   gender?: string;
   medicalConditions?: string[];
@@ -41,16 +44,17 @@ interface FamilyTreeNode extends FamilyMember {
 }
 
 interface CreateFamilyMemberDto {
-
   name: string;
   birthDate?: Date;
   deathDate?: Date;
   // relationship: string;
   gender?: string;
   medicalConditions?: string[];
+  occupation?: string;
+  country?: string;
+  status?: string;
   fatherId?: string;
   motherId?: string;
-  status?: string;
   partnerId?: string;
 }
 
