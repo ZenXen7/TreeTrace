@@ -27,6 +27,13 @@ export class FamilyMember {
   @Prop()
   gender: string;
 
+  @Prop({ required: false, default: null })
+  occupation: string;
+  
+  @Prop({ required: false, default: null })
+  country: string;
+  
+
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
   fatherId: Types.ObjectId;
 

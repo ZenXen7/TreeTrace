@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { FamilyMember, FamilyMemberDocument } from './family-member.schema';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
+// import { SurnameSimilarityService } from '../notification/surname-similarity.service';
 
 // Define interface for family tree response
 export interface FamilyTreeNode {
@@ -23,6 +24,7 @@ export class FamilyService {
   constructor(
     @InjectModel(FamilyMember.name)
     private familyMemberModel: Model<FamilyMemberDocument>,
+    // private surnameSimilarityService: SurnameSimilarityService,
   ) {}
 
   // async createFamilyMember(
@@ -44,20 +46,45 @@ export class FamilyService {
     userId: Types.ObjectId,
     createFamilyMemberDto: CreateFamilyMemberDto,
   ): Promise<FamilyMember> {
-    const createdFamilyMember = new this.familyMemberModel({ 
-      ...createFamilyMemberDto,
-      userId,
-    });
-  
-    return createdFamilyMember.save();
+    const memberData = { ...createFamilyMemberDto, userId };
+    
+    // Automatically set status to 'dead' if death date is provided
+    if (memberData.deathDate) {
+      memberData.status = 'dead';
+    }
+
+    const createdFamilyMember = new this.familyMemberModel(memberData);
+    const savedMember = await createdFamilyMember.save();
+    
+    // Check for similar surnames after saving the new family member
+    // await this.surnameSimilarityService.checkForSimilarSurnames(
+    //   savedMember._id.toString(),
+    //   userId.toString()
+    // );
+    
+    return savedMember;
   }
   
 
-  async findAll(userId: string): Promise<FamilyMember[]> {
+  async findAll(userId: string, filters: Record<string, any> = {}): Promise<FamilyMember[]> {
     // Convert string userId to ObjectId before querying
     const userObjectId = new Types.ObjectId(userId);
-    // Fetch all family members associated with the given userId
-    return this.familyMemberModel.find({ userId: userObjectId }).exec();
+    
+    // Create query object with userId
+    const query: Record<string, any> = { userId: userObjectId };
+    
+    // Add any additional filters from parameters
+    Object.keys(filters).forEach(key => {
+      query[key] = filters[key];
+    });
+    
+    console.log('Database query with filters:', JSON.stringify(query));
+    
+    // Fetch all family members matching the query
+    const results = await this.familyMemberModel.find(query).exec();
+    console.log(`Found ${results.length} members matching filters`);
+    
+    return results;
   }
 
   async findOne(id: string): Promise<FamilyMember> {
@@ -72,6 +99,11 @@ export class FamilyService {
     id: string,
     updateFamilyMemberDto: Partial<CreateFamilyMemberDto>,
   ): Promise<FamilyMember> {
+    // If death date is provided, automatically set status to 'dead'
+    if (updateFamilyMemberDto.deathDate) {
+      updateFamilyMemberDto.status = 'dead';
+    }
+
     const session = await this.familyMemberModel.db.startSession();
     session.startTransaction();
 

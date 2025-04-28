@@ -16,6 +16,55 @@ async function fetchFamilyMembers(token: string) {
   return Array.isArray(result) ? result : result.data;
 }
 
+// New function to fetch family members with filters
+async function fetchFilteredFamilyMembers(token: string, filters: { 
+  gender?: string;
+  country?: string;
+  status?: string;
+}) {
+  console.log("Sending filters to API:", filters);
+  
+  // Build URL with query parameters for filters
+  let url = API_URL;
+  const queryParams: string[] = [];
+
+  // Only add non-'all' filters
+  if (filters.gender && filters.gender !== 'all') {
+    queryParams.push(`gender=${filters.gender}`);
+  }
+  
+  if (filters.country && filters.country !== 'all') {
+    queryParams.push(`country=${filters.country}`);
+  }
+  
+  if (filters.status && filters.status !== 'all') {
+    queryParams.push(`status=${filters.status}`);
+  }
+  
+  // Add query params to URL if we have any
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
+  }
+  
+  console.log("Fetching from URL:", url);
+  
+  // Make the API request
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error("Failed to fetch filtered family members");
+  }
+  
+  const result = await response.json();
+  return Array.isArray(result) ? result : result.data;
+}
+
 async function addFamilyMember(token: string, memberData: any) {
   try {
     console.log("Sending member data:", memberData);
@@ -73,7 +122,9 @@ async function handleAddMember(
     if (relation === "son" || relation === "daughter") {
       const child = await addFamilyMember(token, {
         ...newMemberData,
-        status: "alive"
+        status: "alive",
+        country: newMemberData?.country || "",
+        occupation: newMemberData?.occupation || ""
       });
       await fetchData();
       return;
@@ -81,7 +132,9 @@ async function handleAddMember(
 
     let memberData: any = { 
       name: "Unknown",
-      status: "alive"
+      status: "alive",
+      country: "",
+      occupation: ""
     };
     let updateCurrentNode: any = {};
     let existingParentUpdate: any = null;
@@ -223,6 +276,7 @@ async function deleteFamilyMember(token: string, memberId: string) {
 
 export {
   fetchFamilyMembers,
+  fetchFilteredFamilyMembers,
   addFamilyMember,
   updateFamilyMember,
   handleAddMember,

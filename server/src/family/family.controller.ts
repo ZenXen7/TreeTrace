@@ -28,6 +28,13 @@ export class FamilyController {
   ) {
     try {
       const userId = req.user.id;
+
+      if (createFamilyMemberDto.birthDate && typeof createFamilyMemberDto.birthDate === 'string') {
+        createFamilyMemberDto.birthDate = new Date(createFamilyMemberDto.birthDate);
+      }
+      if (createFamilyMemberDto.deathDate && typeof createFamilyMemberDto.deathDate === 'string') {
+        createFamilyMemberDto.deathDate = new Date(createFamilyMemberDto.deathDate);
+      }
       const familyMember = await this.familyService.createFamilyMember(
         userId,
         createFamilyMemberDto,
@@ -38,6 +45,7 @@ export class FamilyController {
         data: familyMember,
       };
     } catch (error) {
+      console.error('Error creating family member:', error);
       throw new HttpException(
         error.message || 'Error creating family member',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -49,19 +57,29 @@ export class FamilyController {
   async findAll(@Request() req) {
     try {
       const userId = req.user.id;
-      const familyMembers = await this.familyService.findAll(userId);
-      if (!familyMembers || familyMembers.length === 0) {
-        throw new HttpException(
-          'No family members found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
+      
+      // Extract filter parameters from query
+      const { gender, country, status } = req.query;
+      const filters = {};
+      
+      // Add filters if they exist
+      if (gender && gender !== 'all') filters['gender'] = gender;
+      if (country && country !== 'all') filters['country'] = country;
+      if (status && status !== 'all') filters['status'] = status;
+      
+      console.log(`API received filter request: ${JSON.stringify(filters)}`);
+      
+      // Pass filters to service method
+      const familyMembers = await this.familyService.findAll(userId, filters);
+      
+      // Don't throw an error if no members found, just return empty array
       return {
         statusCode: HttpStatus.OK,
-        message: 'Family members found',
+        message: familyMembers.length > 0 ? 'Family members found' : 'No family members match the filters',
         data: familyMembers,
       };
     } catch (error) {
+      console.error('Error in findAll:', error);
       throw new HttpException(
         error.message || 'Error fetching family members',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

@@ -204,7 +204,9 @@ interface FamilyMember {
   name: string;
   birthDate?: Date;
   deathDate?: Date;
- status: string;
+  occupation?: string;
+  country?: string;
+  status: string;
   gender?: string;
   medicalConditions?: string[];
   userId: string;
@@ -229,6 +231,8 @@ interface CreateFamilyMemberDto {
   // relationship: string;
   gender?: string;
   medicalConditions?: string[];
+  occupation?: string;
+  country?: string;
   fatherId?: string;
   motherId?: string;
   status?: string;

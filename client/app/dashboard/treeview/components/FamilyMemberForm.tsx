@@ -24,6 +24,9 @@ interface FamilyMemberFormProps {
     deathDate?: string;
     fatherId?: string;
     motherId?: string;
+    occupation?: string;
+    country?: string;
+    status?: string;
   };
 }
 
@@ -38,6 +41,9 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
     deathDate: initialData?.deathDate || '',
     fatherId: initialData?.fatherId || '',
     motherId: initialData?.motherId || '',
+    occupation: initialData?.occupation || '',
+    country: initialData?.country || '',
+    status: initialData?.status || 'alive',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +67,9 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
         deathDate: '',
         fatherId: '',
         motherId: '',
+        occupation: '',
+        country: '',
+        status: 'alive',
       });
     } catch (error) {
       toast.error('Failed to create family member');
@@ -124,6 +133,24 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
           type="date"
           value={formData.deathDate}
           onChange={(e) => setFormData({ ...formData, deathDate: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="occupation">Occupation</Label>
+        <Input
+          id="occupation"
+          value={formData.occupation}
+          onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="country">Country</Label>
+        <Input
+          id="country"
+          value={formData.country}
+          onChange={(e) => setFormData({ ...formData, country: e.target.value })}
         />
       </div>
 
