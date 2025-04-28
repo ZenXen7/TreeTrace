@@ -27,6 +27,7 @@ interface FamilyMemberFormProps {
     occupation?: string;
     country?: string;
     status?: string;
+    imageUrl?: string;
   };
 }
 
@@ -44,6 +45,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
     occupation: initialData?.occupation || '',
     country: initialData?.country || '',
     status: initialData?.status || 'alive',
+    imageUrl: initialData?.imageUrl || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +72,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
         occupation: '',
         country: '',
         status: 'alive',
+        imageUrl: '',
       });
     } catch (error) {
       toast.error('Failed to create family member');
@@ -152,6 +155,17 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
           value={formData.country}
           onChange={(e) => setFormData({ ...formData, country: e.target.value })}
         />
+      </div>
+
+      <div>
+        <Label htmlFor="imageUrl">Profile Image URL</Label>
+        <Input
+          id="imageUrl"
+          placeholder="https://example.com/image.jpg"
+          value={formData.imageUrl}
+          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+        />
+        <p className="text-xs text-gray-500 mt-1">Enter a URL to an image that will be displayed on the family tree card</p>
       </div>
 
       <div>
