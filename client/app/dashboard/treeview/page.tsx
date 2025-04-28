@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
-import { handleAddMember, updateFamilyMember, deleteFamilyMember } from "./service/familyService"
+import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers } from "./service/familyService"
+import { Filter } from "lucide-react"
 
 function Familytree(props: {
   nodeBinding: any
@@ -27,7 +28,7 @@ function Familytree(props: {
   </clipPath>
 </defs>
 `
-
+      
       // Add the SVG content to the tree
       const svgElement = treeElement.querySelector("svg")
       if (svgElement) {
@@ -140,7 +141,6 @@ function Familytree(props: {
 
       // Update the family tree configuration to match the new node size and dark mode
       const family = new FamilyTree(treeElement, {
-        nodeTreeMenu: true,
         mode: "dark", // Change to dark mode
         nodeBinding: props.nodeBinding,
         nodes: props.nodes,
@@ -167,6 +167,14 @@ function Familytree(props: {
             color: "#1F2937",
           },
         },
+
+        showXScroll: false,
+        showYScroll: false,
+        // miniMap: true,
+        enableSearch: true,
+        enableFilter: false,
+        filterBy: [],
+        
         // Fix the editForm configuration to use standard form elements
         editForm: {
           readOnly: false,
@@ -176,7 +184,7 @@ function Familytree(props: {
             { type: 'textbox', label: 'Full Name', binding: 'name'},
             { type: 'select', options: [
                 {value: 'alive', text: 'Alive'},
-                {value: 'deceased', text: 'Deceased'},
+                {value: 'dead', text: 'Dead'},
                 {value: 'unknown', text: 'Unknown'}
               ], 
               label: 'Status', binding: 'status' },
@@ -203,15 +211,16 @@ function Familytree(props: {
             // { type: 'hidden', binding: 'gender' }
           ]
         },
+        
         // Improved tree layout and spacing for the new node size
         levelSeparation: 100,
         siblingSeparation: 60,
         subtreeSeparation: 80,
         padding: 20,
         orientation: FamilyTree.orientation.top,
-        layout: FamilyTree.mixed,
+        layout: FamilyTree.layout.normal,
         scaleInitial: FamilyTree.match.boundary,
-        enableSearch: true,
+        // enableSearch: true,
         enableDragDrop: true,
         enablePan: true,
         enableZoom: true,
@@ -225,224 +234,308 @@ function Familytree(props: {
             stroke: "#4B5563",
           },
         },
-      })
+      }
+    )
+    
+    // family.filterUI.on("show-items", (sender, args) => {
+    //   if (args.name === 'gender') {
+    //     args.value = "Filter by gender:";
+    //     args.items = [
+    //       { id: 'all', text: '[All]' },
+    //       { id: 'male', text: 'Male' },
+    //       { id: 'female', text: 'Female' }
+    //     ];
+    //   } 
+    //   else if (args.name === 'country') {
+    //     args.value = "Filter by country:";
+    //     args.items = [
+    //       { id: 'all', text: '[All]' },
+    //       { id: 'us', text: 'United States' },
+    //       { id: 'ph', text: 'Philippines' },
+    //       { id: 'ca', text: 'Canada' },
+    //       { id: 'uk', text: 'United Kingdom' },
+    //       { id: 'au', text: 'Australia' },
+    //       { id: 'jp', text: 'Japan' },
+    //       { id: 'sg', text: 'Singapore' },
+    //       { id: 'hk', text: 'Hong Kong' }
+    //     ];
+    //   }
+    //   else if (args.name === 'status') {
+    //     args.value = "Filter by status:";
+    //     args.items = [
+    //       { id: 'all', text: '[All]' },
+    //       { id: 'alive', text: 'Alive' },
+    //       { id: 'deceased', text: 'Deceased' },
+    //       { id: 'unknown', text: 'Unknown' }
+    //     ];
+    //   }
+    // });
+    
+    // family.filterUI.on("add-filter", (sender, args) => {
+    //   console.log("Filter added:", args);
+    // 
+    //   if (args.name === "gender" && args.value !== "all") {
+    //     family.filter((node) => {
+    //       return node.gender === args.value;
+    //     });
+    //   }
+    //   else if (args.name === "country" && args.value !== "all") {
+    //     family.filter((node) => {
+    //       return node.country === args.value;
+    //     });
+    //   }
+    //   else if (args.name === "status" && args.value !== "all") {
+    //     family.filter((node) => {
+    //       return node.status === args.value;
+    //     });
+    //   }
+    //   else {
+    //     family.filter(() => true); // Show all if [All] selected
+    //   }
+    // });
+    
+    
+    // family.filterUI.on("add-filter", (sender, args) => {
+    //     console.log("Filter added:", args)
+    // 
+    //     let filterName = args.name; // 'gender', 'country', or 'status'
+    //     let filterValue = args.value; // selected value like 'male', 'us', etc.
+    // 
+    //     family.nodes.forEach(node => {
+    //         let showNode = true;
+    // 
+    //         // Only apply filtering if filterValue is not 'all'
+    //         if (filterValue !== 'all') {
+    //             if (filterName === 'gender' && node.gender !== filterValue) {
+    //                 showNode = false;
+    //             } else if (filterName === 'country' && node.country !== filterValue) {
+    //                 showNode = false;
+    //             } else if (filterName === 'status' && node.status !== filterValue) {
+    //                 showNode = false;
+    //             }
+    //         }
+    // 
+    //         family.show(node.id, showNode);
+    //     });
+    // })
 
-      family.editUI.on("save", (sender, editedData) => {
-        ;(async () => {
-          try {
-            const token = localStorage.getItem("token")
-            if (!token) throw new Error("No authentication token found")
+    
 
-            const rawData = editedData.data || editedData
-            const resolvedId = rawData.id || rawData._id || rawData._state?.id || rawData._state?._id
+    family.editUI.on("save", (sender, editedData) => {
+      ;(async () => {
+        try {
+          const token = localStorage.getItem("token")
+          if (!token) throw new Error("No authentication token found")
 
-            if (!resolvedId) {
-              throw new Error("No valid ID found in edited data")
-            }
+          const rawData = editedData.data || editedData
+          const resolvedId = rawData.id || rawData._id || rawData._state?.id || rawData._state?._id
 
-      
-            let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
-            let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
-            
-            console.log("Edit form raw data:", rawData);
-            console.log("Country value:", rawData.country);
-            console.log("Occupation value:", rawData.occupation);
-            
-            const updatedData = {
-              name: rawData.name,
-              gender: rawData.gender,
-              status: rawData.status,
-              birthDate: birthDate,
-              deathDate: deathDate,
-              country: rawData.country,
-              occupation: rawData.occupation,
-              tags: rawData.tags
-            }
-            
-            console.log("Data being sent to API:", updatedData);
-
-            await updateFamilyMember(token, resolvedId, updatedData)
-            await props.fetchData()
-          } catch (error) {
-            console.error("Error saving updated member:", error)
+          if (!resolvedId) {
+            throw new Error("No valid ID found in edited data")
           }
-        })()
 
-        return true
-      })
-      
-      // Using the default edit form provided by FamilyTree.js
-      // Custom form field configurations were causing errors
-      // Form fields will be based on the data properties of the nodes
+    
+          let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
+          let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
+          
+          // console.log("Edit form raw data:", rawData);
+          // console.log("Country value:", rawData.country);
+          // console.log("Occupation value:", rawData.occupation);
+          
+          const updatedData = {
+            name: rawData.name,
+            gender: rawData.gender,
+            status: rawData.status,
+            birthDate: birthDate,
+            deathDate: deathDate,
+            country: rawData.country,
+            occupation: rawData.occupation,
+            tags: rawData.tags
+          }
+          
 
-      // Update the node binding to include the new fields
-      const nodeBinding = props.nodeBinding
+          await updateFamilyMember(token, resolvedId, updatedData)
+          await props.fetchData()
+        } catch (error) {
+          console.error("Error saving updated member:", error)
+        }
+      })()
 
-      const canDeleteMember = (node: any) => {
-        const hasPartner = node.pids && node.pids.length > 0
-        const hasChildren = props.nodes.some((member: any) => member.fid === node.id || member.mid === node.id)
-        const hasParents = node.fid || node.mid
+      return true
+    })
+    
+    // Using the default edit form provided by FamilyTree.js
+    // Custom form field configurations were causing errors
+    // Form fields will be based on the data properties of the nodes
 
-        // Case 1: Child without spouse/children
-        if (hasParents && !hasPartner && !hasChildren) return true
+    // Update the node binding to include the new fields
+    const nodeBinding = props.nodeBinding
 
-        // Case 2: Root couple with descendants
-        if (hasChildren && hasPartner && !hasParents) return true
+    const canDeleteMember = (node: any) => {
+      const hasPartner = node.pids && node.pids.length > 0
+      const hasChildren = props.nodes.some((member: any) => member.fid === node.id || member.mid === node.id)
+      const hasParents = node.fid || node.mid
 
-        // Case 3: Root single parent with descendants
-        if (hasChildren && !hasPartner && !hasParents) return true
+      // Case 1: Child without spouse/children
+      if (hasParents && !hasPartner && !hasChildren) return true
 
-        // Case 4: Root couple without children
-        if (!hasChildren && hasPartner && !hasParents) return true
+      // Case 2: Root couple with descendants
+      if (hasChildren && hasPartner && !hasParents) return true
 
-        return false
+      // Case 3: Root single parent with descendants
+      if (hasChildren && !hasPartner && !hasParents) return true
+
+      // Case 4: Root couple without children
+      if (!hasChildren && hasPartner && !hasParents) return true
+
+      return false
+    }
+
+    family.nodeCircleMenuUI.on("show", (sender, args) => {
+      var node = family.getNode(args.nodeId)
+      delete args.menu.father
+      delete args.menu.mother
+      delete args.menu.wife
+      delete args.menu.husband
+
+      // Add parent options
+      if (FamilyTree.isNEU(node.mid)) {
+        args.menu.mother = {
+          icon: FamilyTree.icon.mother(24, 24, "#ec4899"),
+          text: "Add mother",
+          color: "#1F2937",
+        }
       }
 
-      family.nodeCircleMenuUI.on("show", (sender, args) => {
-        var node = family.getNode(args.nodeId)
-        delete args.menu.father
-        delete args.menu.mother
-        delete args.menu.wife
-        delete args.menu.husband
+      if (FamilyTree.isNEU(node.fid)) {
+        args.menu.father = {
+          icon: FamilyTree.icon.father(24, 24, "#3b82f6"),
+          text: "Add father",
+          color: "#1F2937",
+        }
+      }
 
-        // Add parent options
-        if (FamilyTree.isNEU(node.mid)) {
-          args.menu.mother = {
-            icon: FamilyTree.icon.mother(24, 24, "#ec4899"),
-            text: "Add mother",
+      // Check if node has a partner
+      const hasPartner = node.pids && node.pids.length > 0
+      const partner = hasPartner ? family.getNode(node.pids[0]) : null
+
+      // Add children options
+      if (hasPartner) {
+        args.menu.addSon = {
+          icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
+          text: `Add Son with partner`,
+          color: "#1F2937",
+        }
+        args.menu.addDaughter = {
+          icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
+          text: `Add Daughter with partner`,
+          color: "#1F2937",
+        }
+      } else {
+        args.menu.addSon = {
+          icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
+          text: "Add Son",
+          color: "#1F2937",
+        }
+        args.menu.addDaughter = {
+          icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
+          text: "Add Daughter",
+          color: "#1F2937",
+        }
+      }
+
+      // Add partner option if no partner exists
+      if (!hasPartner) {
+        if (node.gender === "male") {
+          args.menu.wife = {
+            icon: FamilyTree.icon.wife(24, 24, "#ec4899"),
+            text: "Add wife",
+            color: "#1F2937",
+          }
+        } else if (node.gender === "female") {
+          args.menu.husband = {
+            icon: FamilyTree.icon.husband(24, 24, "#3b82f6"),
+            text: "Add husband",
             color: "#1F2937",
           }
         }
+      }
+    })
 
-        if (FamilyTree.isNEU(node.fid)) {
-          args.menu.father = {
-            icon: FamilyTree.icon.father(24, 24, "#3b82f6"),
-            text: "Add father",
-            color: "#1F2937",
-          }
-        }
+    family.nodeCircleMenuUI.on("click", async (sender, args) => {
+      const node = family.getNode(args.nodeId)
+      const token = localStorage.getItem("token")
+      if (!token) return
 
-        // Check if node has a partner
-        const hasPartner = node.pids && node.pids.length > 0
-        const partner = hasPartner ? family.getNode(node.pids[0]) : null
-
-        // Add children options
-        if (hasPartner) {
-          args.menu.addSon = {
-            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
-            text: `Add Son with partner`,
-            color: "#1F2937",
-          }
-          args.menu.addDaughter = {
-            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
-            text: `Add Daughter with partner`,
-            color: "#1F2937",
-          }
-        } else {
-          args.menu.addSon = {
-            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
-            text: "Add Son",
-            color: "#1F2937",
-          }
-          args.menu.addDaughter = {
-            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
-            text: "Add Daughter",
-            color: "#1F2937",
-          }
-        }
-
-        // Add partner option if no partner exists
-        if (!hasPartner) {
-          if (node.gender === "male") {
-            args.menu.wife = {
-              icon: FamilyTree.icon.wife(24, 24, "#ec4899"),
-              text: "Add wife",
-              color: "#1F2937",
+      try {
+        switch (args.menuItemName) {
+          case "deleteNode": {
+            if (!canDeleteMember(node)) {
+              alert("Cannot delete this member as it would break the family tree structure.")
+              return
             }
-          } else if (node.gender === "female") {
-            args.menu.husband = {
-              icon: FamilyTree.icon.husband(24, 24, "#3b82f6"),
-              text: "Add husband",
-              color: "#1F2937",
+
+            if (!confirm("Are you sure you want to delete this family member?")) {
+              return
             }
+
+            await deleteFamilyMember(token, node.id)
+            await props.fetchData()
+            break
           }
-        }
-      })
-
-      family.nodeCircleMenuUI.on("click", async (sender, args) => {
-        const node = family.getNode(args.nodeId)
-        const token = localStorage.getItem("token")
-        if (!token) return
-
-        try {
-          switch (args.menuItemName) {
-            case "deleteNode": {
-              if (!canDeleteMember(node)) {
-                alert("Cannot delete this member as it would break the family tree structure.")
-                return
-              }
-
-              if (!confirm("Are you sure you want to delete this family member?")) {
-                return
-              }
-
-              await deleteFamilyMember(token, node.id)
-              await props.fetchData()
-              break
+          case "addSon":
+          case "addDaughter": {
+            const gender = args.menuItemName === "addSon" ? "male" : "female"
+            const newMemberData = {
+              name: "Unknown",
+              gender: gender,
             }
-            case "addSon":
-            case "addDaughter": {
-              const gender = args.menuItemName === "addSon" ? "male" : "female"
-              const newMemberData = {
-                name: "Unknown",
-                gender: gender,
-              }
 
-              if (node.gender === "male") {
-                newMemberData.fatherId = node.id
-                if (node.pids && node.pids[0]) {
-                  newMemberData.motherId = node.pids[0]
-                }
-              } else {
-                newMemberData.motherId = node.id
-                if (node.pids && node.pids[0]) {
-                  newMemberData.fatherId = node.pids[0]
-                }
+            if (node.gender === "male") {
+              newMemberData.fatherId = node.id
+              if (node.pids && node.pids[0]) {
+                newMemberData.motherId = node.pids[0]
               }
-
-              await handleAddMember(token, node, gender === "male" ? "son" : "daughter", props.fetchData, newMemberData)
-              break
+            } else {
+              newMemberData.motherId = node.id
+              if (node.pids && node.pids[0]) {
+                newMemberData.fatherId = node.pids[0]
+              }
             }
-            case "father":
-              await handleAddMember(token, node, "father", props.fetchData)
-              break
-            case "mother":
-              await handleAddMember(token, node, "mother", props.fetchData)
-              break
-            case "wife":
-              await handleAddMember(token, node, "wife", props.fetchData)
-              break
-            case "husband":
-              await handleAddMember(token, node, "husband", props.fetchData)
-              break
-            case "PDFProfile":
-              family.exportPDFProfile({
-                id: args.nodeId,
-              })
-              break
-            case "editNode":
-              family.editUI.show(args.nodeId)
-              break
-            default:
+
+            await handleAddMember(token, node, gender === "male" ? "son" : "daughter", props.fetchData, newMemberData)
+            break
           }
-        } catch (error) {
-          console.error("Error handling member addition:", error)
+          case "father":
+            await handleAddMember(token, node, "father", props.fetchData)
+            break
+          case "mother":
+            await handleAddMember(token, node, "mother", props.fetchData)
+            break
+          case "wife":
+            await handleAddMember(token, node, "wife", props.fetchData)
+            break
+          case "husband":
+            await handleAddMember(token, node, "husband", props.fetchData)
+            break
+          case "PDFProfile":
+            family.exportPDFProfile({
+              id: args.nodeId,
+            })
+            break
+          case "editNode":
+            family.editUI.show(args.nodeId)
+            break
+          default:
         }
-      })
-    }
-  }, [props.nodeBinding, props.nodes, props.fetchData])
+      } catch (error) {
+        console.error("Error handling member addition:", error)
+      }
+    })
+  }
+}, [props.nodeBinding, props.nodes, props.fetchData])
 
-  return null
+return null
 }
 
 // Update the TreeViewPage component to add more content and reduce whitespace
@@ -450,105 +543,162 @@ export default function TreeViewPage() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeFilters, setActiveFilters] = useState({
+    gender: 'all',
+    country: 'all',
+    status: 'all'
+  })
   const [stats, setStats] = useState({
     totalMembers: 0,
     generations: 0,
-    oldestMember: null,
-    youngestMember: null,
+    oldestMember: null as any,
+    youngestMember: null as any,
   })
+  const [treeKey, setTreeKey] = useState(0)
+
+  // Define a handler function for filter changes
+  const handleFilterChange = (name: string, value: string) => {
+    console.log(`Filter changed: ${name} = ${value}`);
+    
+    // Update the filter state and trigger re-fetch
+    setActiveFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [name]: value
+      };
+      console.log('New filters:', newFilters);
+      return newFilters;
+    });
+    
+    // Show loading state immediately
+    setLoading(true);
+  }
+
+  // Update the useEffect for filters to ensure they trigger properly
+  useEffect(() => {
+    console.log('Filter effect triggered with:', activeFilters);
+    fetchData();
+  }, [activeFilters]);
+
+  // When data changes, increment treeKey to force Familytree remount
+  useEffect(() => {
+    setTreeKey(prev => prev + 1)
+  }, [data])
 
   async function fetchData() {
     try {
-      setLoading(true)
-      setError(null)
-      const token = localStorage.getItem("token")
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error("No authentication token found")
+        throw new Error("No authentication token found");
       }
 
-      const response = await fetch("http://localhost:3001/family-members", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const result = await response.json()
-      const members = Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : []
-      // console.log("API raw result:", result)
-      // console.log("API members:", members)
-      const processedData = members.map((member: any) => {
-        // Format dates properly for display and edit form
-        const formattedBirthDate = member.birthDate ? new Date(member.birthDate).toISOString().split('T')[0] : "";
-        const formattedDeathDate = member.deathDate ? new Date(member.deathDate).toISOString().split('T')[0] : "";
+      console.log('Fetching data with filters:', activeFilters);
+      
+      // Use the fetchFilteredFamilyMembers function from familyService
+      try {
+        const members = await fetchFilteredFamilyMembers(token, activeFilters);
+        console.log('API returned members:', members);
         
-        return {
-          id: member._id,
-          name: member.name,
-          pids: Array.isArray(member.partnerId) ? member.partnerId : [],
-          mid: member.motherId ? member.motherId.toString() : undefined,
-          fid: member.fatherId ? member.fatherId.toString() : undefined,
-          gender: member.gender,
-          status: member.status || 'alive',
-          birthDate: formattedBirthDate,
-          deathDate: formattedDeathDate,
-          country: member.country || '',
-          occupation: member.occupation || '',
-          tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
-        };
-      })
-
-      setData(processedData)
-
-      // Calculate family statistics
-      if (processedData.length > 0) {
-        // Find the maximum generation depth
-        const findGenerationDepth = (memberId: string, depth = 1, visited = new Set()) => {
-          if (visited.has(memberId)) return depth
-          visited.add(memberId)
-
-          const member = processedData.find((m) => m.id === memberId)
-          if (!member) return depth
-
-          const children = processedData.filter((m) => m.fid === memberId || m.mid === memberId)
-          if (children.length === 0) return depth
-
-          return Math.max(...children.map((child) => findGenerationDepth(child.id, depth + 1, new Set(visited))))
+        if (!members || members.length === 0) {
+          setData([]);
+          setStats({
+            totalMembers: 0,
+            generations: 0,
+            oldestMember: null,
+            youngestMember: null,
+          });
+          return;
         }
+        
+        // Strictly filter nodes on the frontend
+        const strictFiltered = members.filter(
+          (m: any) =>
+            (activeFilters.gender === 'all' || m.gender === activeFilters.gender) &&
+            (activeFilters.country === 'all' || m.country === activeFilters.country) &&
+            (activeFilters.status === 'all' || m.status === activeFilters.status)
+        );
 
-        // Find root members (those without parents)
-        const rootMembers = processedData.filter((m) => !m.fid && !m.mid)
-        const maxGeneration =
-          rootMembers.length > 0 ? Math.max(...rootMembers.map((m) => findGenerationDepth(m.id))) : 1
+        const allowedIds = new Set(strictFiltered.map((m:any) => m._id?.toString?.() ?? m.id?.toString?.()));
 
-        setStats({
-          totalMembers: processedData.length,
-          generations: maxGeneration,
-          oldestMember: processedData.reduce((oldest, current) => {
-            if (
-              !oldest ||
-              (oldest.birthDate && current.birthDate && new Date(current.birthDate) < new Date(oldest.birthDate))
-            ) {
-              return current
-            }
-            return oldest
-          }, null),
-          youngestMember: processedData.reduce((youngest, current) => {
-            if (
-              !youngest ||
-              (youngest.birthDate && current.birthDate && new Date(current.birthDate) > new Date(youngest.birthDate))
-            ) {
-              return current
-            }
-            return youngest
-          }, null),
-        })
+        const processedData = strictFiltered.map((member:any) => {
+          // Format dates properly for display and edit form
+          const formattedBirthDate = member.birthDate ? new Date(member.birthDate).toISOString().split('T')[0] : "";
+          const formattedDeathDate = member.deathDate ? new Date(member.deathDate).toISOString().split('T')[0] : "";
+          
+          // Clean up references
+          let pids = Array.isArray(member.partnerId) ? member.partnerId.filter((id:string) => allowedIds.has(id?.toString?.())) : [];
+          let mid = member.motherId && allowedIds.has(member.motherId.toString()) ? member.motherId.toString() : undefined;
+          let fid = member.fatherId && allowedIds.has(member.fatherId.toString()) ? member.fatherId.toString() : undefined;
+
+          return {
+            id: member._id,
+            name: member.name,
+            pids,
+            mid,
+            fid,
+            gender: member.gender,
+            status: member.status || 'alive',
+            birthDate: formattedBirthDate,
+            deathDate: formattedDeathDate,
+            country: member.country || '',
+            occupation: member.occupation || '',
+            tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
+          };
+        });
+
+        setData(processedData);
+
+        // Calculate family statistics
+        if (processedData.length > 0) {
+          // Find the maximum generation depth
+          const findGenerationDepth = (memberId: string, depth = 1, visited = new Set()) => {
+            if (visited.has(memberId)) return depth
+            visited.add(memberId)
+
+            const member = processedData.find((m) => m.id === memberId)
+            if (!member) return depth
+
+            const children = processedData.filter((m) => m.fid === memberId || m.mid === memberId)
+            if (children.length === 0) return depth
+
+            return Math.max(...children.map((child) => findGenerationDepth(child.id, depth + 1, new Set(visited))))
+          }
+
+          // Find root members (those without parents)
+          const rootMembers = processedData.filter((m) => !m.fid && !m.mid)
+          const maxGeneration =
+            rootMembers.length > 0 ? Math.max(...rootMembers.map((m) => findGenerationDepth(m.id))) : 1
+
+          setStats({
+            totalMembers: processedData.length,
+            generations: maxGeneration,
+            oldestMember: processedData.reduce((oldest, current) => {
+              if (
+                !oldest ||
+                (oldest.birthDate && current.birthDate && new Date(current.birthDate) < new Date(oldest.birthDate))
+              ) {
+                return current
+              }
+              return oldest
+            }, null),
+            youngestMember: processedData.reduce((youngest, current) => {
+              if (
+                !youngest ||
+                (youngest.birthDate && current.birthDate && new Date(current.birthDate) > new Date(youngest.birthDate))
+              ) {
+                return current
+              }
+              return youngest
+            }, null),
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching filtered family members:", error);
+        throw error;
       }
+      
     } catch (error) {
       console.error("Error fetching family tree data:", error)
       setError(error instanceof Error ? error.message : "Failed to load family tree data")
@@ -556,10 +706,21 @@ export default function TreeViewPage() {
       setLoading(false)
     }
   }
-
+  
+  // Add an effect that listens to activeFilters changes
   useEffect(() => {
     fetchData()
-
+  }, [activeFilters]) // Re-fetch data when filters change
+  
+  // Keep the existing useEffect for initial data load
+  useEffect(() => {
+    // Check if we just logged in or registered
+    const justLoggedIn = sessionStorage.getItem("justAuthenticated")
+    if (justLoggedIn) {
+      fetchData()
+      sessionStorage.removeItem("justAuthenticated")
+    }
+    
     // Set up event listener for auth events to refresh tree data
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "token" && e.newValue) {
@@ -569,14 +730,7 @@ export default function TreeViewPage() {
     }
 
     window.addEventListener("storage", handleStorageChange)
-
-    // Check if we just logged in or registered
-    const justLoggedIn = sessionStorage.getItem("justAuthenticated")
-    if (justLoggedIn) {
-      fetchData()
-      sessionStorage.removeItem("justAuthenticated")
-    }
-
+    
     return () => {
       window.removeEventListener("storage", handleStorageChange)
     }
@@ -649,21 +803,109 @@ export default function TreeViewPage() {
           className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden mb-8"
         >
           {/* Tree Header */}
-          <div className="bg-gray-700 p-4 border-b border-gray-600 flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-white">Interactive Family Tree</h2>
-            <div className="flex space-x-2">
-              <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                Zoom In
-              </button>
-              <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                Zoom Out
-              </button>
-              <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                Reset
-              </button>
+          <div className="bg-gray-700 p-4 border-b border-gray-600">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">Interactive Family Tree</h2>
+              <div className="flex space-x-2">
+                <button 
+                  className={`px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors ${
+                    (activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all') 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : ''
+                  }`}
+                  onClick={() => {
+                    if (activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') {
+                      setActiveFilters({
+                        gender: 'all',
+                        country: 'all',
+                        status: 'all'
+                      });
+                      setLoading(true);
+                    }
+                  }}
+                  disabled={activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all'}
+                >
+                  Reset Filters
+                </button>
+                <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
+                  Zoom In
+                </button>
+                <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
+                  Zoom Out
+                </button>
+                <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
+                  Reset
+                </button>
+              </div>
+            </div>
+            
+            {/* Filter controls - More prominent and aligned with mockup */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center">
+                <Filter className="h-4 w-4 text-gray-400 mr-2" />
+                <select 
+                  className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.gender !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                  value={activeFilters.gender}
+                  onChange={(e) => handleFilterChange('gender', e.target.value)}
+                >
+                  <option value="all">All Genders</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
+              <select 
+                className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.country !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                value={activeFilters.country}
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+              >
+                <option value="all">All Countries</option>
+                <option value="us">United States</option>
+                <option value="ph">Philippines</option>
+                <option value="ca">Canada</option>
+                <option value="uk">United Kingdom</option>
+                <option value="au">Australia</option>
+                <option value="jp">Japan</option>
+                <option value="sg">Singapore</option>
+                <option value="hk">Hong Kong</option>
+              </select>
+
+              <select 
+                className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.status !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                value={activeFilters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="alive">Alive</option>
+                <option value="dead">Dead</option>
+                <option value="unknown">Unknown</option>
+              </select>
             </div>
           </div>
-
+          
+          {/* Active filters display - More compact and similar to mockup */}
+          {(activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') && (
+            <div className="bg-gray-800 px-4 py-2 text-sm text-gray-300 border-b border-gray-700 flex items-center">
+              <span className="mr-2">Active Filters:</span>
+              {activeFilters.gender !== 'all' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mr-2">
+                  Gender: {activeFilters.gender}
+                </span>
+              )}
+              {activeFilters.country !== 'all' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
+                  Country: {activeFilters.country}
+                </span>
+              )}
+              {activeFilters.status !== 'all' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-2">
+                  Status: {activeFilters.status}
+                </span>
+              )}
+            </div>
+          )}
+          
+          {/* Family Tree */}
           {loading ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -689,16 +931,37 @@ export default function TreeViewPage() {
             </motion.div>
           ) : data.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center">
-              <p className="text-gray-400 mb-4">Your family tree is empty. Start by adding your first family member.</p>
-              <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-300">
-                Add First Member
-              </button>
+              {(activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') ? (
+                <div>
+                  <p className="text-gray-400 mb-4">No family members match your current filters.</p>
+                  <button 
+                    onClick={() => {
+                      setActiveFilters({
+                        gender: 'all',
+                        country: 'all',
+                        status: 'all'
+                      });
+                      setLoading(true);
+                    }}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-300"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-400 mb-4">Your family tree is empty. Start by adding your first family member.</p>
+                  <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-300">
+                    Add First Member
+                  </button>
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative">
               <div className="p-4">
                 <div id="tree" className="w-full h-[700px]"></div>
-                <Familytree nodes={data} nodeBinding={nodeBinding} fetchData={fetchData} />
+                <Familytree key={treeKey} nodes={data} nodeBinding={nodeBinding} fetchData={fetchData} />
               </div>
             </motion.div>
           )}

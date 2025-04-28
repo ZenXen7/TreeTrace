@@ -66,11 +66,25 @@ export class FamilyService {
   }
   
 
-  async findAll(userId: string): Promise<FamilyMember[]> {
+  async findAll(userId: string, filters: Record<string, any> = {}): Promise<FamilyMember[]> {
     // Convert string userId to ObjectId before querying
     const userObjectId = new Types.ObjectId(userId);
-    // Fetch all family members associated with the given userId
-    return this.familyMemberModel.find({ userId: userObjectId }).exec();
+    
+    // Create query object with userId
+    const query: Record<string, any> = { userId: userObjectId };
+    
+    // Add any additional filters from parameters
+    Object.keys(filters).forEach(key => {
+      query[key] = filters[key];
+    });
+    
+    console.log('Database query with filters:', JSON.stringify(query));
+    
+    // Fetch all family members matching the query
+    const results = await this.familyMemberModel.find(query).exec();
+    console.log(`Found ${results.length} members matching filters`);
+    
+    return results;
   }
 
   async findOne(id: string): Promise<FamilyMember> {
