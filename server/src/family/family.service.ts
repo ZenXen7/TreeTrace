@@ -44,11 +44,14 @@ export class FamilyService {
     userId: Types.ObjectId,
     createFamilyMemberDto: CreateFamilyMemberDto,
   ): Promise<FamilyMember> {
-    const createdFamilyMember = new this.familyMemberModel({ 
-      ...createFamilyMemberDto,
-      userId,
-    });
-  
+    const memberData = { ...createFamilyMemberDto, userId };
+    
+    // Automatically set status to 'dead' if death date is provided
+    if (memberData.deathDate) {
+      memberData.status = 'dead';
+    }
+
+    const createdFamilyMember = new this.familyMemberModel(memberData);
     return createdFamilyMember.save();
   }
   
@@ -72,6 +75,11 @@ export class FamilyService {
     id: string,
     updateFamilyMemberDto: Partial<CreateFamilyMemberDto>,
   ): Promise<FamilyMember> {
+    // If death date is provided, automatically set status to 'dead'
+    if (updateFamilyMemberDto.deathDate) {
+      updateFamilyMemberDto.status = 'dead';
+    }
+
     const session = await this.familyMemberModel.db.startSession();
     session.startTransaction();
 
