@@ -5,6 +5,7 @@ import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './auth/auth.module';
 import { FamilyModule } from './family/family.module';
+// import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { FamilyModule } from './family/family.module';
     UserModule,
     AuthModule,
     FamilyModule,
+    // NotificationModule,
   ],
   controllers: [],
   providers: [],
