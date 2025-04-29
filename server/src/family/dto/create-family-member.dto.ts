@@ -38,6 +38,10 @@ export class CreateFamilyMemberDto {
   country?: string;
 
   @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
   @IsMongoId()
   fatherId?: string; // Foreign key to FamilyMember
 

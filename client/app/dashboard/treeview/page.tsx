@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import FamilyTree from "@balkangraph/familytree.js";
-import { motion } from "framer-motion";
-import {
-  handleAddMember,
-  updateFamilyMember,
-  deleteFamilyMember,
-  fetchFilteredFamilyMembers,
-} from "./service/familyService";
-import { useRouter } from "next/navigation";
-import { Filter } from "lucide-react";
-
+import { useEffect, useState } from "react"
+import FamilyTree from "@balkangraph/familytree.js"
+import { motion } from "framer-motion"
+import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers } from "./service/familyService"
+import { Filter } from "lucide-react"
+const maleAvatar =
+      "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
+    const femaleAvatar =
+      "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzgwMzQ2RCIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzRBMUY0MCIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiM0QTFGNDAiLz48L3N2Zz4="
 function Familytree(props: {
   nodeBinding: any;
   nodes: any;
@@ -20,7 +17,6 @@ function Familytree(props: {
   useEffect(() => {
     const treeElement = document.getElementById("tree");
     if (treeElement) {
-      // Define custom SVG templates for nodes
       const svgContent = `
 <defs>
   <!-- Filter for card shadow -->
@@ -33,8 +29,7 @@ function Familytree(props: {
     <circle cx="45" cy="50" r="32"/>
   </clipPath>
 </defs>
-`;
-
+`
       // Add the SVG content to the tree
       const svgElement = treeElement.querySelector("svg");
       if (svgElement) {
@@ -46,11 +41,7 @@ function Familytree(props: {
         }
       }
 
-      // Default avatar images based on gender
-      const maleAvatar =
-        "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4=";
-      const femaleAvatar =
-        "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzgwMzQ2RCIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzRBMUY0MCIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiM0QTFGNDAiLz48L3N2Zz4=";
+      const img_0 ="https://preview.redd.it/some-random-black-dude-i-found-v0-7b7ipzz5af0c1.jpg?auto=webp&s=50dde31529bf146611d82a09c0e0e7cf3948a2d3"
 
       // Update the text styling and positioning for the larger cards
       const nameStyle =
@@ -81,10 +72,9 @@ function Familytree(props: {
   
   <!-- Avatar placeholder - larger and positioned better -->
   <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlinkHref="${maleAvatar}" x="13" y="18" height="64" width="64" clipPath="url(#avatar-clip)"/>
+  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
-`;
-
+`
       FamilyTree.templates.tommy_female.node = `
 <g filter="url(#card-shadow)">
   <!-- Card background with rounded corners -->
@@ -95,7 +85,7 @@ function Familytree(props: {
   
   <!-- Avatar placeholder - larger and positioned better -->
   <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlinkHref="${femaleAvatar}" x="13" y="18" height="64" width="64" clipPath="url(#avatar-clip)"/>
+  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `;
 
@@ -109,7 +99,7 @@ function Familytree(props: {
   
   <!-- Avatar placeholder - larger and positioned better -->
   <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlinkHref="${maleAvatar}" x="13" y="18" height="64" width="64" clipPath="url(#avatar-clip)"/>
+  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `;
 
@@ -197,50 +187,41 @@ function Familytree(props: {
         enableSearch: true,
         enableFilter: false,
         filterBy: [],
-
-        // Fix the editForm configuration to use standard form elements
+        
+        // Update the editForm configuration to match the example
         editForm: {
           readOnly: false,
           titleBinding: "name",
+          photoBinding: "imageUrl",
           generateElementsFromFields: false,
           elements: [
-            { type: "textbox", label: "Full Name", binding: "name" },
-            {
-              type: "select",
-              options: [
-                { value: "alive", text: "Alive" },
-                { value: "dead", text: "Dead" },
-                { value: "unknown", text: "Unknown" },
-              ],
-              label: "Status",
-              binding: "status",
-            },
+            { type: 'textbox', label: 'Full Name', binding: 'name'},
+            { type: 'select', options: [
+                {value: 'alive', text: 'Alive'},
+                {value: 'dead', text: 'Dead'},
+                {value: 'unknown', text: 'Unknown'}
+              ], 
+              label: 'Status', binding: 'status' },
             [
-              { type: "date", label: "Birth Date", binding: "birthDate" },
-              { type: "date", label: "Death Date", binding: "deathDate" },
+              { type: 'date', label: 'Birth Date', binding: 'birthDate' },
+              { type: 'date', label: 'Death Date', binding: 'deathDate' },
             ],
-
-            {
-              type: "select",
-              options: [
-                { value: "us", text: "United States" },
-                { value: "ph", text: "Philippines" },
-                { value: "ca", text: "Canada" },
-                { value: "uk", text: "United Kingdom" },
-                { value: "au", text: "Australia" },
-                { value: "jp", text: "Japan" },
-                { value: "sg", text: "Singapore" },
-                { value: "hk", text: "Hong Kong" },
-              ],
-              label: "Country",
-              binding: "country",
-            },
-
-            { type: "textbox", label: "Occupation", binding: "occupation" },
-
-            // Hidden field for gender to prevent editing but still keep it in the form data
-            // { type: 'hidden', binding: 'gender' }
-          ],
+            [
+              { type: 'select', options: [
+                  {value: 'us', text: 'United States'},
+                  {value: 'ph', text: 'Philippines'},
+                  {value: 'ca', text: 'Canada'},
+                  {value: 'uk', text: 'United Kingdom'},
+                  {value: 'au', text: 'Australia'},
+                  {value: 'jp', text: 'Japan'},
+                  {value: 'sg', text: 'Singapore'},
+                  {value: 'hk', text: 'Hong Kong'}
+                ], 
+                label: 'Country', binding: 'country' },
+              { type: 'textbox', label: 'Occupation', binding: 'occupation' },
+            ],
+            { type: 'textbox', label: 'Photo URL', binding: 'imageUrl' },
+          ]
         },
 
         // Improved tree layout and spacing for the new node size
@@ -365,44 +346,37 @@ function Familytree(props: {
               throw new Error("No valid ID found in edited data");
             }
 
-            let birthDate = rawData.birthDate
-              ? new Date(rawData.birthDate)
-              : null;
-            let deathDate = rawData.deathDate
-              ? new Date(rawData.deathDate)
-              : null;
-
-            // console.log("Edit form raw data:", rawData);
-            // console.log("Country value:", rawData.country);
-            // console.log("Occupation value:", rawData.occupation);
-
-            const updatedData = {
-              name: rawData.name,
-              gender: rawData.gender,
-              status: rawData.status,
-              birthDate: birthDate,
-              deathDate: deathDate,
-              country: rawData.country,
-              occupation: rawData.occupation,
-              tags: rawData.tags,
-            };
-
-            await updateFamilyMember(token, resolvedId, updatedData);
-            await props.fetchData();
-          } catch (error) {
-            console.error("Error saving updated member:", error);
+    
+          let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
+          let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
+          
+          // console.log("Edit form raw data:", rawData);
+          // console.log("Country value:", rawData.country);
+          // console.log("Occupation value:", rawData.occupation);
+          
+          const updatedData = {
+            name: rawData.name,
+            gender: rawData.gender,
+            status: rawData.status,
+            birthDate: birthDate,
+            deathDate: deathDate,
+            country: rawData.country,
+            occupation: rawData.occupation,
+            tags: rawData.tags,
+            imageUrl: rawData.imageUrl
           }
-        })();
+          
 
-        return true;
-      });
+          await updateFamilyMember(token, resolvedId, updatedData)
+          await props.fetchData()
+        } catch (error) {
+          console.error("Error saving updated member:", error)
+        }
+      })()
 
-      // Using the default edit form provided by FamilyTree.js
-      // Custom form field configurations were causing errors
-      // Form fields will be based on the data properties of the nodes
-
-      // Update the node binding to include the new fields
-      const nodeBinding = props.nodeBinding;
+      return true
+    })
+    const nodeBinding = props.nodeBinding
 
       const canDeleteMember = (node: any) => {
         const hasPartner = node.pids && node.pids.length > 0;
@@ -426,12 +400,27 @@ function Familytree(props: {
         return false;
       };
 
-      family.nodeCircleMenuUI.on("show", (sender, args) => {
-        var node = family.getNode(args.nodeId);
-        delete args.menu.father;
-        delete args.menu.mother;
-        delete args.menu.wife;
-        delete args.menu.husband;
+
+
+    // Update the node binding to include the new fields
+    // nodeBinding = {
+    //   field_0: "name",
+    //   field_1: "gender",
+    //   field_2: "status",
+    //   field_3: "birthDate",
+    //   field_4: "deathDate",
+    //   field_5: "country",
+    //   field_6: "occupation",
+    //   field_7: "tags",
+    //   // img_0: "imageUrl"
+    // }
+
+    family.nodeCircleMenuUI.on("show", (sender, args) => {
+      var node = family.getNode(args.nodeId)
+      delete args.menu.father
+      delete args.menu.mother
+      delete args.menu.wife
+      delete args.menu.husband
 
         // Add parent options
         if (FamilyTree.isNEU(node.mid)) {
@@ -495,12 +484,13 @@ function Familytree(props: {
             };
           }
         }
-      });
-
-      family.nodeCircleMenuUI.on("click", async (sender, args) => {
-        const node = family.getNode(args.nodeId);
-        const token = localStorage.getItem("token");
-        if (!token) return;
+      }
+    })
+    
+    family.nodeCircleMenuUI.on("click", async (sender, args) => {
+      const node = family.getNode(args.nodeId)
+      const token = localStorage.getItem("token")
+      if (!token) return
 
         try {
           switch (args.menuItemName) {
@@ -589,17 +579,18 @@ export default function TreeViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState({
-    gender: "all",
-    country: "all",
-    status: "all",
-  });
+    gender: 'all',
+    country: 'all',
+    status: 'all'
+  })
+  const [treeKey, setTreeKey] = useState(0) 
   const [stats, setStats] = useState({
     totalMembers: 0,
     generations: 0,
     oldestMember: null as any,
     youngestMember: null as any,
-  });
-  const [treeKey, setTreeKey] = useState(0);
+  })
+
 
   // Define a handler function for filter changes
   const handleFilterChange = (name: string, value: string) => {
@@ -684,19 +675,14 @@ export default function TreeViewPage() {
             : "";
 
           // Clean up references
-          let pids = Array.isArray(member.partnerId)
-            ? member.partnerId.filter((id: string) =>
-                allowedIds.has(id?.toString?.())
-              )
-            : [];
-          let mid =
-            member.motherId && allowedIds.has(member.motherId.toString())
-              ? member.motherId.toString()
-              : undefined;
-          let fid =
-            member.fatherId && allowedIds.has(member.fatherId.toString())
-              ? member.fatherId.toString()
-              : undefined;
+          let pids = Array.isArray(member.partnerId) ? member.partnerId.filter((id:string) => allowedIds.has(id?.toString?.())) : [];
+          let mid = member.motherId && allowedIds.has(member.motherId.toString()) ? member.motherId.toString() : undefined;
+          let fid = member.fatherId && allowedIds.has(member.fatherId.toString()) ? member.fatherId.toString() : undefined;
+
+          let imageUrl = member.imageUrl;
+          if (!imageUrl || imageUrl.trim() === "") {
+            imageUrl = member.gender === "female" ? femaleAvatar : maleAvatar;
+          }
 
           return {
             id: member._id,
@@ -708,9 +694,10 @@ export default function TreeViewPage() {
             status: member.status || "alive",
             birthDate: formattedBirthDate,
             deathDate: formattedDeathDate,
-            country: member.country || "",
-            occupation: member.occupation || "",
-            tags: Array.isArray(member.tags) ? member.tags.join(", ") : "",
+            country: member.country || '',
+            occupation: member.occupation || '',
+            tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
+            imageUrl,
           };
         });
 
