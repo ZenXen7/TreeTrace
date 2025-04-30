@@ -43,6 +43,7 @@ function Familytree(props: {
 
       const img_0 ="https://preview.redd.it/some-random-black-dude-i-found-v0-7b7ipzz5af0c1.jpg?auto=webp&s=50dde31529bf146611d82a09c0e0e7cf3948a2d3"
 
+
       // Update the text styling and positioning for the larger cards
       const nameStyle =
         'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;" fill="#F3F4F6"'
@@ -53,13 +54,14 @@ function Familytree(props: {
 
       // Position text elements for the larger card
       FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="35">{val}</text>`
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${roleStyle} x="95" y="55">{val}</text>`
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${detailStyle} x="95" y="72">{val}</text>`
-      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-5" ${detailStyle} x="95" y="87">🌍 {val}</text>`
-      FamilyTree.templates.tommy.field_6 = `<text class="bft-field-6" ${detailStyle} x="190" y="87">💼 {val}</text>`
-      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
-      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
+      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-0" ${nameStyle} x="200" y="35">{val}</text>`
+      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-1" ${roleStyle} x="95" y="55">{val}</text>`
+      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-2" ${detailStyle} x="95" y="72">{val}</text>`
+      FamilyTree.templates.tommy.field_6 = `<text class="bft-field-5" ${detailStyle} x="95" y="87">🌍 {val}</text>`
+      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-6" ${detailStyle} x="190" y="87">💼 {val}</text>`
+      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
+      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
+      FamilyTree.templates.tommy.field_8 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
 
       // Make the node bigger to accommodate more fields
       FamilyTree.templates.tommy.node = `
@@ -178,7 +180,10 @@ function Familytree(props: {
           photoBinding: "imageUrl",
           generateElementsFromFields: false,
           elements: [
-            { type: 'textbox', label: 'Full Name', binding: 'name'},
+            [
+              { type: 'textbox', label: 'Name', binding: 'name'},
+              { type: 'textbox', label: 'Surname', binding: 'surname'},
+            ],
             { type: 'select', options: [
                 {value: 'alive', text: 'Alive'},
                 {value: 'dead', text: 'Dead'},
@@ -339,6 +344,7 @@ function Familytree(props: {
           
           const updatedData = {
             name: rawData.name,
+            surname: rawData.surname,
             gender: rawData.gender,
             status: rawData.status,
             birthDate: birthDate,
@@ -493,6 +499,7 @@ function Familytree(props: {
             const gender = args.menuItemName === "addSon" ? "male" : "female"
             const newMemberData = {
               name: "Unknown",
+              surname: "Unknown",
               gender: gender,
             }
 
@@ -646,6 +653,7 @@ export default function TreeViewPage() {
           return {
             id: member._id,
             name: member.name,
+            surname: member.surname,
             pids,
             mid,
             fid,
@@ -750,13 +758,14 @@ export default function TreeViewPage() {
 
   const nodeBinding = {
     field_0: "name",
-    field_1: "gender",
-    field_2: "status",
-    field_3: "birthDate",
-    field_4: "deathDate",
-    field_5: "country",
-    field_6: "occupation",
-    field_7: "tags",
+    field_1: "surname",
+    field_2: "gender",
+    field_3: "status",
+    field_4: "birthDate",
+    field_5: "deathDate",
+    field_6: "country",
+    field_7: "occupation",
+    field_8: "tags",
   }
 
   return (

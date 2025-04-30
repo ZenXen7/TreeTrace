@@ -15,6 +15,9 @@ export class FamilyMember {
   @Prop({ required: true })
   name: string;
 
+  @Prop()
+  surname: string;
+
   @Prop({ enum: ['alive', 'dead', 'unknown'], default: 'unknown' })
   status: string; // Status: alive, dead, or unknown
 
