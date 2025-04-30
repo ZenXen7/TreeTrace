@@ -14,6 +14,10 @@ export class CreateFamilyMemberDto {
   name?: string;
 
   @IsOptional()
+  @IsString()
+  surname?: string;
+
+  @IsOptional()
   @IsDate()
   birthDate?: Date;
 

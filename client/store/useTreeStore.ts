@@ -21,6 +21,7 @@ api.interceptors.request.use((config) => {
 interface FamilyMember {
   _id: string;
   name: string;
+  surname?: string;
   birthDate?: Date;
   deathDate?: Date;
   occupation?: string;
@@ -45,6 +46,7 @@ interface FamilyTreeNode extends FamilyMember {
 
 interface CreateFamilyMemberDto {
   name: string;
+  surname?: string;
   birthDate?: Date;
   deathDate?: Date;
   // relationship: string;

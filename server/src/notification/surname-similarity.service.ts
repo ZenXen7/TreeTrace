@@ -62,13 +62,17 @@
 //   }
 
 //   /**
-//    * Extract surname from a full name
-//    * @param fullName Full name of a person
-//    * @returns Extracted surname
+//    * Get surname from family member
+//    * @param member Family member object
+//    * @returns Surname of the family member
 //    */
-//   private extractSurname(fullName: string): string {
-//     if (!fullName) return '';
-//     const nameParts = fullName.trim().split(' ');
+//   private getSurname(member: FamilyMember): string {
+//     // If surname field exists and has value, use it
+//     if (member.surname) return member.surname;
+    
+//     // Fallback to extracting from full name if surname field is not available
+//     if (!member.name) return '';
+//     const nameParts = member.name.trim().split(' ');
 //     return nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
 //   }
 
@@ -83,7 +87,7 @@
 //       const newMember = await this.familyMemberModel.findById(newMemberId).exec();
 //       if (!newMember) return;
 
-//       const newMemberSurname = this.extractSurname(newMember.name);
+//       const newMemberSurname = this.getSurname(newMember);
 //       if (!newMemberSurname) return;
 
 //       // Get all family members for this user
@@ -96,7 +100,7 @@
 
 //       // Compare surnames
 //       for (const member of allFamilyMembers) {
-//         const memberSurname = this.extractSurname(member.name);
+//         const memberSurname = this.getSurname(member);
 //         if (!memberSurname) continue;
 
 //         const similarity = this.calculateSimilarity(newMemberSurname, memberSurname);
@@ -148,7 +152,7 @@
 
 //       // Group family members by surname
 //       for (const member of allFamilyMembers) {
-//         const surname = this.extractSurname(member.name);
+//         const surname = this.getSurname(member);
 //         if (!surname) continue;
 
 //         if (!surnameGroups.has(surname)) {
