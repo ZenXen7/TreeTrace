@@ -3,7 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { FamilyMember, FamilyMemberDocument } from './family-member.schema';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
-// import { SurnameSimilarityService } from '../notification/surname-similarity.service';
+import { SurnameSimilarityService } from '../notification/surname-similarity.service';
+import { FamilyMemberWithId } from '../notification/similar-member.interface';
 
 // Define interface for family tree response
 export interface FamilyTreeNode {
@@ -24,7 +25,7 @@ export class FamilyService {
   constructor(
     @InjectModel(FamilyMember.name)
     private familyMemberModel: Model<FamilyMemberDocument>,
-    // private surnameSimilarityService: SurnameSimilarityService,
+    private surnameSimilarityService: SurnameSimilarityService,
   ) {}
 
   // async createFamilyMember(
@@ -54,13 +55,13 @@ export class FamilyService {
     }
 
     const createdFamilyMember = new this.familyMemberModel(memberData);
-    const savedMember = await createdFamilyMember.save();
+    const savedMember = await createdFamilyMember.save() as FamilyMemberWithId;
     
     // Check for similar surnames after saving the new family member
-    // await this.surnameSimilarityService.checkForSimilarSurnames(
-    //   savedMember._id.toString(),
-    //   userId.toString()
-    // );
+    await this.surnameSimilarityService.checkForSimilarSurnames(
+      savedMember._id.toString(),
+      userId.toString()
+    );
     
     return savedMember;
   }
