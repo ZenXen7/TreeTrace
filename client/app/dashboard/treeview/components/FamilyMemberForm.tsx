@@ -18,6 +18,7 @@ interface FamilyMemberFormProps {
   onSuccess?: () => void;
   initialData?: {
     name?: string;
+    surname?: string;
     relationship?: string;
     gender?: string;
     birthDate?: string;
@@ -36,6 +37,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
+    surname: initialData?.surname || '',
     relationship: initialData?.relationship || '',
     gender: initialData?.gender || '',
     birthDate: initialData?.birthDate || '',
@@ -63,6 +65,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
       if (onSuccess) onSuccess();
       setFormData({
         name: '',
+        surname: '',
         relationship: '',
         gender: '',
         birthDate: '',
@@ -89,6 +92,16 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
           id="name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          required
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="surname">Surname</Label>
+        <Input
+          id="surname"
+          value={formData.surname}
+          onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
           required
         />
       </div>

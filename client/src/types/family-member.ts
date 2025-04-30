@@ -1,6 +1,7 @@
 export interface FamilyMember {
   _id: string;
   name: string;
+  surname?: string;
   birthDate?: Date;
   deathDate?: Date;
   medicalConditions?: string[];
@@ -15,4 +16,4 @@ export interface FamilyMember {
   occupation?: string;
   country?: string;
   status?: string;
-} 
+}
