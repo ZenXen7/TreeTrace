@@ -44,10 +44,11 @@ export class FamilyService {
   // }
 
   async createFamilyMember(
-    userId: Types.ObjectId,
+    userId: string | Types.ObjectId,
     createFamilyMemberDto: CreateFamilyMemberDto,
   ): Promise<FamilyMember> {
-    const memberData = { ...createFamilyMemberDto, userId };
+    const userObjectId = new Types.ObjectId(userId.toString());
+    const memberData = { ...createFamilyMemberDto, userId: userObjectId };
     
     // Automatically set status to 'dead' if death date is provided
     if (memberData.deathDate) {
@@ -57,11 +58,8 @@ export class FamilyService {
     const createdFamilyMember = new this.familyMemberModel(memberData);
     const savedMember = await createdFamilyMember.save() as FamilyMemberWithId;
     
-    // Check for similar surnames after saving the new family member
-    await this.surnameSimilarityService.checkForSimilarSurnames(
-      savedMember._id.toString(),
-      userId.toString()
-    );
+    // Run cross-user surname similarity analysis
+    await this.surnameSimilarityService.analyzeSimilaritiesAcrossUsers(userObjectId);
     
     return savedMember;
   }
