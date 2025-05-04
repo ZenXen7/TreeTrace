@@ -274,11 +274,35 @@ async function deleteFamilyMember(token: string, memberId: string) {
   }
 }
 
+// New function to get surname similarities count for a specific family member
+async function getSurnameSimilaritiesCount(token: string, memberId: string) {
+  try {
+    const response = await fetch(`http://localhost:3001/notifications/member-similarities/${memberId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch surname similarities");
+    }
+    
+    const result = await response.json();
+    return result.data.count || 0;
+  } catch (error) {
+    console.error("Error fetching surname similarities count:", error);
+    return 0;
+  }
+}
+
 export {
   fetchFamilyMembers,
   fetchFilteredFamilyMembers,
   addFamilyMember,
   updateFamilyMember,
   handleAddMember,
-  deleteFamilyMember, 
+  deleteFamilyMember,
+  getSurnameSimilaritiesCount
 };
