@@ -392,4 +392,82 @@ export class NotificationController {
       );
     }
   }
+
+  @Get('member-similarities/:memberId')
+  async getMemberSimilaritiesCount(
+    @Request() req,
+    @Param('memberId') memberId: string,
+  ) {
+    try {
+      const userId = req.user.id;
+      const member = await this.familyMemberModel.findOne({
+        _id: memberId,
+        userId: new Types.ObjectId(userId),
+      }).exec();
+      
+      if (!member) {
+        throw new HttpException(
+          'Family member not found or you do not have permission to access it',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      
+      let surname = member.surname;
+      if (!surname && member.name) {
+        // Extract surname from full name if necessary
+        const nameParts = member.name.trim().split(' ');
+        if (nameParts.length > 1) {
+          surname = nameParts[nameParts.length - 1];
+        }
+      }
+      
+      if (!surname) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'No surname found for this family member',
+          data: { count: 0 }
+        };
+      }
+      
+      // Get all family members from other users
+      const otherUserMembers = await this.familyMemberModel
+        .find({ userId: { $ne: new Types.ObjectId(userId) } })
+        .exec();
+      
+      let similarityCount = 0;
+      
+      for (const otherMember of otherUserMembers) {
+        let otherSurname = otherMember.surname;
+        if (!otherSurname && otherMember.name) {
+          const nameParts = otherMember.name.trim().split(' ');
+          if (nameParts.length > 1) {
+            otherSurname = nameParts[nameParts.length - 1];
+          }
+        }
+        
+        if (!otherSurname) continue;
+        
+        const similarity = this.surnameSimilarityService.calculateSimilarityPublic(
+          surname,
+          otherSurname
+        );
+        
+        // If similarity is above threshold (0.7) but not exact match (1.0)
+        if (similarity > 0.7 && similarity < 1.0) {
+          similarityCount++;
+        }
+      }
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Member similarities count retrieved successfully',
+        data: { count: similarityCount }
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error retrieving member similarities count',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

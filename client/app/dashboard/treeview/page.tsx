@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
-import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers } from "./service/familyService"
+import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers, getSurnameSimilaritiesCount } from "./service/familyService"
 import { Filter } from "lucide-react"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
@@ -62,6 +62,13 @@ function Familytree(props: {
       FamilyTree.templates.tommy.field_4 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
       FamilyTree.templates.tommy.field_5 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
       FamilyTree.templates.tommy.field_8 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
+      // Add surname similarity badge - moved to bottom left
+      FamilyTree.templates.tommy.field_9 = `
+        <g transform="translate(20, 110)">
+          <circle cx="0" cy="0" r="15" fill="#80cbc4" stroke="#4B5563" stroke-width="1"/>
+          <text ${nameStyle} x="0" y="5" text-anchor="middle" fill="#F3F4F6" font-size="12px" font-weight="bold">{val}</text>
+        </g>
+      `
 
       // Make the node bigger to accommodate more fields
       FamilyTree.templates.tommy.node = `
@@ -70,7 +77,7 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#6366F1"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#80cbc4"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
   <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
@@ -114,6 +121,8 @@ function Familytree(props: {
       FamilyTree.templates.tommy_female.field_5 = FamilyTree.templates.tommy.field_5
       FamilyTree.templates.tommy_female.field_6 = FamilyTree.templates.tommy.field_6
       FamilyTree.templates.tommy_female.field_7 = FamilyTree.templates.tommy.field_7
+      FamilyTree.templates.tommy_female.field_8 = FamilyTree.templates.tommy.field_8
+      FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9
 
       FamilyTree.templates.tommy_male.field_0 = FamilyTree.templates.tommy.field_0
       FamilyTree.templates.tommy_male.field_1 = FamilyTree.templates.tommy.field_1
@@ -123,6 +132,8 @@ function Familytree(props: {
       FamilyTree.templates.tommy_male.field_5 = FamilyTree.templates.tommy.field_5
       FamilyTree.templates.tommy_male.field_6 = FamilyTree.templates.tommy.field_6
       FamilyTree.templates.tommy_male.field_7 = FamilyTree.templates.tommy.field_7
+      FamilyTree.templates.tommy_male.field_8 = FamilyTree.templates.tommy.field_8
+      FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9
 
       // Update the node menu button position for the larger card
       FamilyTree.templates.tommy.nodeCircleMenuButton =
@@ -552,7 +563,7 @@ return null
 
 // Update the TreeViewPage component to add more content and reduce whitespace
 export default function TreeViewPage() {
-  const [data, setData] = useState([])
+  const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeFilters, setActiveFilters] = useState({
@@ -635,7 +646,11 @@ export default function TreeViewPage() {
 
         const allowedIds = new Set(strictFiltered.map((m:any) => m._id?.toString?.() ?? m.id?.toString?.()));
 
-        const processedData = strictFiltered.map((member:any) => {
+        // Fetch surname similarities for each member
+        const processedDataPromises = strictFiltered.map(async (member:any) => {
+          // Get similarity count for this member
+          const similarityCount = await getSurnameSimilaritiesCount(token, member._id);
+          
           // Format dates properly for display and edit form
           const formattedBirthDate = member.birthDate ? new Date(member.birthDate).toISOString().split('T')[0] : "";
           const formattedDeathDate = member.deathDate ? new Date(member.deathDate).toISOString().split('T')[0] : "";
@@ -665,31 +680,35 @@ export default function TreeViewPage() {
             occupation: member.occupation || '',
             tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
             imageUrl,
+            similarityCount: similarityCount > 0 ? similarityCount.toString() : '', // Add similarity count
           };
         });
+        
+        // Wait for all the similarity counts to be fetched
+        const processedData = await Promise.all(processedDataPromises);
 
         setData(processedData);
 
         // Calculate family statistics
         if (processedData.length > 0) {
           // Find the maximum generation depth
-          const findGenerationDepth = (memberId: string, depth = 1, visited = new Set()) => {
-            if (visited.has(memberId)) return depth
-            visited.add(memberId)
+          const findGenerationDepth = (memberId: string, depth = 1, visited = new Set<string>()): number => {
+            if (visited.has(memberId)) return depth;
+            visited.add(memberId);
 
-            const member = processedData.find((m) => m.id === memberId)
-            if (!member) return depth
+            const member = processedData.find((m) => m.id === memberId);
+            if (!member) return depth;
 
-            const children = processedData.filter((m) => m.fid === memberId || m.mid === memberId)
-            if (children.length === 0) return depth
+            const children = processedData.filter((m) => m.fid === memberId || m.mid === memberId);
+            if (children.length === 0) return depth;
 
-            return Math.max(...children.map((child) => findGenerationDepth(child.id, depth + 1, new Set(visited))))
-          }
+            return Math.max(...children.map((child) => findGenerationDepth(child.id, depth + 1, new Set(visited))));
+          };
 
           // Find root members (those without parents)
-          const rootMembers = processedData.filter((m) => !m.fid && !m.mid)
+          const rootMembers = processedData.filter((m) => !m.fid && !m.mid);
           const maxGeneration =
-            rootMembers.length > 0 ? Math.max(...rootMembers.map((m) => findGenerationDepth(m.id))) : 1
+            rootMembers.length > 0 ? Math.max(...rootMembers.map((m) => findGenerationDepth(m.id))) : 1;
 
           setStats({
             totalMembers: processedData.length,
@@ -766,6 +785,7 @@ export default function TreeViewPage() {
     field_6: "country",
     field_7: "occupation",
     field_8: "tags",
+    field_9: "similarityCount", // Add similarity count binding
   }
 
   return (
