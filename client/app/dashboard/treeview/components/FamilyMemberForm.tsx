@@ -29,6 +29,7 @@ interface FamilyMemberFormProps {
     country?: string;
     status?: string;
     imageUrl?: string;
+    isPublic?: boolean;
   };
 }
 
@@ -48,6 +49,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
     country: initialData?.country || '',
     status: initialData?.status || 'alive',
     imageUrl: initialData?.imageUrl || '',
+    isPublic: initialData?.isPublic || false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +78,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
         country: '',
         status: 'alive',
         imageUrl: '',
+        isPublic: false,
       });
     } catch (error) {
       toast.error('Failed to create family member');
@@ -179,6 +182,18 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
           onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
         />
         <p className="text-xs text-gray-500 mt-1">Enter a URL to an image that will be displayed on the family tree card</p>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="isPublic"
+          checked={formData.isPublic}
+          onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+        />
+        <Label htmlFor="isPublic">Make this family member public</Label>
+        <p className="text-xs text-gray-500">Public family members can be viewed by other users</p>
       </div>
 
       <div>
