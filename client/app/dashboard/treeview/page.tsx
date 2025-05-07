@@ -4,7 +4,9 @@ import { useEffect, useState } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
 import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers, getSurnameSimilaritiesCount } from "./service/familyService"
-import { Filter } from "lucide-react"
+import { Filter, Share2 } from "lucide-react"
+import useTreeStore from "@/store/useTreeStore"
+import { toast } from "react-hot-toast"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -578,6 +580,7 @@ export default function TreeViewPage() {
     oldestMember: null as any,
     youngestMember: null as any,
   })
+  const { generatePublicLink } = useTreeStore()
 
 
   // Define a handler function for filter changes
@@ -788,6 +791,20 @@ export default function TreeViewPage() {
     field_9: "similarityCount", // Add similarity count binding
   }
 
+  const handleShareTree = async () => {
+    try {
+      if (!data || data.length === 0) {
+        toast.error("No family tree data available to share")
+        return
+      }
+      const publicLink = generatePublicLink(data[0].id)
+      await navigator.clipboard.writeText(publicLink)
+      toast.success("Public link copied to clipboard!")
+    } catch (error) {
+      toast.error("Failed to copy link")
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -847,7 +864,7 @@ export default function TreeViewPage() {
           <div className="bg-gray-700 p-4 border-b border-gray-600">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-white">Interactive Family Tree</h2>
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <button 
                   className={`px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors ${
                     (activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all') 
@@ -868,14 +885,12 @@ export default function TreeViewPage() {
                 >
                   Reset Filters
                 </button>
-                <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                  Zoom In
-                </button>
-                <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                  Zoom Out
-                </button>
-                <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                  Reset
+                <button 
+                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md transition-colors flex items-center gap-2"
+                  onClick={handleShareTree}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share Tree
                 </button>
               </div>
             </div>

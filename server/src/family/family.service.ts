@@ -179,4 +179,37 @@ export class FamilyService {
       );
     }
   }
+
+  async getPublicFamilyTree(userId: string): Promise<FamilyTreeNode[]> {
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new NotFoundException(`Invalid user ID format: ${userId}`);
+      }
+
+      const userObjectId = new Types.ObjectId(userId);
+      
+      // Find all public family members for the given user
+      const familyMembers = await this.familyMemberModel
+        .find({ userId: userObjectId, isPublic: true })
+        .populate('fatherId')
+        .populate('motherId')
+        .populate('partnerId')
+        .exec();
+
+      if (!familyMembers || familyMembers.length === 0) {
+        throw new NotFoundException(`No public family members found for user ${userId}`);
+      }
+
+      return familyMembers.map(member => member.toObject() as FamilyTreeNode);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new NotFoundException(
+        `Error fetching public family tree: ${errorMessage}`,
+      );
+    }
+  }
 }
