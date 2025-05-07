@@ -138,4 +138,29 @@ export class UserService {
       );
     }
   }
+
+  async searchUsers(searchTerm: string): Promise<User[]> {
+    try {
+      if (!searchTerm || searchTerm.trim() === '') {
+        return [];
+      }
+
+      const regex = new RegExp(searchTerm, 'i');
+      
+      return await this.userModel.find({
+        $or: [
+          { firstName: { $regex: regex } },
+          { lastName: { $regex: regex } },
+        ]
+      })
+      .select('_id firstName lastName email')
+      .limit(10)
+      .exec();
+    } catch (error) {
+      throw new HttpException(
+        'Error searching users',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 }

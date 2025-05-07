@@ -16,12 +16,13 @@ import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { FamilyService, FamilyTreeNode } from './family.service';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 import { Model, Types } from 'mongoose';
+
 @Controller('family-members')
-@UseGuards(JwtAuthGuard)
 export class FamilyController {
   constructor(private readonly familyService: FamilyService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async create(
     @Body() createFamilyMemberDto: CreateFamilyMemberDto,
     @Request() req,
@@ -54,6 +55,7 @@ export class FamilyController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll(@Request() req) {
     try {
       const userId = req.user.id;
@@ -86,25 +88,46 @@ export class FamilyController {
       );
     }
   }
-//   @Get()
-// async findAll(@Request() req) {
-//   try {
-//     const userId = req.user.id;
-//     const familyMembers = await this.familyService.findAll(userId);
-//     return {
-//       statusCode: HttpStatus.OK,
-//       message: 'Family members fetched successfully',
-//       data: familyMembers, // can be empty array
-//     };
-//   } catch (error) {
-//     throw new HttpException(
-//       error.message || 'Error fetching family members',
-//       error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-//     );
-//   }
-// }
+
+  @Get('public/:userId')
+  async getPublicFamilyTree(
+    @Param('userId') userId: string,
+  ): Promise<{ message: string; data: FamilyTreeNode[] }> {
+    try {
+      const familyTree = await this.familyService.getPublicFamilyTree(userId);
+      return {
+        message: 'Public family tree retrieved successfully',
+        data: familyTree,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error fetching public family tree',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('user/:userId')
+  async getAllFamilyMembersForUser(
+    @Param('userId') userId: string,
+  ) {
+    try {
+      const familyMembers = await this.familyService.findAllByUserId(userId);
+      return {
+        statusCode: HttpStatus.OK,
+        message: familyMembers.length > 0 ? 'Family members found' : 'No family members found',
+        data: familyMembers,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error fetching family members',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string) {
     try {
       const familyMember = await this.familyService.findOne(id);
@@ -128,6 +151,7 @@ export class FamilyController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() updateFamilyMemberDto: Partial<CreateFamilyMemberDto>,
@@ -151,6 +175,7 @@ export class FamilyController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   async remove(@Param('id') id: string) {
     try {
       const deletedFamilyMember = await this.familyService.remove(id);
@@ -168,6 +193,7 @@ export class FamilyController {
   }
 
   @Get(':id/family-tree')
+  @UseGuards(JwtAuthGuard)
   async getFamilyTree(
     @Param('id') id: string,
   ): Promise<{ message: string; data: FamilyTreeNode }> {
@@ -180,24 +206,6 @@ export class FamilyController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error fetching family tree',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Get('public/:userId')
-  async getPublicFamilyTree(
-    @Param('userId') userId: string,
-  ): Promise<{ message: string; data: FamilyTreeNode[] }> {
-    try {
-      const familyTree = await this.familyService.getPublicFamilyTree(userId);
-      return {
-        message: 'Public family tree retrieved successfully',
-        data: familyTree,
-      };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error fetching public family tree',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
