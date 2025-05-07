@@ -48,6 +48,9 @@ export class FamilyMember {
 
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
   partnerId: Types.ObjectId[]; // Partner ID
+
+  @Prop({ default: false })
+  isPublic: boolean;
 }
 
 export const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMember);

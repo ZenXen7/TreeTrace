@@ -184,4 +184,22 @@ export class FamilyController {
       );
     }
   }
+
+  @Get('public/:userId')
+  async getPublicFamilyTree(
+    @Param('userId') userId: string,
+  ): Promise<{ message: string; data: FamilyTreeNode[] }> {
+    try {
+      const familyTree = await this.familyService.getPublicFamilyTree(userId);
+      return {
+        message: 'Public family tree retrieved successfully',
+        data: familyTree,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error fetching public family tree',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
