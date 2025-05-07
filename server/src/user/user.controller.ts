@@ -37,6 +37,34 @@ export class UserController {
     }
   }
 
+  @Get('search')
+  async searchUsers(@Request() req) {
+    try {
+      const { query } = req.query;
+      
+      if (!query) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Search query is required',
+          data: [],
+        };
+      }
+      
+      const users = await this.userService.searchUsers(query);
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: users.length > 0 ? 'Users found' : 'No users found',
+        data: users,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Error searching users',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req) {

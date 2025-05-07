@@ -182,34 +182,35 @@ export class FamilyService {
 
   async getPublicFamilyTree(userId: string): Promise<FamilyTreeNode[]> {
     try {
-      if (!Types.ObjectId.isValid(userId)) {
-        throw new NotFoundException(`Invalid user ID format: ${userId}`);
-      }
-
-      const userObjectId = new Types.ObjectId(userId);
-      
-      // Find all public family members for the given user
       const familyMembers = await this.familyMemberModel
-        .find({ userId: userObjectId, isPublic: true })
-        .populate('fatherId')
-        .populate('motherId')
-        .populate('partnerId')
+        .find({ userId: userId })
         .exec();
 
       if (!familyMembers || familyMembers.length === 0) {
-        throw new NotFoundException(`No public family members found for user ${userId}`);
+        return [];
       }
 
-      return familyMembers.map(member => member.toObject() as FamilyTreeNode);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      throw new NotFoundException(
-        `Error fetching public family tree: ${errorMessage}`,
+      // Find members without parents (roots) to start tree building from
+      const rootMembers = familyMembers.filter(
+        (member) => !member.fatherId && !member.motherId,
       );
+
+      if (rootMembers.length === 0 && familyMembers.length > 0) {
+        // If no roots found but family members exist, use the first member as root
+        rootMembers.push(familyMembers[0]);
+      }
+
+      // Create tree nodes for each root member
+      const treeNodes = await Promise.all(
+        rootMembers.map((root) =>
+          this.buildFamilyTreeNode(root, familyMembers),
+        ),
+      );
+
+      return treeNodes;
+    } catch (error) {
+      console.error('Error in getPublicFamilyTree:', error);
+      throw new Error('Failed to retrieve public family tree');
     }
   }
 }

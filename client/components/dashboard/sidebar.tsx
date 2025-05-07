@@ -16,6 +16,7 @@ import {
   LogOut,
   HelpCircle,
   Sparkles,
+  Search,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -26,6 +27,7 @@ const mainNavItems = [
   { title: "My Trees", icon: <Trees className="h-5 w-5" />, href: "./treeview", badge: "3" },
   { title: "Find Connections", icon: <GitMerge className="h-5 w-5" />, href: "./connections" },
   { title: "Family Members", icon: <Users className="h-5 w-5" />, href: "/members" },
+  { title: "Search Users", icon: <Search className="h-5 w-5" />, href: "/search" },
 ]
 
 const toolsNavItems = [
