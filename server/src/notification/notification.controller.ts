@@ -14,6 +14,22 @@ import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { NotificationService } from './notification.service';
 import { SurnameSimilarityService } from './surname-similarity.service';
 import { Types } from 'mongoose';
+import { FamilyMember, FamilyMemberDocument } from '../family/family-member.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+
+// Define interfaces for the cross-user similarities
+interface CrossUserSimilarity {
+  currentUserSurname: string;
+  otherUserSurname: string;
+  otherUserName: string;
+  similarity: number;
+}
+
+interface UserSimilarities {
+  otherUserId: string;
+  similarities: CrossUserSimilarity[];
+}
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -21,6 +37,8 @@ export class NotificationController {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly surnameSimilarityService: SurnameSimilarityService,
+    @InjectModel(FamilyMember.name)
+    private familyMemberModel: Model<FamilyMemberDocument>,
   ) {}
 
   @Get()
@@ -259,6 +277,195 @@ export class NotificationController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating cross-user notification',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  
+  @Get('cross-user-similarities')
+  async getCrossUserSimilarities(@Request() req) {
+    try {
+      const userId = req.user.id;
+      const userObjectId = new Types.ObjectId(userId);
+      
+      // Get the current user's family members
+      const currentUserMembers = await this.familyMemberModel
+        .find({ userId: userObjectId })
+        .exec();
+      
+      // Get all the current user's surnames
+      const currentUserSurnames = new Set<string>();
+      for (const member of currentUserMembers) {
+        if (member.surname) {
+          currentUserSurnames.add(member.surname.toLowerCase());
+        } else if (member.name) {
+          // Extract surname from full name if necessary
+          const nameParts = member.name.trim().split(' ');
+          if (nameParts.length > 1) {
+            const surname = nameParts[nameParts.length - 1].toLowerCase();
+            currentUserSurnames.add(surname);
+          }
+        }
+      }
+      
+      // Get all family members from other users
+      const otherUserMembers = await this.familyMemberModel
+        .find({ userId: { $ne: userObjectId } })
+        .exec();
+      
+      // Group the other users' family members by userId
+      const otherUserMembersByUserId = new Map<string, any[]>();
+      for (const member of otherUserMembers) {
+        const userId = member.userId.toString();
+        if (!otherUserMembersByUserId.has(userId)) {
+          otherUserMembersByUserId.set(userId, []);
+        }
+        const userMembers = otherUserMembersByUserId.get(userId);
+        if (userMembers) {
+          userMembers.push(member);
+        }
+      }
+      
+      // Find similar surnames between current user and other users
+      const similarSurnames: UserSimilarities[] = [];
+      
+      for (const [otherUserId, members] of otherUserMembersByUserId.entries()) {
+        const userSimilarities: CrossUserSimilarity[] = [];
+        
+        for (const member of members) {
+          let otherSurname = '';
+          if (member.surname) {
+            otherSurname = member.surname.toLowerCase();
+          } else if (member.name) {
+            const nameParts = member.name.trim().split(' ');
+            if (nameParts.length > 1) {
+              otherSurname = nameParts[nameParts.length - 1].toLowerCase();
+            }
+          }
+          
+          if (!otherSurname) continue;
+          
+          // Compare with current user's surnames
+          for (const currentSurname of currentUserSurnames) {
+            const similarity = this.surnameSimilarityService.calculateSimilarityPublic(
+              currentSurname,
+              otherSurname
+            );
+            
+            // If similarity is above threshold (0.7) but not exact match (1.0)
+            if (similarity > 0.7 && similarity < 1.0) {
+              userSimilarities.push({
+                currentUserSurname: currentSurname,
+                otherUserSurname: otherSurname,
+                otherUserName: member.name,
+                similarity: similarity
+              });
+            }
+          }
+        }
+        
+        if (userSimilarities.length > 0) {
+          similarSurnames.push({
+            otherUserId,
+            similarities: userSimilarities
+          });
+        }
+      }
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Cross-user surname similarities retrieved successfully',
+        data: {
+          currentUserSurnames: Array.from(currentUserSurnames),
+          similarSurnames,
+          totalSimilarities: similarSurnames.reduce(
+            (count, user) => count + user.similarities.length, 
+            0
+          )
+        }
+      };
+    } catch (error) {
+      console.error('Error retrieving cross-user similarities:', error);
+      throw new HttpException(
+        error.message || 'Error retrieving cross-user similarities',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('member-similarities/:memberId')
+  async getMemberSimilaritiesCount(
+    @Request() req,
+    @Param('memberId') memberId: string,
+  ) {
+    try {
+      const userId = req.user.id;
+      const member = await this.familyMemberModel.findOne({
+        _id: memberId,
+        userId: new Types.ObjectId(userId),
+      }).exec();
+      
+      if (!member) {
+        throw new HttpException(
+          'Family member not found or you do not have permission to access it',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      
+      let surname = member.surname;
+      if (!surname && member.name) {
+        // Extract surname from full name if necessary
+        const nameParts = member.name.trim().split(' ');
+        if (nameParts.length > 1) {
+          surname = nameParts[nameParts.length - 1];
+        }
+      }
+      
+      if (!surname) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'No surname found for this family member',
+          data: { count: 0 }
+        };
+      }
+      
+      // Get all family members from other users
+      const otherUserMembers = await this.familyMemberModel
+        .find({ userId: { $ne: new Types.ObjectId(userId) } })
+        .exec();
+      
+      let similarityCount = 0;
+      
+      for (const otherMember of otherUserMembers) {
+        let otherSurname = otherMember.surname;
+        if (!otherSurname && otherMember.name) {
+          const nameParts = otherMember.name.trim().split(' ');
+          if (nameParts.length > 1) {
+            otherSurname = nameParts[nameParts.length - 1];
+          }
+        }
+        
+        if (!otherSurname) continue;
+        
+        const similarity = this.surnameSimilarityService.calculateSimilarityPublic(
+          surname,
+          otherSurname
+        );
+        
+        // If similarity is above threshold (0.7) but not exact match (1.0)
+        if (similarity > 0.7 && similarity < 1.0) {
+          similarityCount++;
+        }
+      }
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Member similarities count retrieved successfully',
+        data: { count: similarityCount }
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error retrieving member similarities count',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

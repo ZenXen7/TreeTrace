@@ -511,11 +511,49 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-         
+          {/* Public Family Trees Section */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
+            className="space-y-6 mt-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">Public Family Trees</h2>
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                View All <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {publicTrees.map((tree, index) => (
+                <Card 
+                  key={index}
+                  className="relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] bg-gray-900/30 border-gray-800/50 hover:border-gray-700/50"
+                  onClick={() => router.push(`/dashboard/public-trees/${tree.userId}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                        <span className="text-white font-semibold">{tree.ownerName[0]}</span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{tree.ownerName}</h3>
+                        <p className="text-sm text-gray-400">{tree.memberCount} family members</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400">{tree.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </motion.div>
+
+         
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
             className="space-y-6"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -576,7 +614,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.4 }}
             className="space-y-6"
           >
             <Card className="bg-gray-900/30 backdrop-blur-sm border-gray-800/50 overflow-hidden relative">
@@ -633,7 +671,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
             className="space-y-6"
           >
             <Tabs defaultValue="activity" className="w-full">

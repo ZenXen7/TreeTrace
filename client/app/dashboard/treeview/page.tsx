@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
-import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers } from "./service/familyService"
-import { Filter } from "lucide-react"
+import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers, getSurnameSimilaritiesCount } from "./service/familyService"
+import { Filter, Share2 } from "lucide-react"
+import useTreeStore from "@/store/useTreeStore"
+import { toast } from "react-hot-toast"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -62,6 +64,13 @@ function Familytree(props: {
       FamilyTree.templates.tommy.field_4 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
       FamilyTree.templates.tommy.field_5 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
       FamilyTree.templates.tommy.field_8 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
+      // Add surname similarity badge - moved to bottom left
+      FamilyTree.templates.tommy.field_9 = `
+        <g transform="translate(20, 110)">
+          <circle cx="0" cy="0" r="15" fill="#80cbc4" stroke="#4B5563" stroke-width="1"/>
+          <text ${nameStyle} x="0" y="5" text-anchor="middle" fill="#F3F4F6" font-size="12px" font-weight="bold">{val}</text>
+        </g>
+      `
 
       // Make the node bigger to accommodate more fields
       FamilyTree.templates.tommy.node = `
@@ -70,7 +79,7 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#6366F1"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#80cbc4"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
   <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
@@ -123,27 +132,27 @@ function Familytree(props: {
       FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`;
 
       // Apply the same styling to male and female templates
-      FamilyTree.templates.tommy_female.field_0 =
-        FamilyTree.templates.tommy.field_0;
-      FamilyTree.templates.tommy_female.field_1 =
-        FamilyTree.templates.tommy.field_1;
-      FamilyTree.templates.tommy_female.field_2 =
-        FamilyTree.templates.tommy.field_2;
-      FamilyTree.templates.tommy_female.field_3 =
-        FamilyTree.templates.tommy.field_3;
-      FamilyTree.templates.tommy_female.field_4 =
-        FamilyTree.templates.tommy.field_4;
+      FamilyTree.templates.tommy_female.field_0 = FamilyTree.templates.tommy.field_0
+      FamilyTree.templates.tommy_female.field_1 = FamilyTree.templates.tommy.field_1
+      FamilyTree.templates.tommy_female.field_2 = FamilyTree.templates.tommy.field_2
+      FamilyTree.templates.tommy_female.field_3 = FamilyTree.templates.tommy.field_3
+      FamilyTree.templates.tommy_female.field_4 = FamilyTree.templates.tommy.field_4
+      FamilyTree.templates.tommy_female.field_5 = FamilyTree.templates.tommy.field_5
+      FamilyTree.templates.tommy_female.field_6 = FamilyTree.templates.tommy.field_6
+      FamilyTree.templates.tommy_female.field_7 = FamilyTree.templates.tommy.field_7
+      FamilyTree.templates.tommy_female.field_8 = FamilyTree.templates.tommy.field_8
+      FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9
 
-      FamilyTree.templates.tommy_male.field_0 =
-        FamilyTree.templates.tommy.field_0;
-      FamilyTree.templates.tommy_male.field_1 =
-        FamilyTree.templates.tommy.field_1;
-      FamilyTree.templates.tommy_male.field_2 =
-        FamilyTree.templates.tommy.field_2;
-      FamilyTree.templates.tommy_male.field_3 =
-        FamilyTree.templates.tommy.field_3;
-      FamilyTree.templates.tommy_male.field_4 =
-        FamilyTree.templates.tommy.field_4;
+      FamilyTree.templates.tommy_male.field_0 = FamilyTree.templates.tommy.field_0
+      FamilyTree.templates.tommy_male.field_1 = FamilyTree.templates.tommy.field_1
+      FamilyTree.templates.tommy_male.field_2 = FamilyTree.templates.tommy.field_2
+      FamilyTree.templates.tommy_male.field_3 = FamilyTree.templates.tommy.field_3
+      FamilyTree.templates.tommy_male.field_4 = FamilyTree.templates.tommy.field_4
+      FamilyTree.templates.tommy_male.field_5 = FamilyTree.templates.tommy.field_5
+      FamilyTree.templates.tommy_male.field_6 = FamilyTree.templates.tommy.field_6
+      FamilyTree.templates.tommy_male.field_7 = FamilyTree.templates.tommy.field_7
+      FamilyTree.templates.tommy_male.field_8 = FamilyTree.templates.tommy.field_8
+      FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9
 
       // Update the node menu button position for the larger card
       FamilyTree.templates.tommy.nodeCircleMenuButton =
@@ -582,9 +591,9 @@ function Familytree(props: {
 
 // Update the TreeViewPage component to add more content and reduce whitespace
 export default function TreeViewPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeFilters, setActiveFilters] = useState({
     gender: 'all',
     country: 'all',
@@ -597,6 +606,7 @@ export default function TreeViewPage() {
     oldestMember: null as any,
     youngestMember: null as any,
   })
+  const { generatePublicLink } = useTreeStore()
 
 
   // Define a handler function for filter changes
@@ -672,7 +682,11 @@ export default function TreeViewPage() {
           )
         );
 
-        const processedData = strictFiltered.map((member: any) => {
+        // Fetch surname similarities for each member
+        const processedDataPromises = strictFiltered.map(async (member:any) => {
+          // Get similarity count for this member
+          const similarityCount = await getSurnameSimilaritiesCount(token, member._id);
+          
           // Format dates properly for display and edit form
           const formattedBirthDate = member.birthDate
             ? new Date(member.birthDate).toISOString().split("T")[0]
@@ -706,43 +720,35 @@ export default function TreeViewPage() {
             occupation: member.occupation || '',
             tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
             imageUrl,
+            similarityCount: similarityCount > 0 ? similarityCount.toString() : '', // Add similarity count
           };
         });
+        
+        // Wait for all the similarity counts to be fetched
+        const processedData = await Promise.all(processedDataPromises);
 
         setData(processedData);
 
         // Calculate family statistics
         if (processedData.length > 0) {
           // Find the maximum generation depth
-          const findGenerationDepth = (
-            memberId: string,
-            depth = 1,
-            visited = new Set()
-          ) => {
+          const findGenerationDepth = (memberId: string, depth = 1, visited = new Set<string>()): number => {
             if (visited.has(memberId)) return depth;
             visited.add(memberId);
 
             const member = processedData.find((m) => m.id === memberId);
             if (!member) return depth;
 
-            const children = processedData.filter(
-              (m) => m.fid === memberId || m.mid === memberId
-            );
+            const children = processedData.filter((m) => m.fid === memberId || m.mid === memberId);
             if (children.length === 0) return depth;
 
-            return Math.max(
-              ...children.map((child) =>
-                findGenerationDepth(child.id, depth + 1, new Set(visited))
-              )
-            );
+            return Math.max(...children.map((child) => findGenerationDepth(child.id, depth + 1, new Set(visited))));
           };
 
           // Find root members (those without parents)
           const rootMembers = processedData.filter((m) => !m.fid && !m.mid);
           const maxGeneration =
-            rootMembers.length > 0
-              ? Math.max(...rootMembers.map((m) => findGenerationDepth(m.id)))
-              : 1;
+            rootMembers.length > 0 ? Math.max(...rootMembers.map((m) => findGenerationDepth(m.id))) : 1;
 
           setStats({
             totalMembers: processedData.length,
@@ -826,6 +832,21 @@ export default function TreeViewPage() {
     field_6: "country",
     field_7: "occupation",
     field_8: "tags",
+    field_9: "similarityCount", // Add similarity count binding
+  }
+
+  const handleShareTree = async () => {
+    try {
+      if (!data || data.length === 0) {
+        toast.error("No family tree data available to share")
+        return
+      }
+      const publicLink = generatePublicLink(data[0].id)
+      await navigator.clipboard.writeText(publicLink)
+      toast.success("Public link copied to clipboard!")
+    } catch (error) {
+      toast.error("Failed to copy link")
+    }
   }
 
   return (
@@ -935,23 +956,107 @@ export default function TreeViewPage() {
           className="rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 overflow-hidden mb-8"
         >
           {/* Tree Header */}
-          <div className="bg-gray-700 p-4 border-b border-gray-600 flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-white">
-              Interactive Family Tree
-            </h2>
-            <div className="flex space-x-2">
-              <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                Zoom In
-              </button>
-              <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                Zoom Out
-              </button>
-              <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors">
-                Reset
-              </button>
+          <div className="bg-gray-700 p-4 border-b border-gray-600">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">Interactive Family Tree</h2>
+              <div className="flex gap-2">
+                <button 
+                  className={`px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors ${
+                    (activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all') 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : ''
+                  }`}
+                  onClick={() => {
+                    if (activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') {
+                      setActiveFilters({
+                        gender: 'all',
+                        country: 'all',
+                        status: 'all'
+                      });
+                      setLoading(true);
+                    }
+                  }}
+                  disabled={activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all'}
+                >
+                  Reset Filters
+                </button>
+                <button 
+                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md transition-colors flex items-center gap-2"
+                  onClick={handleShareTree}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share Tree
+                </button>
+              </div>
+            </div>
+            
+            {/* Filter controls - More prominent and aligned with mockup */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center">
+                <Filter className="h-4 w-4 text-gray-400 mr-2" />
+                <select 
+                  className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.gender !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                  value={activeFilters.gender}
+                  onChange={(e) => handleFilterChange('gender', e.target.value)}
+                >
+                  <option value="all">All Genders</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
+              <select 
+                className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.country !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                value={activeFilters.country}
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+              >
+                <option value="all">All Countries</option>
+                <option value="us">United States</option>
+                <option value="ph">Philippines</option>
+                <option value="ca">Canada</option>
+                <option value="uk">United Kingdom</option>
+                <option value="au">Australia</option>
+                <option value="jp">Japan</option>
+                <option value="sg">Singapore</option>
+                <option value="hk">Hong Kong</option>
+              </select>
+
+              <select 
+                className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.status !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                value={activeFilters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="alive">Alive</option>
+                <option value="dead">Dead</option>
+                <option value="unknown">Unknown</option>
+              </select>
             </div>
           </div>
-
+          
+          {/* Active filters display - More compact and similar to mockup */}
+          {(activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') && (
+            <div className="bg-gray-800 px-4 py-2 text-sm text-gray-300 border-b border-gray-700 flex items-center">
+              <span className="mr-2">Active Filters:</span>
+              {activeFilters.gender !== 'all' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mr-2">
+                  Gender: {activeFilters.gender}
+                </span>
+              )}
+              {activeFilters.country !== 'all' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
+                  Country: {activeFilters.country}
+                </span>
+              )}
+              {activeFilters.status !== 'all' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-2">
+                  Status: {activeFilters.status}
+                </span>
+              )}
+            </div>
+          )}
+          
+          {/* Family Tree */}
           {loading ? (
             <motion.div
               initial={{ opacity: 0 }}

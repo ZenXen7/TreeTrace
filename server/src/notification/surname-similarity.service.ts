@@ -63,6 +63,17 @@ export class SurnameSimilarityService {
   }
 
   /**
+   * Public method to calculate similarity between two surnames
+   * This is used by the controller for direct comparisons
+   * @param surname1 First surname
+   * @param surname2 Second surname
+   * @returns Similarity score between 0 and 1
+   */
+  public calculateSimilarityPublic(surname1: string, surname2: string): number {
+    return this.calculateSimilarity(surname1, surname2);
+  }
+
+  /**
    * Get surname from family member
    * @param member Family member object
    * @returns Surname of the family member

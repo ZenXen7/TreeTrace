@@ -44,10 +44,11 @@ export class FamilyService {
   // }
 
   async createFamilyMember(
-    userId: Types.ObjectId,
+    userId: string | Types.ObjectId,
     createFamilyMemberDto: CreateFamilyMemberDto,
   ): Promise<FamilyMember> {
-    const memberData = { ...createFamilyMemberDto, userId };
+    const userObjectId = new Types.ObjectId(userId.toString());
+    const memberData = { ...createFamilyMemberDto, userId: userObjectId };
     
     // Automatically set status to 'dead' if death date is provided
     if (memberData.deathDate) {
@@ -57,11 +58,8 @@ export class FamilyService {
     const createdFamilyMember = new this.familyMemberModel(memberData);
     const savedMember = await createdFamilyMember.save() as FamilyMemberWithId;
     
-    // Check for similar surnames after saving the new family member
-    await this.surnameSimilarityService.checkForSimilarSurnames(
-      savedMember._id.toString(),
-      userId.toString()
-    );
+    // Run cross-user surname similarity analysis
+    await this.surnameSimilarityService.analyzeSimilaritiesAcrossUsers(userObjectId);
     
     return savedMember;
   }
@@ -178,6 +176,39 @@ export class FamilyService {
         error instanceof Error ? error.message : 'Unknown error';
       throw new NotFoundException(
         `Error fetching family tree: ${errorMessage}`,
+      );
+    }
+  }
+
+  async getPublicFamilyTree(userId: string): Promise<FamilyTreeNode[]> {
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new NotFoundException(`Invalid user ID format: ${userId}`);
+      }
+
+      const userObjectId = new Types.ObjectId(userId);
+      
+      // Find all public family members for the given user
+      const familyMembers = await this.familyMemberModel
+        .find({ userId: userObjectId, isPublic: true })
+        .populate('fatherId')
+        .populate('motherId')
+        .populate('partnerId')
+        .exec();
+
+      if (!familyMembers || familyMembers.length === 0) {
+        throw new NotFoundException(`No public family members found for user ${userId}`);
+      }
+
+      return familyMembers.map(member => member.toObject() as FamilyTreeNode);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new NotFoundException(
+        `Error fetching public family tree: ${errorMessage}`,
       );
     }
   }
