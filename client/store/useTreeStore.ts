@@ -67,6 +67,7 @@ interface TreeState {
   error: string | null;
   fetchAllFamilyMembers: () => Promise<void>;
   getFamilyTree: (id: string) => Promise<void>;
+  getPublicFamilyTree: (userId: string) => Promise<void>;
   createFamilyMember: (member: CreateFamilyMemberDto) => Promise<void>;
   updateFamilyMember: (id: string, member: Partial<CreateFamilyMemberDto>) => Promise<void>;
   deleteFamilyMember: (id: string) => Promise<void>;
@@ -116,6 +117,62 @@ const useTreeStore = create<TreeState>((set) => ({
       set({ 
         error: errorMessage,
         isLoading: false 
+      });
+    }
+  },
+
+  getPublicFamilyTree: async (userId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Get all family members for this user
+      const response = await api.get(`/family-members/user/${userId}`);
+      
+      if (response.data && response.data.data && response.data.data.length > 0) {
+        const familyMembers = response.data.data;
+        console.log(`Found ${familyMembers.length} family members for user ${userId}`);
+        
+        // Process data like in TreeView
+        const processedData = familyMembers.map((member: any) => ({
+          id: member._id,
+          name: member.name || '',
+          surname: member.surname || '',
+          gender: member.gender || '',
+          status: member.status || 'unknown',
+          birthDate: member.birthDate || '',
+          deathDate: member.deathDate || '',
+          country: member.country || '',
+          occupation: member.occupation || '',
+          fid: member.fatherId || '',
+          mid: member.motherId || '',
+          pids: member.partnerId ? [member.partnerId] : [],
+          tags: member.tags || [],
+          imageUrl: member.imageUrl || ''
+        }));
+        
+        set({ 
+          familyMembers: familyMembers,
+          currentFamilyTree: processedData,
+          isLoading: false 
+        });
+        toast.success("Family tree loaded successfully");
+      } else {
+        console.log("No family tree data received:", response.data);
+        set({
+          currentFamilyTree: null,
+          error: "No family tree found for this user",
+          isLoading: false
+        });
+        toast.error("No family tree found for this user");
+      }
+    } catch (error: unknown) {
+      console.error("Error fetching family tree:", error);
+      const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || 
+        (error instanceof Error ? error.message : "Failed to fetch public family tree");
+      toast.error(errorMessage);
+      set({ 
+        error: errorMessage,
+        isLoading: false,
+        currentFamilyTree: null
       });
     }
   },

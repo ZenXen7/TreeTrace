@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Search, Users, Loader2 } from "lucide-react"
+import { Search, Users, Loader2, AlertCircle, Trees } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import useUserSearchStore from "@/store/useUserSearchStore"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "react-hot-toast"
@@ -16,6 +17,8 @@ export default function SearchPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
+  const [selectedUser, setSelectedUser] = useState<{ _id: string; firstName: string; lastName: string } | null>(null)
+  const [showDialog, setShowDialog] = useState(false)
   const { searchUsers, searchResults, isLoading, clearSearchResults } = useUserSearchStore()
 
   // Handle input debounce
@@ -36,8 +39,16 @@ export default function SearchPage() {
     }
   }, [debouncedQuery, searchUsers, clearSearchResults])
 
-  const handleViewTree = (userId: string) => {
-    router.push(`/public-tree/${userId}`)
+  const handleViewTreeClick = (user: { _id: string; firstName: string; lastName: string }) => {
+    setSelectedUser(user)
+    setShowDialog(true)
+  }
+  
+  const handleConfirmViewTree = () => {
+    if (selectedUser) {
+      router.push(`/public-tree/${selectedUser._id}`)
+    }
+    setShowDialog(false)
   }
 
   const getInitials = (firstName: string, lastName: string) => {
@@ -118,7 +129,7 @@ export default function SearchPage() {
                         variant="outline"
                         size="sm"
                         className="ml-2 bg-gray-600 hover:bg-gray-500"
-                        onClick={() => handleViewTree(user._id)}
+                        onClick={() => handleViewTreeClick(user)}
                       >
                         <Users className="h-4 w-4 mr-1" />
                         View Tree
@@ -141,6 +152,45 @@ export default function SearchPage() {
           </Card>
         </motion.div>
       </div>
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md bg-gray-800 text-gray-100 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trees className="h-5 w-5 text-emerald-400" />
+              View Family Tree
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedUser ? (
+                <>You are about to view {selectedUser.firstName} {selectedUser.lastName}&apos;s family tree.</>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-gray-300 space-y-2 py-4">
+            <p className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
+              <span>If this user hasn&apos;t created a family tree or has set their tree to private, you may not see any data.</span>
+            </p>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              className="bg-gray-700 hover:bg-gray-600"
+              onClick={() => setShowDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white"
+              onClick={handleConfirmViewTree}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   )
 } 

@@ -112,6 +112,7 @@ export class UserController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll() {
     try {
       return await this.userService.findAll();
@@ -130,7 +131,17 @@ export class UserController {
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      return user;
+      
+      // Only return public information
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User found',
+        data: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      };
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'An unexpected error occurred',
