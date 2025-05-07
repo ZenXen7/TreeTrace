@@ -86,6 +86,25 @@ export class FamilyService {
     return results;
   }
 
+  async findAllByUserId(userId: string): Promise<FamilyMember[]> {
+    try {
+      // Convert string userId to ObjectId if it's not already
+      const userObjectId = new Types.ObjectId(userId.toString());
+      
+      // Fetch all family members for this user
+      const results = await this.familyMemberModel
+        .find({ userId: userObjectId })
+        .exec();
+      
+      console.log(`Found ${results.length} family members for user ${userId}`);
+      
+      return results;
+    } catch (error) {
+      console.error('Error in findAllByUserId:', error);
+      throw new Error(`Error fetching family members for user ${userId}`);
+    }
+  }
+
   async findOne(id: string): Promise<FamilyMember> {
     const familyMember = await this.familyMemberModel.findById(id).exec();
     if (!familyMember) {
@@ -182,34 +201,105 @@ export class FamilyService {
 
   async getPublicFamilyTree(userId: string): Promise<FamilyTreeNode[]> {
     try {
-      if (!Types.ObjectId.isValid(userId)) {
-        throw new NotFoundException(`Invalid user ID format: ${userId}`);
-      }
-
+      // Convert string userId to ObjectId
       const userObjectId = new Types.ObjectId(userId);
       
-      // Find all public family members for the given user
+      // Find all family members for this user
       const familyMembers = await this.familyMemberModel
-        .find({ userId: userObjectId, isPublic: true })
-        .populate('fatherId')
-        .populate('motherId')
-        .populate('partnerId')
+        .find({ 
+          userId: userObjectId
+          // All trees are public by default
+        })
         .exec();
 
+      console.log(`Found ${familyMembers.length} family members for user ${userId}`);
+
       if (!familyMembers || familyMembers.length === 0) {
-        throw new NotFoundException(`No public family members found for user ${userId}`);
+        console.log(`No family members found for user ${userId}`);
+        return [];
       }
 
-      return familyMembers.map(member => member.toObject() as FamilyTreeNode);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      throw new NotFoundException(
-        `Error fetching public family tree: ${errorMessage}`,
+      // Find members without parents (roots) to start tree building from
+      const rootMembers = familyMembers.filter(
+        (member) => !member.fatherId && !member.motherId,
       );
+
+      if (rootMembers.length === 0 && familyMembers.length > 0) {
+        // If no roots found but family members exist, use the first member as root
+        rootMembers.push(familyMembers[0]);
+        console.log(`No root members found. Using first member as root: ${familyMembers[0].name}`);
+      }
+
+      console.log(`Building tree with ${rootMembers.length} root members`);
+
+      // Create tree nodes for each root member
+      const treeNodes = await Promise.all(
+        rootMembers.map((root) =>
+          this.buildFamilyTreeNode(root, familyMembers),
+        ),
+      );
+
+      return treeNodes;
+    } catch (error) {
+      console.error('Error in getPublicFamilyTree:', error);
+      throw new Error('Failed to retrieve public family tree');
     }
+  }
+
+  // Build a family tree node recursively
+  private async buildFamilyTreeNode(
+    member: FamilyMember,
+    allMembers: FamilyMember[],
+  ): Promise<FamilyTreeNode> {
+    // Convert to a TreeNode
+    const treeNode = member as unknown as FamilyTreeNode;
+    
+    // Find father
+    if (member.fatherId) {
+      const father = allMembers.find(
+        (m) => m._id.toString() === member.fatherId.toString(),
+      );
+      if (father) {
+        treeNode.father = father as unknown as FamilyTreeNode;
+      }
+    }
+    
+    // Find mother
+    if (member.motherId) {
+      const mother = allMembers.find(
+        (m) => m._id.toString() === member.motherId.toString(),
+      );
+      if (mother) {
+        treeNode.mother = mother as unknown as FamilyTreeNode;
+      }
+    }
+    
+    // Find partner(s)
+    if (member.partnerId) {
+      const partner = allMembers.find(
+        (m) => m._id.toString() === member.partnerId.toString(),
+      );
+      if (partner) {
+        treeNode.partner = partner as unknown as FamilyTreeNode;
+      }
+    }
+    
+    // Find children
+    const children = allMembers.filter(
+      (m) => 
+        (m.fatherId && m.fatherId.toString() === member._id.toString()) ||
+        (m.motherId && m.motherId.toString() === member._id.toString())
+    );
+    
+    if (children.length > 0) {
+      // Process each child recursively
+      treeNode.childNodes = await Promise.all(
+        children.map((child) => this.buildFamilyTreeNode(child, allMembers))
+      );
+    } else {
+      treeNode.childNodes = [];
+    }
+    
+    return treeNode;
   }
 }

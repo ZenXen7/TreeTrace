@@ -37,6 +37,34 @@ export class UserController {
     }
   }
 
+  @Get('search')
+  async searchUsers(@Request() req) {
+    try {
+      const { query } = req.query;
+      
+      if (!query) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Search query is required',
+          data: [],
+        };
+      }
+      
+      const users = await this.userService.searchUsers(query);
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: users.length > 0 ? 'Users found' : 'No users found',
+        data: users,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Error searching users',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req) {
@@ -84,6 +112,7 @@ export class UserController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll() {
     try {
       return await this.userService.findAll();
@@ -102,7 +131,17 @@ export class UserController {
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      return user;
+      
+      // Only return public information
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User found',
+        data: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      };
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'An unexpected error occurred',
