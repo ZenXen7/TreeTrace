@@ -70,6 +70,7 @@ interface TreeState {
   createFamilyMember: (member: CreateFamilyMemberDto) => Promise<void>;
   updateFamilyMember: (id: string, member: Partial<CreateFamilyMemberDto>) => Promise<void>;
   deleteFamilyMember: (id: string) => Promise<void>;
+  generatePublicLink: (treeId: string) => string;
   clearError: () => void;
 }
 
@@ -178,6 +179,11 @@ const useTreeStore = create<TreeState>((set) => ({
         isLoading: false 
       });
     }
+  },
+
+  generatePublicLink: (treeId: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/public-tree/${treeId}`;
   },
 
   clearError: () => set({ error: null })
