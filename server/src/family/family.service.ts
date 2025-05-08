@@ -18,6 +18,10 @@ export interface FamilyTreeNode {
   motherId?: Types.ObjectId;
   partnerId?: Types.ObjectId[]; // Updated to be an array of ObjectIds
   __v?: number;
+  father?: FamilyTreeNode;
+  mother?: FamilyTreeNode;
+  partners?: FamilyTreeNode[];
+  childNodes?: FamilyTreeNode[];
 }
 
 @Injectable()
@@ -257,7 +261,7 @@ export class FamilyService {
     // Find father
     if (member.fatherId) {
       const father = allMembers.find(
-        (m) => m._id.toString() === member.fatherId.toString(),
+        (m) => (m as any)._id.toString() === member.fatherId.toString(),
       );
       if (father) {
         treeNode.father = father as unknown as FamilyTreeNode;
@@ -267,28 +271,31 @@ export class FamilyService {
     // Find mother
     if (member.motherId) {
       const mother = allMembers.find(
-        (m) => m._id.toString() === member.motherId.toString(),
+        (m) => (m as any)._id.toString() === member.motherId.toString(),
       );
       if (mother) {
         treeNode.mother = mother as unknown as FamilyTreeNode;
       }
     }
     
-    // Find partner(s)
-    if (member.partnerId) {
-      const partner = allMembers.find(
-        (m) => m._id.toString() === member.partnerId.toString(),
-      );
-      if (partner) {
-        treeNode.partner = partner as unknown as FamilyTreeNode;
+    // Find partners (handle as array)
+    treeNode.partners = [];
+    if (member.partnerId && Array.isArray(member.partnerId)) {
+      for (const pid of member.partnerId) {
+        const partner = allMembers.find(
+          (m) => (m as any)._id.toString() === pid.toString(),
+        );
+        if (partner) {
+          treeNode.partners.push(partner as unknown as FamilyTreeNode);
+        }
       }
     }
     
     // Find children
     const children = allMembers.filter(
       (m) => 
-        (m.fatherId && m.fatherId.toString() === member._id.toString()) ||
-        (m.motherId && m.motherId.toString() === member._id.toString())
+        (m.fatherId && m.fatherId.toString() === (member as any)._id.toString()) ||
+        (m.motherId && m.motherId.toString() === (member as any)._id.toString())
     );
     
     if (children.length > 0) {
