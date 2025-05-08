@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@balkangraph/familytree.js": "^1.9.45",
     "@hookform/resolvers": "^4.1.3",
     "@radix-ui/react-alert-dialog": "^1.1.7",
     "@radix-ui/react-avatar": "^1.1.3",
