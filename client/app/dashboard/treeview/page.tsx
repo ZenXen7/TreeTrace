@@ -7,7 +7,7 @@ import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredF
 import { Filter, Share2 } from "lucide-react"
 import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
-import router from "next/router";
+import { useRouter } from "next/navigation"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -580,6 +580,7 @@ function Familytree(props: {
 
 // Update the TreeViewPage component to add more content and reduce whitespace
 export default function TreeViewPage() {
+  const router = useRouter()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
