@@ -156,26 +156,64 @@ export default function MemberSuggestionsPage() {
     // Parse the suggestion and extract the data to update
     let updateData: any = {};
     
+    console.log("Parsing suggestion:", suggestion);
+    
     if (suggestion.includes("birth date")) {
+      // Look for date patterns in the format YYYY-MM-DD
       const match = suggestion.match(/(\d{4}-\d{2}-\d{2})/);
       if (match) {
         updateData.birthDate = match[0];
+        console.log("Extracted birth date:", updateData.birthDate);
       }
     } else if (suggestion.includes("death date")) {
+      // Look for date patterns in the format YYYY-MM-DD
       const match = suggestion.match(/(\d{4}-\d{2}-\d{2})/);
       if (match) {
         updateData.deathDate = match[0];
+        console.log("Extracted death date:", updateData.deathDate);
       }
     } else if (suggestion.includes("country")) {
-      // Improved regex to handle different formats like 'country is "USA"' or '"USA" as country'
-      const match = suggestion.match(/country (?:is |as |)"(.*?)"/i) || suggestion.match(/"(.*?)" (?:as |for |)country/i);
-      if (match && match[1]) {
-        updateData.country = match[1];
+      // Improved regex to handle different formats of country suggestions
+      const countryRegex = /country "([^"]+)"|"([^"]+)" country|country from "([^"]+)"|country ([A-Za-z]+)/i;
+      const match = suggestion.match(countryRegex);
+      
+      if (match) {
+        // Find the first non-undefined group which contains the country
+        const country = match[1] || match[2] || match[3] || match[4];
+        if (country) {
+          updateData.country = country;
+          console.log("Extracted country:", updateData.country);
+        }
       }
     } else if (suggestion.includes("deceased") || suggestion.includes("dead")) {
       updateData.status = "dead";
+      console.log("Setting status to deceased");
     } else if (suggestion.includes("alive")) {
       updateData.status = "alive";
+      console.log("Setting status to alive");
+    }
+    
+    // If no data was extracted, try additional patterns
+    if (Object.keys(updateData).length === 0) {
+      if (suggestion.includes("adding birth date")) {
+        const match = suggestion.match(/adding birth date \(([^)]+)\)/);
+        if (match && match[1]) {
+          updateData.birthDate = match[1];
+          console.log("Extracted birth date from 'adding' format:", updateData.birthDate);
+        }
+      } else if (suggestion.includes("adding death date")) {
+        const match = suggestion.match(/adding death date \(([^)]+)\)/);
+        if (match && match[1]) {
+          updateData.deathDate = match[1];
+          console.log("Extracted death date from 'adding' format:", updateData.deathDate);
+        }
+      } else if (suggestion.includes("adding country")) {
+        const match = suggestion.match(/adding country "([^"]+)"/);
+        if (match && match[1]) {
+          updateData.country = match[1];
+          console.log("Extracted country from 'adding' format:", updateData.country);
+        }
+      }
     }
     
     console.log("Parsed suggestion into update data:", updateData);
@@ -389,27 +427,40 @@ export default function MemberSuggestionsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {suggestionsData.similarMembers.flatMap((similar, index) => 
-                      similar.suggestions.map((suggestion, subIndex) => (
-                        <div 
-                          key={`${index}-${subIndex}`} 
-                          className="p-4 rounded-lg bg-gray-700/50 border border-gray-600/50 hover:border-orange-500/50 transition-colors"
-                        >
-                          <div className="mb-3 text-gray-300">{suggestion}</div>
-                          <div className="flex justify-between items-center">
-                            <div className="text-xs text-gray-400">
-                              From similar member: <span className="text-orange-400">{similar.name}</span>
-                            </div>
-                            <button 
-                              onClick={() => handleApplySuggestion(suggestion)}
-                              className="px-3 py-1 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors"
+                    {(() => {
+                      // Debug logs that won't appear in the component
+                      console.log("Rendering suggestions:", suggestionsData);
+                      console.log("similarMembers:", suggestionsData.similarMembers);
+                      console.log("Suggestions mapping:", suggestionsData.similarMembers.map(sm => sm.suggestions));
+                      
+                      // Return the actual component rendering
+                      return suggestionsData.similarMembers.flatMap((similar, index) => {
+                        console.log(`Processing similar member ${index}:`, similar);
+                        console.log(`Suggestions for this member:`, similar.suggestions);
+                        return similar.suggestions.map((suggestion, subIndex) => {
+                          console.log(`Rendering suggestion ${subIndex}:`, suggestion);
+                          return (
+                            <div 
+                              key={`${index}-${subIndex}`} 
+                              className="p-4 rounded-lg bg-gray-700/50 border border-gray-600/50 hover:border-orange-500/50 transition-colors"
                             >
-                              Apply
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                              <div className="mb-3 text-gray-300">{suggestion}</div>
+                              <div className="flex justify-between items-center">
+                                <div className="text-xs text-gray-400">
+                                  From similar member: <span className="text-orange-400">{similar.name}</span>
+                                </div>
+                                <button 
+                                  onClick={() => handleApplySuggestion(suggestion)}
+                                  className="px-3 py-1 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors"
+                                >
+                                  Apply
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        });
+                      });
+                    })()}
                   </div>
                 )}
               </div>
