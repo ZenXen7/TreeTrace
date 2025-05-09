@@ -83,6 +83,29 @@ async function addFamilyMember(token: string, memberData: any) {
 
     const result = await response.json();
     console.log("Server response:", result);
+    
+    // Explicitly check for similar family members
+    try {
+      const newMemberId = result.data._id;
+      console.log("Triggering check for similar family members for new member:", newMemberId);
+      
+      const checkResponse = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${newMemberId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (checkResponse.ok) {
+        console.log("Similar family members check completed successfully for new member");
+      } else {
+        console.error("Failed to check for similar family members for new member:", await checkResponse.text());
+      }
+    } catch (checkError) {
+      console.error("Error checking for similar family members:", checkError);
+    }
+    
     return result;
   } catch (error) {
     console.error("Error in addFamilyMember:", error);

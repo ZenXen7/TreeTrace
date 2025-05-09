@@ -40,6 +40,13 @@ export class FamilyController {
         userId,
         createFamilyMemberDto,
       );
+      
+      // Explicitly trigger the similarity check after creation
+      await this.familyService.checkForSimilarFamilyMembers(
+        (familyMember as any)._id.toString(), 
+        userId
+      );
+      
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Family member created successfully',
@@ -155,12 +162,17 @@ export class FamilyController {
   async update(
     @Param('id') id: string,
     @Body() updateFamilyMemberDto: Partial<CreateFamilyMemberDto>,
+    @Request() req,
   ) {
     try {
       const updatedFamilyMember = await this.familyService.update(
         id,
         updateFamilyMemberDto,
       );
+      
+      // Explicitly trigger the similarity check after updating
+      await this.familyService.checkForSimilarFamilyMembers(id, req.user.id);
+      
       return {
         statusCode: HttpStatus.OK,
         message: 'Family member updated successfully',

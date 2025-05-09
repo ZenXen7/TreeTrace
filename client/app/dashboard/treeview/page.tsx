@@ -35,7 +35,7 @@ function Familytree(props: {
   
   <!-- Avatar circle clip path -->
   <clipPath id="avatar-clip">
-    <circle cx="45" cy="50" r="32"/>
+    <circle cx="45" cy="60" r="32"/>
   </clipPath>
 </defs>
 `
@@ -53,23 +53,33 @@ function Familytree(props: {
       const img_0 ="https://preview.redd.it/some-random-black-dude-i-found-v0-7b7ipzz5af0c1.jpg?auto=webp&s=50dde31529bf146611d82a09c0e0e7cf3948a2d3"
 
       // Position text elements for the larger card
-      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="35">{val}</text>`
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-0" ${nameStyle} x="200" y="35">{val}</text>`
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-1" ${roleStyle} x="95" y="55">{val}</text>`
-      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-2" ${detailStyle} x="95" y="72">{val}</text>`
-      FamilyTree.templates.tommy.field_6 = `<text class="bft-field-5" ${detailStyle} x="95" y="87">🌍 {val}</text>`
-      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-6" ${detailStyle} x="190" y="87">💼 {val}</text>`
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
-      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
-      FamilyTree.templates.tommy.field_8 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
-      // Add surname similarity badge - moved to bottom left
+      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="45">{val}</text>`
+      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="95" y="65">{val}</text>`
+      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${roleStyle} x="118" y="85">⚧️ {val}</text>`
+      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-7" ${roleStyle} x="190" y="85">💼 {val}</text>`
+      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="95" y="105">Born: {val}</text>`
+      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-5" ${detailStyle} x="190" y="105">Died: {val}</text>`
+      
+      // Remove any unused fields from previous template
+      FamilyTree.templates.tommy.field_3 = ``; 
+      FamilyTree.templates.tommy.field_6 = ``;
+      FamilyTree.templates.tommy.field_8 = ``;
+
+      // Initialize SVG with our custom suggestion badge definitions
       FamilyTree.templates.tommy.field_9 = `
-        <g transform="translate(20, 110)">
-          <circle cx="0" cy="0" r="15" fill="#F97316" stroke="#4B5563" stroke-width="1"/>
-          <text ${nameStyle} x="0" y="5" text-anchor="middle" fill="#F3F4F6" font-size="12px" font-weight="bold">{val}</text>
-          <title>Suggestions available</title>
+        <g class="suggestion-badge-svg" data-suggestion-badge="true" transform="translate(10, 10)" style="cursor:pointer;">
+          <circle cx="0" cy="0" r="18" fill="#F97316" stroke="#FFFFFF" stroke-width="3"></circle>
+          <text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="16px" font-weight="bold" fill="white">{val}</text>
+          <circle cx="0" cy="0" r="18" fill="none" stroke="#F97316" stroke-width="3" opacity="0.5" class="pulse-circle">
+            <animate attributeName="r" from="18" to="26" dur="1.5s" begin="0s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" begin="0s" repeatCount="indefinite"/>
+          </circle>
         </g>
-      `
+      `;
+
+      // Copy the suggestion badge to other templates
+      FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9;
+      FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9;
 
       // Make the node bigger to accommodate more fields
       FamilyTree.templates.tommy.node = `
@@ -78,11 +88,11 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#80cbc4"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="0" fill="#80cbc4"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
-  <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
+  <circle cx="45" cy="60" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
+  <image xlink:href="${img_0}" x="13" y="28" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `
       FamilyTree.templates.tommy_female.node = `
@@ -91,11 +101,11 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card with female color -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#EC4899"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="0" fill="#EC4899"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
-  <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
+  <circle cx="45" cy="60" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
+  <image xlink:href="${img_0}" x="13" y="28" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `;
 
@@ -105,60 +115,34 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card with male color -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#3B82F6"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="0" fill="#3B82F6"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
-  <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
+  <circle cx="45" cy="60" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
+  <image xlink:href="${img_0}" x="13" y="28" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `;
-
-      // Position text elements for the larger card
-      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="40">{val}</text>`;
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${roleStyle} x="95" y="65">{val}</text>`;
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${detailStyle} x="95" y="85">{val}</text>`;
-
-      // Add birth/death dates as small text at bottom
-      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`;
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`;
-
-      // Apply the same styling to male and female templates
-      FamilyTree.templates.tommy_female.field_0 = FamilyTree.templates.tommy.field_0
-      FamilyTree.templates.tommy_female.field_1 = FamilyTree.templates.tommy.field_1
-      FamilyTree.templates.tommy_female.field_2 = FamilyTree.templates.tommy.field_2
-      FamilyTree.templates.tommy_female.field_3 = FamilyTree.templates.tommy.field_3
-      FamilyTree.templates.tommy_female.field_4 = FamilyTree.templates.tommy.field_4
-      FamilyTree.templates.tommy_female.field_5 = FamilyTree.templates.tommy.field_5
-      FamilyTree.templates.tommy_female.field_6 = FamilyTree.templates.tommy.field_6
-      FamilyTree.templates.tommy_female.field_7 = FamilyTree.templates.tommy.field_7
-      FamilyTree.templates.tommy_female.field_8 = FamilyTree.templates.tommy.field_8
-      FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9
-
-      FamilyTree.templates.tommy_male.field_0 = FamilyTree.templates.tommy.field_0
-      FamilyTree.templates.tommy_male.field_1 = FamilyTree.templates.tommy.field_1
-      FamilyTree.templates.tommy_male.field_2 = FamilyTree.templates.tommy.field_2
-      FamilyTree.templates.tommy_male.field_3 = FamilyTree.templates.tommy.field_3
-      FamilyTree.templates.tommy_male.field_4 = FamilyTree.templates.tommy.field_4
-      FamilyTree.templates.tommy_male.field_5 = FamilyTree.templates.tommy.field_5
-      FamilyTree.templates.tommy_male.field_6 = FamilyTree.templates.tommy.field_6
-      FamilyTree.templates.tommy_male.field_7 = FamilyTree.templates.tommy.field_7
-      FamilyTree.templates.tommy_male.field_8 = FamilyTree.templates.tommy.field_8
-      FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9
 
       // Update the node menu button position for the larger card
       FamilyTree.templates.tommy.nodeCircleMenuButton =
         FamilyTree.templates.tommy_female.nodeCircleMenuButton =
         FamilyTree.templates.tommy_male.nodeCircleMenuButton =
           {
-            radius: 24,
-            x: 260,
-            y: 100,
+            radius: 16,
+            x: 255,
+            y: 95,
             color: "#1F2937",
             stroke: "#4B5563",
-            strokeWidth: 2,
+            strokeWidth: 1,
             hoverColor: "#374151",
             hoverStroke: "#6366F1",
           };
+          
+      // Apply the same field styling to male and female templates
+      for (let i = 0; i <= 9; i++) {
+        FamilyTree.templates.tommy_female[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
+        FamilyTree.templates.tommy_male[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
+      }
 
       // Update the family tree configuration to match the new node size and dark mode
       const family = new FamilyTree(treeElement, {
@@ -253,86 +237,191 @@ function Familytree(props: {
         },
       });
 
-      // family.filterUI.on("show-items", (sender, args) => {
-      //   if (args.name === 'gender') {
-      //     args.value = "Filter by gender:";
-      //     args.items = [
-      //       { id: 'all', text: '[All]' },
-      //       { id: 'male', text: 'Male' },
-      //       { id: 'female', text: 'Female' }
-      //     ];
-      //   }
-      //   else if (args.name === 'country') {
-      //     args.value = "Filter by country:";
-      //     args.items = [
-      //       { id: 'all', text: '[All]' },
-      //       { id: 'us', text: 'United States' },
-      //       { id: 'ph', text: 'Philippines' },
-      //       { id: 'ca', text: 'Canada' },
-      //       { id: 'uk', text: 'United Kingdom' },
-      //       { id: 'au', text: 'Australia' },
-      //       { id: 'jp', text: 'Japan' },
-      //       { id: 'sg', text: 'Singapore' },
-      //       { id: 'hk', text: 'Hong Kong' }
-      //     ];
-      //   }
-      //   else if (args.name === 'status') {
-      //     args.value = "Filter by status:";
-      //     args.items = [
-      //       { id: 'all', text: '[All]' },
-      //       { id: 'alive', text: 'Alive' },
-      //       { id: 'deceased', text: 'Deceased' },
-      //       { id: 'unknown', text: 'Unknown' }
-      //     ];
-      //   }
-      // });
+      // Add event listener for tree initialization
+      family.on("init", function() {
+        console.log("Tree initialized");
+      });
+      
+      // Enhance the redraw event handler to ensure proper IDs are used
+      family.on("redraw", function(sender: any) {
+        console.log("Tree redrawn, checking for nodes with suggestions");
+        
+        try {
+          // Get all nodes without parameters as per Balkan's API
+          const nodes = (family as any).get();
+          
+          if (!nodes || !Array.isArray(nodes)) {
+            console.warn("No nodes found or invalid nodes data");
+            return;
+          }
+          
+          // Get all nodes that have suggestions
+          const nodesWithSuggestions = nodes.filter((node: any) => 
+            node.hasSimilarityMatch === true || 
+            (node.tags && node.tags.includes("suggestion")) ||
+            (node.suggestionCount && node.suggestionCount !== '')
+          );
+          
+          console.log(`Found ${nodesWithSuggestions.length} nodes with suggestions`);
+          
+          // Process each node with suggestions to add our custom badge
+          setTimeout(() => {
+            nodesWithSuggestions.forEach((node: any) => {
+              try {
+                // Find the node's DOM element
+                const nodeElement = document.querySelector(`[data-n-id="${node.id}"]`);
+                if (!nodeElement) {
+                  console.warn(`DOM element for node ${node.id} not found`);
+                  return;
+                }
+                
+                // Check if we already added a suggestion badge to this node
+                const existingBadge = nodeElement.querySelector('.custom-suggestion-badge');
+                if (existingBadge) {
+                  console.log(`Badge already exists for node ${node.id}`);
+                  return;
+                }
+                
+                // Make sure we have a valid ID - not a template string
+                const nodeId = String(node.id);
+                console.log(`Creating badge for node ${nodeId} (type: ${typeof nodeId})`);
+                
+                // Create a larger, more prominent badge as a link
+                const badgeLink = document.createElement('a');
+                badgeLink.className = 'custom-suggestion-badge';
+                badgeLink.href = `/dashboard/suggestions/${nodeId}`;
+                
+                // Make the badge more prominent
+                badgeLink.style.cssText = `
+                  position: absolute;
+                  top: -12px;
+                  left: -12px;
+                  width: 36px;
+                  height: 36px;
+                  background-color: #F97316;
+                  border-radius: 50%;
+                  border: 3px solid white;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-size: 18px;
+                  font-weight: bold;
+                  cursor: pointer;
+                  z-index: 9999;
+                  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                  text-decoration: none;
+                  animation: pulse-badge 1.5s infinite;
+                `;
+                
+                // Add a pulsing effect with CSS animation
+                const style = document.createElement('style');
+                style.textContent = `
+                  @keyframes pulse-badge {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                    100% { transform: scale(1); }
+                  }
+                `;
+                document.head.appendChild(style);
+                
+                // Show the suggestion count
+                if (node.suggestionCount && node.suggestionCount !== '') {
+                  badgeLink.textContent = node.suggestionCount;
+                } else if (node.hasSimilarityMatch || (node.tags && node.tags.includes("suggestion"))) {
+ 
+                  badgeLink.textContent = '0';
+                } else {
+                  // Failsafe - should never happen but just in case
+                  badgeLink.textContent = '1';
+                }
+                
+                // Add a click event just to ensure it works even if href doesn't
+                badgeLink.addEventListener('click', (e) => {
+                  // Redundant but ensures it works
+                  window.location.href = `/dashboard/suggestions/${nodeId}`;
+                });
+                
+                // Add badge to the node element
+                (nodeElement as HTMLElement).style.position = 'relative';
+                nodeElement.appendChild(badgeLink);
+                
+                console.log(`Added suggestion badge link for node ${nodeId}, redirecting to: ${badgeLink.href}`);
+              } catch (error) {
+                console.error(`Error adding badge to node ${node.id}:`, error);
+              }
+            });
+          }, 200);
+        } catch (error) {
+          console.error("Error processing suggestions badges:", error);
+        }
+      });
 
-      // family.filterUI.on("add-filter", (sender, args) => {
-      //   console.log("Filter added:", args);
-      //
-      //   if (args.name === "gender" && args.value !== "all") {
-      //     family.filter((node) => {
-      //       return node.gender === args.value;
-      //     });
-      //   }
-      //   else if (args.name === "country" && args.value !== "all") {
-      //     family.filter((node) => {
-      //       return node.country === args.value;
-      //     });
-      //   }
-      //   else if (args.name === "status" && args.value !== "all") {
-      //     family.filter((node) => {
-      //       return node.status === args.value;
-      //     });
-      //   }
-      //   else {
-      //     family.filter(() => true); // Show all if [All] selected
-      //   }
-      // });
+      // Add event listener for tree render completion
+      family.on("render", function() {
+        console.log("Tree rendered, attaching badge click handlers");
+        
+        // Use setTimeout to ensure all elements are fully rendered
+        setTimeout(() => {
+          // Get all suggestion badges by class
+          const badges = document.querySelectorAll('.suggestion-badge-svg');
+          console.log(`Found ${badges.length} suggestion badges`);
+          
+          badges.forEach(badge => {
+            // Find the parent node element that contains this badge
+            const nodeElement = badge.closest('[data-n-id]');
+            if (!nodeElement) return;
+            
+            // Get the actual node ID from the parent element
+            const nodeId = nodeElement.getAttribute('data-n-id');
+            if (!nodeId) return;
+            
+            console.log("Found badge for node:", nodeId);
+            
+            // Remove previous event listeners by cloning the element
+            const newBadge = badge.cloneNode(true);
+            if (badge.parentNode) {
+              badge.parentNode.replaceChild(newBadge, badge);
+            }
+            
+            // Make the badge clickable
+            newBadge.style.cursor = 'pointer';
+            
+            // Add click event listener to the new badge
+            newBadge.addEventListener('click', (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log("Badge clicked, navigating to suggestion for ID:", nodeId);
+              
+              // Navigate directly to the suggestions page with the real ID
+              window.location.href = `/dashboard/suggestions/${nodeId}`;
+            });
+          });
+        }, 500); // 500ms delay to ensure rendering is complete
+      });
 
-      // family.filterUI.on("add-filter", (sender, args) => {
-      //     console.log("Filter added:", args)
-      //
-      //     let filterName = args.name; // 'gender', 'country', or 'status'
-      //     let filterValue = args.value; // selected value like 'male', 'us', etc.
-      //
-      //     family.nodes.forEach(node => {
-      //         let showNode = true;
-      //
-      //         // Only apply filtering if filterValue is not 'all'
-      //         if (filterValue !== 'all') {
-      //             if (filterName === 'gender' && node.gender !== filterValue) {
-      //                 showNode = false;
-      //             } else if (filterName === 'country' && node.country !== filterValue) {
-      //                 showNode = false;
-      //             } else if (filterName === 'status' && node.status !== filterValue) {
-      //                 showNode = false;
-      //             }
-      //         }
-      //
-      //         family.show(node.id, showNode);
-      //     });
-      // })
+      // Add event listener for node click instead of relying on template placeholders
+      family.on("click", function(sender, args) {
+        // If a family member is clicked directly (not a suggestion badge), normal behavior applies
+        if (!args.event.target.closest('[data-suggestion-badge="true"]')) {
+          return true; // Allow default behavior
+        }
+        
+        // If we're here, a suggestion badge was clicked
+        // Prevent the default node click behavior
+        args.preventDefault();
+        
+        // Get the actual node data from the args
+        const nodeId = args.node.id;
+        console.log("Suggestion badge clicked for node ID:", nodeId, "of type:", typeof nodeId);
+        
+        // Navigate to the suggestions page with the real ID (ensure it's a string)
+        const realNodeId = String(nodeId).replace(/{.*}/, '');
+        window.location.href = `/dashboard/suggestions/${realNodeId}`;
+        
+        // Prevent default behavior
+        return false;
+      });
 
       family.editUI.on("save", (sender, editedData) => {
         (async () => {
@@ -355,9 +444,11 @@ function Familytree(props: {
           let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
           let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
           
-          // console.log("Edit form raw data:", rawData);
-          // console.log("Country value:", rawData.country);
-          // console.log("Occupation value:", rawData.occupation);
+          console.log("Edit form raw data:", rawData);
+          console.log("Country value:", rawData.country);
+          console.log("Occupation value:", rawData.occupation);
+          console.log("Birth date:", birthDate);
+          console.log("Death date:", deathDate);
           
           const updatedData = {
             name: rawData.name,
@@ -372,13 +463,62 @@ function Familytree(props: {
             imageUrl: rawData.imageUrl
           }
           
+          console.log("Updating family member with ID:", resolvedId);
+          console.log("Update data:", updatedData);
 
           await updateFamilyMember(token, resolvedId, updatedData)
+          console.log("Family member updated successfully, fetching data...");
+          
+          // Explicitly trigger the check for similar family members
+          try {
+            console.log("Triggering check for similar family members...");
+            const response = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${resolvedId}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            
+            if (response.ok) {
+              console.log("Similar family members check completed successfully");
+            } else {
+              console.error("Failed to check for similar family members:", await response.text());
+            }
+          } catch (error) {
+            console.error("Error checking for similar family members:", error);
+          }
+          
           await props.fetchData()
+          console.log("Data fetched successfully, including new suggestion counts");
         } catch (error) {
           console.error("Error saving updated member:", error)
         }
       })()
+
+      // Keep the event listener as a fallback but modify it to stop propagation and prevent default
+      treeElement.addEventListener('click', (e) => {
+        const target = e.target as Element;
+        
+        // Check for badge elements
+        const badgeElement = target.closest('[data-suggestion-badge="true"]');
+        if (badgeElement) {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          const nodeId = badgeElement.getAttribute('data-node-id');
+          if (nodeId) {
+            console.log("Badge clicked via event listener, redirecting to:", nodeId);
+            try {
+              const idStr = String(nodeId); // Ensure ID is a string
+              window.location.href = `/dashboard/suggestions/${encodeURIComponent(idStr)}`;
+            } catch (error) {
+              console.error("Error redirecting to suggestions page:", error);
+            }
+            return;
+          }
+        }
+      }, true); // Use capture phase to get events before they bubble up
 
       return true
     })

@@ -152,6 +152,10 @@ export class FamilyService {
       }
 
       await session.commitTransaction();
+      
+      // Run cross-user similarity analysis after update
+      await this.familyMemberSimilarityService.analyzeSimilaritiesAcrossUsers(updatedFamilyMember.userId);
+      
       return updatedFamilyMember;
     } catch (error) {
       await session.abortTransaction();
@@ -169,6 +173,19 @@ export class FamilyService {
       throw new NotFoundException(`Family member with ID ${id} not found`);
     }
     return deletedFamilyMember;
+  }
+
+  /**
+   * Check for similar family members after member creation or update
+   * @param id ID of the family member to check
+   * @param userId ID of the user who owns the family member
+   */
+  async checkForSimilarFamilyMembers(id: string, userId: string): Promise<void> {
+    try {
+      await this.familyMemberSimilarityService.checkForSimilarFamilyMembers(id, userId);
+    } catch (error) {
+      console.error('Error checking for similar family members:', error);
+    }
   }
 
   async getFamilyTree(id: string): Promise<FamilyTreeNode> {
