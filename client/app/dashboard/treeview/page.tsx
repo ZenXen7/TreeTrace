@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
-import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers, getSurnameSimilaritiesCount } from "./service/familyService"
+import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers, getSurnameSimilaritiesCount, getMemberSuggestionCount } from "./service/familyService"
 import { Filter, Share2 } from "lucide-react"
 import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
@@ -65,8 +65,9 @@ function Familytree(props: {
       // Add surname similarity badge - moved to bottom left
       FamilyTree.templates.tommy.field_9 = `
         <g transform="translate(20, 110)">
-          <circle cx="0" cy="0" r="15" fill="#80cbc4" stroke="#4B5563" stroke-width="1"/>
+          <circle cx="0" cy="0" r="15" fill="#F97316" stroke="#4B5563" stroke-width="1"/>
           <text ${nameStyle} x="0" y="5" text-anchor="middle" fill="#F3F4F6" font-size="12px" font-weight="bold">{val}</text>
+          <title>Suggestions available</title>
         </g>
       `
 
@@ -593,6 +594,7 @@ export default function TreeViewPage() {
   const [stats, setStats] = useState({
     totalMembers: 0,
     generations: 0,
+    totalSuggestions: 0,
     oldestMember: null as any,
     youngestMember: null as any,
   })
@@ -649,6 +651,7 @@ export default function TreeViewPage() {
           setStats({
             totalMembers: 0,
             generations: 0,
+            totalSuggestions: 0,
             oldestMember: null,
             youngestMember: null,
           });
@@ -672,10 +675,12 @@ export default function TreeViewPage() {
           )
         );
 
-        // Fetch surname similarities for each member
+        // Fetch suggestion counts for each member
+        let totalSuggestionsCount = 0;
         const processedDataPromises = strictFiltered.map(async (member:any) => {
-          // Get similarity count for this member
-          const similarityCount = await getSurnameSimilaritiesCount(token, member._id);
+          // Get suggestion count for this member
+          const suggestionCount = await getMemberSuggestionCount(token, member._id);
+          totalSuggestionsCount += suggestionCount; // Add to total count
           
           // Format dates properly for display and edit form
           const formattedBirthDate = member.birthDate
@@ -710,11 +715,11 @@ export default function TreeViewPage() {
             occupation: member.occupation || '',
             tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
             imageUrl,
-            similarityCount: similarityCount > 0 ? similarityCount.toString() : '', // Add similarity count
+            suggestionCount: suggestionCount > 0 ? suggestionCount.toString() : '', // Display suggestion count
           };
         });
         
-        // Wait for all the similarity counts to be fetched
+        // Wait for all the suggestion counts to be fetched
         const processedData = await Promise.all(processedDataPromises);
 
         setData(processedData);
@@ -743,6 +748,7 @@ export default function TreeViewPage() {
           setStats({
             totalMembers: processedData.length,
             generations: maxGeneration,
+            totalSuggestions: totalSuggestionsCount,
             oldestMember: processedData.reduce((oldest, current) => {
               if (
                 !oldest ||
@@ -822,7 +828,7 @@ export default function TreeViewPage() {
     field_6: "country",
     field_7: "occupation",
     field_8: "tags",
-    field_9: "similarityCount", // Add similarity count binding
+    field_9: "suggestionCount", // Add suggestion count binding
   }
 
   const handleShareTree = async () => {
@@ -927,14 +933,17 @@ export default function TreeViewPage() {
             </div>
             <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
               <h3 className="text-sm font-medium text-gray-400 mb-2">
-                Youngest Member
+                Suggestions
               </h3>
-              <p className="text-xl font-semibold text-white truncate">
-                {stats.youngestMember?.name || "N/A"}
-              </p>
-              <p className="text-sm text-gray-500">
-                {stats.youngestMember?.birthDate || "Unknown"}
-              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs text-white font-bold">?</div>
+                  <p className="text-sm text-gray-300">
+                    Orange badges show how many suggestions are available for a member
+                  </p>
+                </div>
+                <span className="text-2xl font-semibold text-orange-400">{stats.totalSuggestions}</span>
+              </div>
             </div>
           </motion.div>
         )}
