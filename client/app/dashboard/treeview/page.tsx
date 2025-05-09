@@ -237,95 +237,193 @@ function Familytree(props: {
         },
       });
 
-      // Define a function to ensure badges are properly attached and clickable
-      const updateSuggestionBadges = () => {
-        console.log("Updating suggestion badges");
-        setTimeout(() => {
-          try {
-            // Find all badge elements
-            const badges = document.querySelectorAll('.suggestion-badge-svg, .custom-suggestion-badge');
-            console.log(`Found ${badges.length} suggestion badges to update`);
-            
-            badges.forEach(badge => {
-              // Find parent node element
-              const nodeElement = badge.closest('[data-n-id]');
-              if (!nodeElement) {
-                console.warn("Badge found without parent node element");
-                return;
-              }
-              
-              // Get node ID
-              const nodeId = nodeElement.getAttribute('data-n-id');
-              if (!nodeId) {
-                console.warn("Node element without node ID");
-                return;
-              }
-              
-              // Clone badge to remove old event listeners
-              const newBadge = badge.cloneNode(true);
-              if (badge.parentNode) {
-                badge.parentNode.replaceChild(newBadge, badge);
-              }
-              
-              // Add direct click handler that forces page navigation
-              newBadge.addEventListener('click', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                
-                console.log(`Badge clicked for node ID: ${nodeId}, navigating`);
-                
-                // Force direct navigation
-                window.location.href = `/dashboard/suggestions/${nodeId}`;
-                
-                // Return false to prevent event bubbling
-                return false;
-              });
-              
-              console.log(`Re-attached click handler to badge for node ${nodeId}`);
-            });
-          } catch (error) {
-            console.error("Error updating suggestion badges:", error);
-          }
-        }, 500); // Wait for DOM to fully update
-      };
-
       // Add event listener for tree initialization
       family.on("init", function() {
         console.log("Tree initialized");
-        updateSuggestionBadges();
       });
       
-      // Add event listeners for various tree update events - only use supported events
-      family.on("redraw", updateSuggestionBadges);
-      family.on("render", updateSuggestionBadges);
-      family.on("update", updateSuggestionBadges);
-      
-      // Add a global click handler to catch badge clicks regardless of when they're added
-      document.addEventListener('click', (e) => {
-        const target = e.target as Element;
-        const badgeElement = target.closest('[data-suggestion-badge="true"]') || 
-                            target.closest('.suggestion-badge-svg') ||
-                            target.closest('.custom-suggestion-badge');
+      // Enhance the redraw event handler to ensure proper IDs are used
+      family.on("redraw", function(sender: any) {
+        console.log("Tree redrawn, checking for nodes with suggestions");
         
-        if (badgeElement) {
-          e.stopPropagation();
-          e.preventDefault();
+        try {
+          // Get all nodes without parameters as per Balkan's API
+          const nodes = (family as any).get();
           
-          // Get parent node to find the ID
-          const nodeElement = badgeElement.closest('[data-n-id]');
-          if (!nodeElement) return;
-          
-          const nodeId = nodeElement.getAttribute('data-n-id');
-          if (nodeId) {
-            console.log("Badge clicked via global document listener, redirecting to:", nodeId);
-            window.location.href = `/dashboard/suggestions/${nodeId}`;
-            return false;
+          if (!nodes || !Array.isArray(nodes)) {
+            console.warn("No nodes found or invalid nodes data");
+            return;
           }
+          
+          // Get all nodes that have suggestions
+          const nodesWithSuggestions = nodes.filter((node: any) => 
+            node.hasSimilarityMatch === true || 
+            (node.tags && node.tags.includes("suggestion")) ||
+            (node.suggestionCount && node.suggestionCount !== '')
+          );
+          
+          console.log(`Found ${nodesWithSuggestions.length} nodes with suggestions`);
+          
+          // Process each node with suggestions to add our custom badge
+          setTimeout(() => {
+            nodesWithSuggestions.forEach((node: any) => {
+              try {
+                // Find the node's DOM element
+                const nodeElement = document.querySelector(`[data-n-id="${node.id}"]`);
+                if (!nodeElement) {
+                  console.warn(`DOM element for node ${node.id} not found`);
+                  return;
+                }
+                
+                // Check if we already added a suggestion badge to this node
+                const existingBadge = nodeElement.querySelector('.custom-suggestion-badge');
+                if (existingBadge) {
+                  console.log(`Badge already exists for node ${node.id}`);
+                  return;
+                }
+                
+                // Make sure we have a valid ID - not a template string
+                const nodeId = String(node.id);
+                console.log(`Creating badge for node ${nodeId} (type: ${typeof nodeId})`);
+                
+                // Create a larger, more prominent badge as a link
+                const badgeLink = document.createElement('a');
+                badgeLink.className = 'custom-suggestion-badge';
+                badgeLink.href = `/dashboard/suggestions/${nodeId}`;
+                
+                // Make the badge more prominent
+                badgeLink.style.cssText = `
+                  position: absolute;
+                  top: -12px;
+                  left: -12px;
+                  width: 36px;
+                  height: 36px;
+                  background-color: #F97316;
+                  border-radius: 50%;
+                  border: 3px solid white;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-size: 18px;
+                  font-weight: bold;
+                  cursor: pointer;
+                  z-index: 9999;
+                  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                  text-decoration: none;
+                  animation: pulse-badge 1.5s infinite;
+                `;
+                
+                // Add a pulsing effect with CSS animation
+                const style = document.createElement('style');
+                style.textContent = `
+                  @keyframes pulse-badge {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                    100% { transform: scale(1); }
+                  }
+                `;
+                document.head.appendChild(style);
+                
+                // Show the suggestion count
+                if (node.suggestionCount && node.suggestionCount !== '') {
+                  badgeLink.textContent = node.suggestionCount;
+                } else if (node.hasSimilarityMatch || (node.tags && node.tags.includes("suggestion"))) {
+ 
+                  badgeLink.textContent = '0';
+                } else {
+                  // Failsafe - should never happen but just in case
+                  badgeLink.textContent = '1';
+                }
+                
+                // Add a click event just to ensure it works even if href doesn't
+                badgeLink.addEventListener('click', (e) => {
+                  // Redundant but ensures it works
+                  window.location.href = `/dashboard/suggestions/${nodeId}`;
+                });
+                
+                // Add badge to the node element
+                (nodeElement as HTMLElement).style.position = 'relative';
+                nodeElement.appendChild(badgeLink);
+                
+                console.log(`Added suggestion badge link for node ${nodeId}, redirecting to: ${badgeLink.href}`);
+              } catch (error) {
+                console.error(`Error adding badge to node ${node.id}:`, error);
+              }
+            });
+          }, 200);
+        } catch (error) {
+          console.error("Error processing suggestions badges:", error);
         }
-      }, true); // Use capture phase to catch events early
+      });
 
-      // Add event listeners for form edit saving with additional badge updating
-      family.editUI.on("save", (sender: any, editedData: any) => {
+      // Add event listener for tree render completion
+      family.on("render", function() {
+        console.log("Tree rendered, attaching badge click handlers");
+        
+        // Use setTimeout to ensure all elements are fully rendered
+        setTimeout(() => {
+          // Get all suggestion badges by class
+          const badges = document.querySelectorAll('.suggestion-badge-svg');
+          console.log(`Found ${badges.length} suggestion badges`);
+          
+          badges.forEach(badge => {
+            // Find the parent node element that contains this badge
+            const nodeElement = badge.closest('[data-n-id]');
+            if (!nodeElement) return;
+            
+            // Get the actual node ID from the parent element
+            const nodeId = nodeElement.getAttribute('data-n-id');
+            if (!nodeId) return;
+            
+            console.log("Found badge for node:", nodeId);
+            
+            // Remove previous event listeners by cloning the element
+            const newBadge = badge.cloneNode(true);
+            if (badge.parentNode) {
+              badge.parentNode.replaceChild(newBadge, badge);
+            }
+            
+            // Make the badge clickable
+            newBadge.style.cursor = 'pointer';
+            
+            // Add click event listener to the new badge
+            newBadge.addEventListener('click', (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log("Badge clicked, navigating to suggestion for ID:", nodeId);
+              
+              // Navigate directly to the suggestions page with the real ID
+              window.location.href = `/dashboard/suggestions/${nodeId}`;
+            });
+          });
+        }, 500); // 500ms delay to ensure rendering is complete
+      });
+
+      // Add event listener for node click instead of relying on template placeholders
+      family.on("click", function(sender, args) {
+        // If a family member is clicked directly (not a suggestion badge), normal behavior applies
+        if (!args.event.target.closest('[data-suggestion-badge="true"]')) {
+          return true; // Allow default behavior
+        }
+        
+        // If we're here, a suggestion badge was clicked
+        // Prevent the default node click behavior
+        args.preventDefault();
+        
+        // Get the actual node data from the args
+        const nodeId = args.node.id;
+        console.log("Suggestion badge clicked for node ID:", nodeId, "of type:", typeof nodeId);
+        
+        // Navigate to the suggestions page with the real ID (ensure it's a string)
+        const realNodeId = String(nodeId).replace(/{.*}/, '');
+        window.location.href = `/dashboard/suggestions/${realNodeId}`;
+        
+        // Prevent default behavior
+        return false;
+      });
+
+      family.editUI.on("save", (sender, editedData) => {
         (async () => {
           try {
             const token = localStorage.getItem("token");
@@ -342,112 +440,89 @@ function Familytree(props: {
               throw new Error("No valid ID found in edited data");
             }
 
-            let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null;
-            let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null;
-            
-            console.log("Edit form raw data:", rawData);
-            console.log("Country value:", rawData.country);
-            console.log("Occupation value:", rawData.occupation);
-            console.log("Birth date:", birthDate);
-            console.log("Death date:", deathDate);
-            
-            const updatedData = {
-              name: rawData.name,
-              surname: rawData.surname,
-              gender: rawData.gender,
-              status: rawData.status,
-              birthDate: birthDate,
-              deathDate: deathDate,
-              country: rawData.country,
-              occupation: rawData.occupation,
-              tags: rawData.tags,
-              imageUrl: rawData.imageUrl
-            };
-            
-            console.log("Updating family member with ID:", resolvedId);
-            console.log("Update data:", updatedData);
-
-            await updateFamilyMember(token, resolvedId, updatedData);
-            console.log("Family member updated successfully, fetching data...");
-            
-            // Explicitly trigger the check for similar family members
-            try {
-              console.log("Triggering check for similar family members...");
-              const response = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${resolvedId}`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-              });
-              
-              if (response.ok) {
-                console.log("Similar family members check completed successfully");
-              } else {
-                console.error("Failed to check for similar family members:", await response.text());
-              }
-            } catch (error) {
-              console.error("Error checking for similar family members:", error);
-            }
-            
-            await props.fetchData();
-            console.log("Data fetched successfully, including new suggestion counts");
-
-            // Force a complete tree redraw
-            setTimeout(() => {
-              console.log("Forcing redraw to update suggestion badges");
-              family.draw();
-              
-              // Explicitly call our badge update function after redraw
-              updateSuggestionBadges();
-            }, 300);
-            
-          } catch (error) {
-            console.error("Error saving updated member:", error);
-          }
-        })();
-      });
-
-      // Add event listener for click on nodes to ensure navigation works
-      family.on("click", function(sender: any, args: any) {
-        // Check if a badge was clicked
-        if (args.event) {
-          const target = args.event.target;
-          const badgeElement = target.closest('[data-suggestion-badge="true"]') || 
-                              target.closest('.suggestion-badge-svg') ||
-                              target.closest('.custom-suggestion-badge');
+    
+          let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
+          let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
           
-          if (badgeElement) {
-            args.preventDefault();
+          console.log("Edit form raw data:", rawData);
+          console.log("Country value:", rawData.country);
+          console.log("Occupation value:", rawData.occupation);
+          console.log("Birth date:", birthDate);
+          console.log("Death date:", deathDate);
+          
+          const updatedData = {
+            name: rawData.name,
+            surname: rawData.surname,
+            gender: rawData.gender,
+            status: rawData.status,
+            birthDate: birthDate,
+            deathDate: deathDate,
+            country: rawData.country,
+            occupation: rawData.occupation,
+            tags: rawData.tags,
+            imageUrl: rawData.imageUrl
+          }
+          
+          console.log("Updating family member with ID:", resolvedId);
+          console.log("Update data:", updatedData);
+
+          await updateFamilyMember(token, resolvedId, updatedData)
+          console.log("Family member updated successfully, fetching data...");
+          
+          // Explicitly trigger the check for similar family members
+          try {
+            console.log("Triggering check for similar family members...");
+            const response = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${resolvedId}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
             
-            // Get the actual node ID
-            const nodeId = args.node.id;
-            console.log("Badge clicked via tree click event, node ID:", nodeId);
-            
-            window.location.href = `/dashboard/suggestions/${nodeId}`;
-            return false;
+            if (response.ok) {
+              console.log("Similar family members check completed successfully");
+            } else {
+              console.error("Failed to check for similar family members:", await response.text());
+            }
+          } catch (error) {
+            console.error("Error checking for similar family members:", error);
+          }
+          
+          await props.fetchData()
+          console.log("Data fetched successfully, including new suggestion counts");
+        } catch (error) {
+          console.error("Error saving updated member:", error)
+        }
+      })()
+
+      // Keep the event listener as a fallback but modify it to stop propagation and prevent default
+      treeElement.addEventListener('click', (e) => {
+        const target = e.target as Element;
+        
+        // Check for badge elements
+        const badgeElement = target.closest('[data-suggestion-badge="true"]');
+        if (badgeElement) {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          const nodeId = badgeElement.getAttribute('data-node-id');
+          if (nodeId) {
+            console.log("Badge clicked via event listener, redirecting to:", nodeId);
+            try {
+              const idStr = String(nodeId); // Ensure ID is a string
+              window.location.href = `/dashboard/suggestions/${encodeURIComponent(idStr)}`;
+            } catch (error) {
+              console.error("Error redirecting to suggestions page:", error);
+            }
+            return;
           }
         }
-        
-        return true;
-      });
+      }, true); // Use capture phase to get events before they bubble up
 
-      // Add cleanup function at the end of useEffect
-      return function cleanup() {
-        // Cleanup event listeners when component unmounts
-        document.removeEventListener('click', (e) => {
-          const target = e.target as Element;
-          const badgeElement = target.closest('[data-suggestion-badge="true"]') || 
-                              target.closest('.suggestion-badge-svg') ||
-                              target.closest('.custom-suggestion-badge');
-          if (badgeElement) {
-            e.stopPropagation();
-            e.preventDefault();
-          }
-        }, true);
-      };
-
-      const nodeBinding = props.nodeBinding;
+      return true
+    })
+    const nodeBinding = props.nodeBinding
 
       const canDeleteMember = (node: any) => {
         const hasPartner = node.pids && node.pids.length > 0;
@@ -471,17 +546,32 @@ function Familytree(props: {
         return false;
       };
 
-      family.nodeCircleMenuUI.on("show", (sender: any, args: any) => {
-        var node = family.getNode(args.nodeId);
-        delete args.menu.father;
-        delete args.menu.mother;
-        delete args.menu.wife;
-        delete args.menu.husband;
+
+
+    // Update the node binding to include the new fields
+    // nodeBinding = {
+    //   field_0: "name",
+    //   field_1: "gender",
+    //   field_2: "status",
+    //   field_3: "birthDate",
+    //   field_4: "deathDate",
+    //   field_5: "country",
+    //   field_6: "occupation",
+    //   field_7: "tags",
+    //   // img_0: "imageUrl"
+    // }
+
+    family.nodeCircleMenuUI.on("show", (sender, args) => {
+      var node = family.getNode(args.nodeId)
+      delete args.menu.father
+      delete args.menu.mother
+      delete args.menu.wife
+      delete args.menu.husband
 
         // Add parent options
         if (FamilyTree.isNEU(node.mid)) {
           args.menu.mother = {
-            icon: (FamilyTree.icon as any).mother(24, 24, "#ec4899"),
+            icon: FamilyTree.icon.mother(24, 24, "#ec4899"),
             text: "Add mother",
             color: "#1F2937",
           };
@@ -489,36 +579,36 @@ function Familytree(props: {
 
         if (FamilyTree.isNEU(node.fid)) {
           args.menu.father = {
-            icon: (FamilyTree.icon as any).father(24, 24, "#3b82f6"),
+            icon: FamilyTree.icon.father(24, 24, "#3b82f6"),
             text: "Add father",
             color: "#1F2937",
           };
         }
 
         // Check if node has a partner
-        const hasPartner = (node as any).pids && (node as any).pids.length > 0;
-        const partner = hasPartner ? family.getNode((node as any).pids[0]) : null;
+        const hasPartner = node.pids && node.pids.length > 0;
+        const partner = hasPartner ? family.getNode(node.pids[0]) : null;
 
         // Add children options
         if (hasPartner) {
           args.menu.addSon = {
-            icon: (FamilyTree.icon as any).son(24, 24, "#3b82f6"),
+            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
             text: `Add Son with partner`,
             color: "#1F2937",
           };
           args.menu.addDaughter = {
-            icon: (FamilyTree.icon as any).daughter(24, 24, "#ec4899"),
+            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
             text: `Add Daughter with partner`,
             color: "#1F2937",
           };
         } else {
           args.menu.addSon = {
-            icon: (FamilyTree.icon as any).son(24, 24, "#3b82f6"),
+            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
             text: "Add Son",
             color: "#1F2937",
           };
           args.menu.addDaughter = {
-            icon: (FamilyTree.icon as any).daughter(24, 24, "#ec4899"),
+            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
             text: "Add Daughter",
             color: "#1F2937",
           };
@@ -526,26 +616,26 @@ function Familytree(props: {
 
         // Add partner option if no partner exists
         if (!hasPartner) {
-          if ((node as any).gender === "male") {
+          if (node.gender === "male") {
             args.menu.wife = {
-              icon: (FamilyTree.icon as any).wife(24, 24, "#ec4899"),
+              icon: FamilyTree.icon.wife(24, 24, "#ec4899"),
               text: "Add wife",
               color: "#1F2937",
             };
-          } else if ((node as any).gender === "female") {
+          } else if (node.gender === "female") {
             args.menu.husband = {
-              icon: (FamilyTree.icon as any).husband(24, 24, "#3b82f6"),
+              icon: FamilyTree.icon.husband(24, 24, "#3b82f6"),
               text: "Add husband",
               color: "#1F2937",
             };
           }
         }
-      });
-      
-      family.nodeCircleMenuUI.on("click", (sender: any, args: any) => {
-        const node = family.getNode(args.nodeId);
-        const token = localStorage.getItem("token");
-        if (!token) return;
+    });
+    
+    family.nodeCircleMenuUI.on("click", async (sender, args) => {
+      const node = family.getNode(args.nodeId)
+      const token = localStorage.getItem("token")
+      if (!token) return
 
         try {
           switch (args.menuItemName) {
@@ -563,61 +653,56 @@ function Familytree(props: {
                 return;
               }
 
-              deleteFamilyMember(token, String(node.id))
-                .then(() => props.fetchData())
-                .catch(error => console.error("Error deleting member:", error));
-              break;
+            await deleteFamilyMember(token, node.id)
+            await props.fetchData()
+            break
+          }
+          case "addSon":
+          case "addDaughter": {
+            const gender = args.menuItemName === "addSon" ? "male" : "female"
+            const newMemberData = {
+              name: "Unknown",
+              surname: "Unknown",
+              gender: gender,
             }
-            case "addSon":
-            case "addDaughter": {
-              const gender = args.menuItemName === "addSon" ? "male" : "female";
-              const newMemberData = {
-                name: "Unknown",
-                surname: "Unknown",
-                gender: gender,
-              } as any;
 
-              if ((node as any).gender === "male") {
+              if (node.gender === "male") {
                 newMemberData.fatherId = node.id;
-                if ((node as any).pids && (node as any).pids[0]) {
-                  newMemberData.motherId = (node as any).pids[0];
+                if (node.pids && node.pids[0]) {
+                  newMemberData.motherId = node.pids[0];
                 }
               } else {
                 newMemberData.motherId = node.id;
-                if ((node as any).pids && (node as any).pids[0]) {
-                  newMemberData.fatherId = (node as any).pids[0];
+                if (node.pids && node.pids[0]) {
+                  newMemberData.fatherId = node.pids[0];
                 }
               }
 
-              handleAddMember(
+              await handleAddMember(
                 token,
                 node,
                 gender === "male" ? "son" : "daughter",
                 props.fetchData,
                 newMemberData
-              ).catch(error => console.error("Error adding member:", error));
+              );
               break;
             }
             case "father":
-              handleAddMember(token, node, "father", props.fetchData)
-                .catch(error => console.error("Error adding father:", error));
+              await handleAddMember(token, node, "father", props.fetchData);
               break;
             case "mother":
-              handleAddMember(token, node, "mother", props.fetchData)
-                .catch(error => console.error("Error adding mother:", error));
+              await handleAddMember(token, node, "mother", props.fetchData);
               break;
             case "wife":
-              handleAddMember(token, node, "wife", props.fetchData)
-                .catch(error => console.error("Error adding wife:", error));
+              await handleAddMember(token, node, "wife", props.fetchData);
               break;
             case "husband":
-              handleAddMember(token, node, "husband", props.fetchData)
-                .catch(error => console.error("Error adding husband:", error));
+              await handleAddMember(token, node, "husband", props.fetchData);
               break;
             case "PDFProfile":
               family.exportPDFProfile({
                 id: args.nodeId,
-              } as any);
+              });
               break;
             case "editNode":
               family.editUI.show(args.nodeId);
@@ -628,7 +713,6 @@ function Familytree(props: {
           console.error("Error handling member addition:", error);
         }
       });
-      
     }
   }, [props.nodeBinding, props.nodes, props.fetchData]);
 
@@ -884,7 +968,7 @@ export default function TreeViewPage() {
     field_6: "country",
     field_7: "occupation",
     field_8: "tags",
-    field_9: "suggestionCount", // This ensures the suggestion count is displayed in the badge
+    field_9: "suggestionCount", // Add suggestion count binding
   }
 
   const handleShareTree = async () => {
