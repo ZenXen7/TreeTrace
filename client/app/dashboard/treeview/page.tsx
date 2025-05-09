@@ -403,8 +403,17 @@ function Familytree(props: {
       // Add event listener for node click instead of relying on template placeholders
       family.on("click", function(sender, args) {
         // If a family member is clicked directly (not a suggestion badge), normal behavior applies
-        if (!args.event.target.closest('[data-suggestion-badge="true"]')) {
-          return true; // Allow default behavior
+        if (!args.event || !args.event.target) {
+          return true; // Allow default behavior if no event target
+        }
+        
+        // Check if a badge was clicked
+        const badgeElement = args.event.target.closest('[data-suggestion-badge="true"]') || 
+                            args.event.target.closest('.suggestion-badge-svg') ||
+                            args.event.target.closest('.custom-suggestion-badge');
+        
+        if (!badgeElement) {
+          return true; // Allow default behavior for non-badge clicks
         }
         
         // If we're here, a suggestion badge was clicked
@@ -413,7 +422,7 @@ function Familytree(props: {
         
         // Get the actual node data from the args
         const nodeId = args.node.id;
-        console.log("Suggestion badge clicked for node ID:", nodeId, "of type:", typeof nodeId);
+        console.log("Suggestion badge clicked via FamilyTree click event for node ID:", nodeId);
         
         // Navigate to the suggestions page with the real ID (ensure it's a string)
         const realNodeId = String(nodeId).replace(/{.*}/, '');
@@ -491,6 +500,62 @@ function Familytree(props: {
           
           await props.fetchData()
           console.log("Data fetched successfully, including new suggestion counts");
+
+          // Force a complete tree redraw and ensure badges are properly attached
+          setTimeout(() => {
+            console.log("Forcing redraw to update suggestion badges");
+            family.draw();
+            
+            // Wait for the redraw to complete, then attach badge event handlers
+            setTimeout(() => {
+              // First, handle SVG badges
+              const svgBadges = document.querySelectorAll('.suggestion-badge-svg');
+              svgBadges.forEach(badge => {
+                const nodeElement = badge.closest('[data-n-id]');
+                if (!nodeElement) return;
+                
+                const nodeId = nodeElement.getAttribute('data-n-id');
+                if (!nodeId) return;
+                
+                // Clone and replace to remove old listeners
+                const newBadge = badge.cloneNode(true);
+                if (badge.parentNode) {
+                  badge.parentNode.replaceChild(newBadge, badge);
+                }
+                
+                // Add fresh click handler
+                (newBadge as any).style.cursor = 'pointer';
+                newBadge.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log(`SVG Badge clicked for node ${nodeId}, redirecting`);
+                  window.location.href = `/dashboard/suggestions/${nodeId}`;
+                  return false;
+                });
+              });
+              
+              // Second, handle custom badges
+              const customBadges = document.querySelectorAll('.custom-suggestion-badge');
+              customBadges.forEach(badge => {
+                // Update href attribute to ensure it has the correct ID
+                const nodeElement = badge.closest('[data-n-id]');
+                if (!nodeElement) return;
+                
+                const nodeId = nodeElement.getAttribute('data-n-id');
+                if (!nodeId) return;
+                
+                (badge as HTMLAnchorElement).href = `/dashboard/suggestions/${nodeId}`;
+                
+                // Ensure click handler is working
+                badge.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log(`Custom badge clicked for node ${nodeId}, redirecting`);
+                  window.location.href = `/dashboard/suggestions/${nodeId}`;
+                });
+              });
+            }, 500);
+          }, 300);
         } catch (error) {
           console.error("Error saving updated member:", error)
         }
@@ -516,6 +581,17 @@ function Familytree(props: {
               console.error("Error redirecting to suggestions page:", error);
             }
             return;
+          }
+          
+          // If the badge doesn't have a data-node-id attribute, look for the parent node
+          const nodeElement = badgeElement.closest('[data-n-id]');
+          if (nodeElement) {
+            const nodeId = nodeElement.getAttribute('data-n-id');
+            if (nodeId) {
+              console.log("Badge clicked via parent lookup, redirecting to:", nodeId);
+              window.location.href = `/dashboard/suggestions/${nodeId}`;
+              return;
+            }
           }
         }
       }, true); // Use capture phase to get events before they bubble up
@@ -685,6 +761,44 @@ function Familytree(props: {
                 props.fetchData,
                 newMemberData
               );
+              
+              // After adding a member, force tree redraw and reattach badge handlers
+              setTimeout(() => {
+                family.draw();
+                setTimeout(() => {
+                  // Handle SVG badges
+                  document.querySelectorAll('.suggestion-badge-svg').forEach(badge => {
+                    const nodeElement = badge.closest('[data-n-id]');
+                    if (!nodeElement) return;
+                    
+                    const nodeId = nodeElement.getAttribute('data-n-id');
+                    if (!nodeId) return;
+                    
+                    badge.addEventListener('click', (e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      window.location.href = `/dashboard/suggestions/${nodeId}`;
+                    });
+                  });
+                  
+                  // Handle custom badges
+                  document.querySelectorAll('.custom-suggestion-badge').forEach(badge => {
+                    const nodeElement = badge.closest('[data-n-id]');
+                    if (!nodeElement) return;
+                    
+                    const nodeId = nodeElement.getAttribute('data-n-id');
+                    if (!nodeId) return;
+                    
+                    (badge as HTMLAnchorElement).href = `/dashboard/suggestions/${nodeId}`;
+                    badge.addEventListener('click', (e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      window.location.href = `/dashboard/suggestions/${nodeId}`;
+                    });
+                  });
+                }, 500);
+              }, 300);
+              
               break;
             }
             case "father":

@@ -98,24 +98,38 @@ export class FamilyMemberSimilarityService {
     let totalSimilarity = 0;
     let fieldCount = 0;
     
-    // Compare surname
+    // Get basic name components
     const surname1 = this.getSurname(member1);
     const surname2 = this.getSurname(member2);
+    const firstName1 = member1.name ? member1.name.split(' ')[0] : '';
+    const firstName2 = member2.name ? member2.name.split(' ')[0] : '';
+    
+    console.log(`Comparing members: "${member1.name}" (${firstName1} ${surname1}) vs "${member2.name}" (${firstName2} ${surname2})`);
+    
+    // Check if they have the same last name
+    const hasSameSurname = surname1 && surname2 && surname1.toLowerCase() === surname2.toLowerCase();
+    
+    // Check if they have the same first name
+    const hasSameFirstName = firstName1 && firstName2 && firstName1.toLowerCase() === firstName2.toLowerCase();
+    
+    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
+    
+    // Compare surname
     const surnameSimilarity = this.calculateStringSimilarity(surname1, surname2);
     if (surnameSimilarity > 0.7) {
       similarFields.push('surname');
       totalSimilarity += surnameSimilarity;
       fieldCount++;
+      console.log(`Surname similarity: ${surnameSimilarity.toFixed(2)}`);
     }
     
     // Compare first name (extracted from full name)
-    const firstName1 = member1.name ? member1.name.split(' ')[0] : '';
-    const firstName2 = member2.name ? member2.name.split(' ')[0] : '';
     const firstNameSimilarity = this.calculateStringSimilarity(firstName1, firstName2);
     if (firstNameSimilarity > 0.7) {
       similarFields.push('firstName');
       totalSimilarity += firstNameSimilarity;
       fieldCount++;
+      console.log(`First name similarity: ${firstNameSimilarity.toFixed(2)}`);
     }
     
     // Compare full name
@@ -124,6 +138,7 @@ export class FamilyMemberSimilarityService {
       similarFields.push('fullName');
       totalSimilarity += fullNameSimilarity;
       fieldCount++;
+      console.log(`Full name similarity: ${fullNameSimilarity.toFixed(2)}`);
     }
     
     // Compare status (alive, dead, unknown)
@@ -173,6 +188,8 @@ export class FamilyMemberSimilarityService {
     
     // Calculate average similarity score
     const overallSimilarity = fieldCount > 0 ? totalSimilarity / fieldCount : 0;
+    
+    console.log(`Overall similarity: ${overallSimilarity.toFixed(2)}, Similar fields: ${similarFields.join(', ')}`);
     
     return {
       similarity: overallSimilarity,
@@ -935,66 +952,80 @@ export class FamilyMemberSimilarityService {
     suggestionsForMember2: string[];
     suggestionCount: number;
   } {
+    console.log(`Generating suggestions for "${member1.name}" vs "${member2.name}"`);
+    console.log(`Similar fields: ${similarFields.join(', ')}`);
+    
     const suggestionsForMember1: string[] = [];
     const suggestionsForMember2: string[] = [];
     
-    // Check for name similarity but status difference
-    const hasSimilarNames = similarFields.includes('firstName') || 
-                           similarFields.includes('surname') || 
-                           similarFields.includes('fullName') || 
-                           (member1.name && member2.name && member1.name === member2.name);
+    // Get surnames for comparison
+    const surname1 = this.getSurname(member1);
+    const surname2 = this.getSurname(member2);
     
-    // For identical names that might not be caught by the similarity algorithm
-    if (!hasSimilarNames && member1.name && member2.name) {
-      // If names are exactly the same, force similarity detection
-      if (member1.name.toLowerCase() === member2.name.toLowerCase()) {
-        const hasSimilarStatus = member1.status && member2.status && 
-                               (member1.status === member2.status || 
-                               (member1.status !== 'unknown' && member2.status !== 'unknown'));
-        
-        if (hasSimilarStatus) {
-          // These are definitely the same person, so generate suggestions
-          if (member1.status !== member2.status) {
-            // Status difference
-            if (member1.status === 'alive' && member2.status === 'dead') {
-              suggestionsForMember1.push(
-                `This family member may be deceased. Another user has recorded "${member2.name}" as deceased.`
-              );
-              suggestionsForMember2.push(
-                `You have recorded this family member as deceased, but another user has recorded "${member1.name}" as alive.`
-              );
-            } else if (member1.status === 'dead' && member2.status === 'alive') {
-              suggestionsForMember2.push(
-                `This family member may be deceased. Another user has recorded "${member1.name}" as deceased.`
-              );
-              suggestionsForMember1.push(
-                `You have recorded this family member as deceased, but another user has recorded "${member2.name}" as alive.`
-              );
-            }
-          } else {
-            // Even if statuses match, suggest confirming info
-            if (member1.status === 'dead') {
-              suggestionsForMember1.push(
-                `Confirm deceased status for "${member1.name}". Another user has also recorded this person as deceased.`
-              );
-              suggestionsForMember2.push(
-                `Confirm deceased status for "${member2.name}". Another user has also recorded this person as deceased.`
-              );
-            }
-          }
-          
-          // Return early since we've handled this special case
-          return {
-            suggestionsForMember1,
-            suggestionsForMember2,
-            suggestionCount: suggestionsForMember1.length + suggestionsForMember2.length
-          };
-        }
+    // Get first names for comparison
+    const firstName1 = member1.name ? member1.name.split(' ')[0] : '';
+    const firstName2 = member2.name ? member2.name.split(' ')[0] : '';
+    
+    // Check if they have the same name components
+    const hasSameFirstName = firstName1 && firstName2 && firstName1.toLowerCase() === firstName2.toLowerCase();
+    const hasSameSurname = surname1 && surname2 && surname1.toLowerCase() === surname2.toLowerCase();
+    
+    // Check for high similarity in name components
+    const hasSimilarFirstName = similarFields.includes('firstName');
+    const hasSimilarSurname = similarFields.includes('surname');
+    const hasSimilarFullName = similarFields.includes('fullName');
+    
+    // We can generate suggestions in various cases:
+    // 1. Exact match on both first name and surname (strict equality)
+    // 2. Exact match on full name (which might not be caught by the components)
+    // 3. High similarity on name components with at least 3 similar fields total
+    
+    // First, check for exact name matches
+    const hasExactNameMatch = hasSameFirstName && hasSameSurname; 
+    
+    // Then check for full name equality (as a fallback)
+    const hasFullNameEquality = member1.name && member2.name && 
+                               member1.name.toLowerCase() === member2.name.toLowerCase();
+    
+    // Finally, check for high similarity in multiple fields
+    const hasHighSimilarity = similarFields.length >= 3 && 
+                             (hasSimilarFirstName || hasSimilarSurname || hasSimilarFullName);
+    
+    // We will generate suggestions if any of the conditions are met
+    const shouldGenerateSuggestions = hasExactNameMatch || hasFullNameEquality || hasHighSimilarity;
+    
+    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
+    console.log(`Full name equality: ${hasFullNameEquality}, High similarity: ${hasHighSimilarity}`);
+    console.log(`Should generate suggestions: ${shouldGenerateSuggestions}`);
+    
+    // Skip name suggestions when we have exact matches
+    if (shouldGenerateSuggestions && !(hasExactNameMatch || hasFullNameEquality)) {
+      // First name difference suggestion
+      if (hasSimilarFirstName && !hasSameFirstName) {
+        console.log(`First name difference found: ${firstName1} vs ${firstName2}`);
+        suggestionsForMember1.push(
+          `Consider checking the first name "${firstName1}" vs "${firstName2}" for potential correction.`
+        );
+        suggestionsForMember2.push(
+          `Consider checking the first name "${firstName2}" vs "${firstName1}" for potential correction.`
+        );
+      }
+      
+      // Surname difference suggestion
+      if (hasSimilarSurname && !hasSameSurname) {
+        console.log(`Surname difference found: ${surname1} vs ${surname2}`);
+        suggestionsForMember1.push(
+          `Consider checking the surname "${surname1}" vs "${surname2}" for potential correction.`
+        );
+        suggestionsForMember2.push(
+          `Consider checking the surname "${surname2}" vs "${surname1}" for potential correction.`
+        );
       }
     }
     
-    // Check status differences
-    if (hasSimilarNames && member1.status && member2.status && member1.status !== member2.status) {
+    // Check status differences - only if we should generate suggestions
+    if (shouldGenerateSuggestions && member1.status && member2.status && member1.status !== member2.status) {
+      console.log(`Status difference found: ${member1.status} vs ${member2.status}`);
       // Only make suggestions for actual status differences between alive/dead, not unknown
       if (member1.status !== 'unknown' && member2.status !== 'unknown') {
         // If member1 is alive but member2 is dead, suggest updating member1's status
@@ -1018,14 +1049,18 @@ export class FamilyMemberSimilarityService {
       }
     }
     
-    // Check for birth date differences
-    if (hasSimilarNames && member1.birthDate && member2.birthDate) {
+    // Check for birth date differences - only if we should generate suggestions
+    if (shouldGenerateSuggestions && member1.birthDate && member2.birthDate) {
       const date1 = new Date(member1.birthDate);
       const date2 = new Date(member2.birthDate);
+      
+      console.log(`Birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
       
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) { // More than 1 day difference
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
+        
+        console.log(`Birth date difference found: ${date1Str} vs ${date2Str}`);
         
         suggestionsForMember1.push(
           `Birth date may be ${date2Str} (recorded by another user) instead of ${date1Str}.`
@@ -1034,16 +1069,34 @@ export class FamilyMemberSimilarityService {
           `Birth date may be ${date1Str} (recorded by another user) instead of ${date2Str}.`
         );
       }
+    } else if (shouldGenerateSuggestions && !member1.birthDate && member2.birthDate) {
+      // First member is missing birth date
+      const dateStr = new Date(member2.birthDate).toISOString().split('T')[0];
+      console.log(`Member1 missing birth date, suggesting to add: ${dateStr}`);
+      suggestionsForMember1.push(
+        `Consider adding birth date (${dateStr}). Another user has recorded this birth date.`
+      );
+    } else if (shouldGenerateSuggestions && member1.birthDate && !member2.birthDate) {
+      // Second member is missing birth date
+      const dateStr = new Date(member1.birthDate).toISOString().split('T')[0];
+      console.log(`Member2 missing birth date, suggesting to add: ${dateStr}`);
+      suggestionsForMember2.push(
+        `Consider adding birth date (${dateStr}). Another user has recorded this birth date.`
+      );
     }
     
-    // Check for death date differences (only if both members have a death date)
-    if (hasSimilarNames && member1.deathDate && member2.deathDate) {
+    // Check for death date differences - only if we should generate suggestions
+    if (shouldGenerateSuggestions && member1.deathDate && member2.deathDate) {
       const date1 = new Date(member1.deathDate);
       const date2 = new Date(member2.deathDate);
+      
+      console.log(`Death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
       
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) { // More than 1 day difference
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
+        
+        console.log(`Death date difference found: ${date1Str} vs ${date2Str}`);
         
         suggestionsForMember1.push(
           `Death date may be ${date2Str} (recorded by another user) instead of ${date1Str}.`
@@ -1052,17 +1105,46 @@ export class FamilyMemberSimilarityService {
           `Death date may be ${date1Str} (recorded by another user) instead of ${date2Str}.`
         );
       }
+    } else if (shouldGenerateSuggestions && !member1.deathDate && member2.deathDate) {
+      // First member is missing death date
+      const dateStr = new Date(member2.deathDate).toISOString().split('T')[0];
+      console.log(`Member1 missing death date, suggesting to add: ${dateStr}`);
+      suggestionsForMember1.push(
+        `Consider adding death date (${dateStr}). Another user has recorded this death date.`
+      );
+    } else if (shouldGenerateSuggestions && member1.deathDate && !member2.deathDate) {
+      // Second member is missing death date
+      const dateStr = new Date(member1.deathDate).toISOString().split('T')[0];
+      console.log(`Member2 missing death date, suggesting to add: ${dateStr}`);
+      suggestionsForMember2.push(
+        `Consider adding death date (${dateStr}). Another user has recorded this death date.`
+      );
     }
     
-    // Check for country differences
-    if (hasSimilarNames && member1.country && member2.country && member1.country !== member2.country) {
+    // Check for country differences - only if we should generate suggestions
+    if (shouldGenerateSuggestions && member1.country && member2.country && member1.country !== member2.country) {
+      console.log(`Country difference found: ${member1.country} vs ${member2.country}`);
       suggestionsForMember1.push(
         `Country may be ${member2.country} (recorded by another user) instead of ${member1.country}.`
       );
       suggestionsForMember2.push(
         `Country may be ${member1.country} (recorded by another user) instead of ${member2.country}.`
       );
+    } else if (shouldGenerateSuggestions && !member1.country && member2.country) {
+      // First member is missing country
+      console.log(`Member1 missing country, suggesting to add: ${member2.country}`);
+      suggestionsForMember1.push(
+        `Consider adding country "${member2.country}". Another user has recorded this country.`
+      );
+    } else if (shouldGenerateSuggestions && member1.country && !member2.country) {
+      // Second member is missing country
+      console.log(`Member2 missing country, suggesting to add: ${member1.country}`);
+      suggestionsForMember2.push(
+        `Consider adding country "${member1.country}". Another user has recorded this country.`
+      );
     }
+    
+    console.log(`Generated ${suggestionsForMember1.length} suggestions for member1 and ${suggestionsForMember2.length} for member2`);
     
     return {
       suggestionsForMember1,
