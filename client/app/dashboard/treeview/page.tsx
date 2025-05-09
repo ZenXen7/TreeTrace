@@ -35,7 +35,7 @@ function Familytree(props: {
   
   <!-- Avatar circle clip path -->
   <clipPath id="avatar-clip">
-    <circle cx="45" cy="50" r="32"/>
+    <circle cx="45" cy="60" r="32"/>
   </clipPath>
 </defs>
 `
@@ -53,23 +53,33 @@ function Familytree(props: {
       const img_0 ="https://preview.redd.it/some-random-black-dude-i-found-v0-7b7ipzz5af0c1.jpg?auto=webp&s=50dde31529bf146611d82a09c0e0e7cf3948a2d3"
 
       // Position text elements for the larger card
-      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="35">{val}</text>`
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-0" ${nameStyle} x="200" y="35">{val}</text>`
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-1" ${roleStyle} x="95" y="55">{val}</text>`
-      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-2" ${detailStyle} x="95" y="72">{val}</text>`
-      FamilyTree.templates.tommy.field_6 = `<text class="bft-field-5" ${detailStyle} x="95" y="87">🌍 {val}</text>`
-      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-6" ${detailStyle} x="190" y="87">💼 {val}</text>`
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`
-      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`
-      FamilyTree.templates.tommy.field_8 = `<text class="bft-field-7" ${detailStyle} x="270" y="120" text-anchor="end" transform="rotate(-45,270,120)">{val}</text>`
-      // Add surname similarity badge - moved to bottom left
+      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="45">{val}</text>`
+      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="95" y="65">{val}</text>`
+      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${roleStyle} x="118" y="85">⚧️ {val}</text>`
+      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-7" ${roleStyle} x="190" y="85">💼 {val}</text>`
+      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="95" y="105">Born: {val}</text>`
+      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-5" ${detailStyle} x="190" y="105">Died: {val}</text>`
+      
+      // Remove any unused fields from previous template
+      FamilyTree.templates.tommy.field_3 = ``; 
+      FamilyTree.templates.tommy.field_6 = ``;
+      FamilyTree.templates.tommy.field_8 = ``;
+
+      // Initialize SVG with our custom suggestion badge definitions
       FamilyTree.templates.tommy.field_9 = `
-        <g transform="translate(20, 110)">
-          <circle cx="0" cy="0" r="15" fill="#F97316" stroke="#4B5563" stroke-width="1"/>
-          <text ${nameStyle} x="0" y="5" text-anchor="middle" fill="#F3F4F6" font-size="12px" font-weight="bold">{val}</text>
-          <title>Suggestions available</title>
+        <g class="suggestion-badge-svg" data-suggestion-badge="true" transform="translate(10, 10)" style="cursor:pointer;">
+          <circle cx="0" cy="0" r="18" fill="#F97316" stroke="#FFFFFF" stroke-width="3"></circle>
+          <text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="16px" font-weight="bold" fill="white">{val}</text>
+          <circle cx="0" cy="0" r="18" fill="none" stroke="#F97316" stroke-width="3" opacity="0.5" class="pulse-circle">
+            <animate attributeName="r" from="18" to="26" dur="1.5s" begin="0s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" begin="0s" repeatCount="indefinite"/>
+          </circle>
         </g>
-      `
+      `;
+
+      // Copy the suggestion badge to other templates
+      FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9;
+      FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9;
 
       // Make the node bigger to accommodate more fields
       FamilyTree.templates.tommy.node = `
@@ -78,11 +88,11 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#80cbc4"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="0" fill="#80cbc4"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
-  <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
+  <circle cx="45" cy="60" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
+  <image xlink:href="${img_0}" x="13" y="28" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `
       FamilyTree.templates.tommy_female.node = `
@@ -91,11 +101,11 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card with female color -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#EC4899"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="0" fill="#EC4899"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
-  <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
+  <circle cx="45" cy="60" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
+  <image xlink:href="${img_0}" x="13" y="28" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `;
 
@@ -105,60 +115,34 @@ function Familytree(props: {
   <rect x="0" y="0" height="130" width="280" rx="12" ry="12" fill="#1F2937" stroke="#374151" strokeWidth="1"/>
   
   <!-- Modern accent line at top of card with male color -->
-  <rect x="0" y="0" height="6" width="280" rx="12" ry="12" fill="#3B82F6"/>
+  <rect x="0" y="0" height="6" width="280" rx="12" ry="0" fill="#3B82F6"/>
   
   <!-- Avatar placeholder - larger and positioned better -->
-  <circle cx="45" cy="50" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
-  <image xlink:href="${img_0}" x="13" y="18" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
+  <circle cx="45" cy="60" r="32" fill="#374151" stroke="#4B5563" strokeWidth="1"/>
+  <image xlink:href="${img_0}" x="13" y="28" height="64" width="64" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice"/>
 </g>
 `;
-
-      // Position text elements for the larger card
-      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="95" y="40">{val}</text>`;
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${roleStyle} x="95" y="65">{val}</text>`;
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${detailStyle} x="95" y="85">{val}</text>`;
-
-      // Add birth/death dates as small text at bottom
-      FamilyTree.templates.tommy.field_3 = `<text class="bft-field-3" ${detailStyle} x="95" y="105">Born: {val}</text>`;
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="190" y="105">Died: {val}</text>`;
-
-      // Apply the same styling to male and female templates
-      FamilyTree.templates.tommy_female.field_0 = FamilyTree.templates.tommy.field_0
-      FamilyTree.templates.tommy_female.field_1 = FamilyTree.templates.tommy.field_1
-      FamilyTree.templates.tommy_female.field_2 = FamilyTree.templates.tommy.field_2
-      FamilyTree.templates.tommy_female.field_3 = FamilyTree.templates.tommy.field_3
-      FamilyTree.templates.tommy_female.field_4 = FamilyTree.templates.tommy.field_4
-      FamilyTree.templates.tommy_female.field_5 = FamilyTree.templates.tommy.field_5
-      FamilyTree.templates.tommy_female.field_6 = FamilyTree.templates.tommy.field_6
-      FamilyTree.templates.tommy_female.field_7 = FamilyTree.templates.tommy.field_7
-      FamilyTree.templates.tommy_female.field_8 = FamilyTree.templates.tommy.field_8
-      FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9
-
-      FamilyTree.templates.tommy_male.field_0 = FamilyTree.templates.tommy.field_0
-      FamilyTree.templates.tommy_male.field_1 = FamilyTree.templates.tommy.field_1
-      FamilyTree.templates.tommy_male.field_2 = FamilyTree.templates.tommy.field_2
-      FamilyTree.templates.tommy_male.field_3 = FamilyTree.templates.tommy.field_3
-      FamilyTree.templates.tommy_male.field_4 = FamilyTree.templates.tommy.field_4
-      FamilyTree.templates.tommy_male.field_5 = FamilyTree.templates.tommy.field_5
-      FamilyTree.templates.tommy_male.field_6 = FamilyTree.templates.tommy.field_6
-      FamilyTree.templates.tommy_male.field_7 = FamilyTree.templates.tommy.field_7
-      FamilyTree.templates.tommy_male.field_8 = FamilyTree.templates.tommy.field_8
-      FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9
 
       // Update the node menu button position for the larger card
       FamilyTree.templates.tommy.nodeCircleMenuButton =
         FamilyTree.templates.tommy_female.nodeCircleMenuButton =
         FamilyTree.templates.tommy_male.nodeCircleMenuButton =
           {
-            radius: 24,
-            x: 260,
-            y: 100,
+            radius: 16,
+            x: 255,
+            y: 95,
             color: "#1F2937",
             stroke: "#4B5563",
-            strokeWidth: 2,
+            strokeWidth: 1,
             hoverColor: "#374151",
             hoverStroke: "#6366F1",
           };
+          
+      // Apply the same field styling to male and female templates
+      for (let i = 0; i <= 9; i++) {
+        FamilyTree.templates.tommy_female[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
+        FamilyTree.templates.tommy_male[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
+      }
 
       // Update the family tree configuration to match the new node size and dark mode
       const family = new FamilyTree(treeElement, {
@@ -253,88 +237,95 @@ function Familytree(props: {
         },
       });
 
-      // family.filterUI.on("show-items", (sender, args) => {
-      //   if (args.name === 'gender') {
-      //     args.value = "Filter by gender:";
-      //     args.items = [
-      //       { id: 'all', text: '[All]' },
-      //       { id: 'male', text: 'Male' },
-      //       { id: 'female', text: 'Female' }
-      //     ];
-      //   }
-      //   else if (args.name === 'country') {
-      //     args.value = "Filter by country:";
-      //     args.items = [
-      //       { id: 'all', text: '[All]' },
-      //       { id: 'us', text: 'United States' },
-      //       { id: 'ph', text: 'Philippines' },
-      //       { id: 'ca', text: 'Canada' },
-      //       { id: 'uk', text: 'United Kingdom' },
-      //       { id: 'au', text: 'Australia' },
-      //       { id: 'jp', text: 'Japan' },
-      //       { id: 'sg', text: 'Singapore' },
-      //       { id: 'hk', text: 'Hong Kong' }
-      //     ];
-      //   }
-      //   else if (args.name === 'status') {
-      //     args.value = "Filter by status:";
-      //     args.items = [
-      //       { id: 'all', text: '[All]' },
-      //       { id: 'alive', text: 'Alive' },
-      //       { id: 'deceased', text: 'Deceased' },
-      //       { id: 'unknown', text: 'Unknown' }
-      //     ];
-      //   }
-      // });
+      // Define a function to ensure badges are properly attached and clickable
+      const updateSuggestionBadges = () => {
+        console.log("Updating suggestion badges");
+        setTimeout(() => {
+          try {
+            // Find all badge elements
+            const badges = document.querySelectorAll('.suggestion-badge-svg, .custom-suggestion-badge');
+            console.log(`Found ${badges.length} suggestion badges to update`);
+            
+            badges.forEach(badge => {
+              // Find parent node element
+              const nodeElement = badge.closest('[data-n-id]');
+              if (!nodeElement) {
+                console.warn("Badge found without parent node element");
+                return;
+              }
+              
+              // Get node ID
+              const nodeId = nodeElement.getAttribute('data-n-id');
+              if (!nodeId) {
+                console.warn("Node element without node ID");
+                return;
+              }
+              
+              // Clone badge to remove old event listeners
+              const newBadge = badge.cloneNode(true);
+              if (badge.parentNode) {
+                badge.parentNode.replaceChild(newBadge, badge);
+              }
+              
+              // Add direct click handler that forces page navigation
+              newBadge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                console.log(`Badge clicked for node ID: ${nodeId}, navigating`);
+                
+                // Force direct navigation
+                window.location.href = `/dashboard/suggestions/${nodeId}`;
+                
+                // Return false to prevent event bubbling
+                return false;
+              });
+              
+              console.log(`Re-attached click handler to badge for node ${nodeId}`);
+            });
+          } catch (error) {
+            console.error("Error updating suggestion badges:", error);
+          }
+        }, 500); // Wait for DOM to fully update
+      };
 
-      // family.filterUI.on("add-filter", (sender, args) => {
-      //   console.log("Filter added:", args);
-      //
-      //   if (args.name === "gender" && args.value !== "all") {
-      //     family.filter((node) => {
-      //       return node.gender === args.value;
-      //     });
-      //   }
-      //   else if (args.name === "country" && args.value !== "all") {
-      //     family.filter((node) => {
-      //       return node.country === args.value;
-      //     });
-      //   }
-      //   else if (args.name === "status" && args.value !== "all") {
-      //     family.filter((node) => {
-      //       return node.status === args.value;
-      //     });
-      //   }
-      //   else {
-      //     family.filter(() => true); // Show all if [All] selected
-      //   }
-      // });
+      // Add event listener for tree initialization
+      family.on("init", function() {
+        console.log("Tree initialized");
+        updateSuggestionBadges();
+      });
+      
+      // Add event listeners for various tree update events - only use supported events
+      family.on("redraw", updateSuggestionBadges);
+      family.on("render", updateSuggestionBadges);
+      family.on("update", updateSuggestionBadges);
+      
+      // Add a global click handler to catch badge clicks regardless of when they're added
+      document.addEventListener('click', (e) => {
+        const target = e.target as Element;
+        const badgeElement = target.closest('[data-suggestion-badge="true"]') || 
+                            target.closest('.suggestion-badge-svg') ||
+                            target.closest('.custom-suggestion-badge');
+        
+        if (badgeElement) {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          // Get parent node to find the ID
+          const nodeElement = badgeElement.closest('[data-n-id]');
+          if (!nodeElement) return;
+          
+          const nodeId = nodeElement.getAttribute('data-n-id');
+          if (nodeId) {
+            console.log("Badge clicked via global document listener, redirecting to:", nodeId);
+            window.location.href = `/dashboard/suggestions/${nodeId}`;
+            return false;
+          }
+        }
+      }, true); // Use capture phase to catch events early
 
-      // family.filterUI.on("add-filter", (sender, args) => {
-      //     console.log("Filter added:", args)
-      //
-      //     let filterName = args.name; // 'gender', 'country', or 'status'
-      //     let filterValue = args.value; // selected value like 'male', 'us', etc.
-      //
-      //     family.nodes.forEach(node => {
-      //         let showNode = true;
-      //
-      //         // Only apply filtering if filterValue is not 'all'
-      //         if (filterValue !== 'all') {
-      //             if (filterName === 'gender' && node.gender !== filterValue) {
-      //                 showNode = false;
-      //             } else if (filterName === 'country' && node.country !== filterValue) {
-      //                 showNode = false;
-      //             } else if (filterName === 'status' && node.status !== filterValue) {
-      //                 showNode = false;
-      //             }
-      //         }
-      //
-      //         family.show(node.id, showNode);
-      //     });
-      // })
-
-      family.editUI.on("save", (sender, editedData) => {
+      // Add event listeners for form edit saving with additional badge updating
+      family.editUI.on("save", (sender: any, editedData: any) => {
         (async () => {
           try {
             const token = localStorage.getItem("token");
@@ -351,38 +342,112 @@ function Familytree(props: {
               throw new Error("No valid ID found in edited data");
             }
 
-    
-          let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
-          let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
-          
-          // console.log("Edit form raw data:", rawData);
-          // console.log("Country value:", rawData.country);
-          // console.log("Occupation value:", rawData.occupation);
-          
-          const updatedData = {
-            name: rawData.name,
-            surname: rawData.surname,
-            gender: rawData.gender,
-            status: rawData.status,
-            birthDate: birthDate,
-            deathDate: deathDate,
-            country: rawData.country,
-            occupation: rawData.occupation,
-            tags: rawData.tags,
-            imageUrl: rawData.imageUrl
+            let birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null;
+            let deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null;
+            
+            console.log("Edit form raw data:", rawData);
+            console.log("Country value:", rawData.country);
+            console.log("Occupation value:", rawData.occupation);
+            console.log("Birth date:", birthDate);
+            console.log("Death date:", deathDate);
+            
+            const updatedData = {
+              name: rawData.name,
+              surname: rawData.surname,
+              gender: rawData.gender,
+              status: rawData.status,
+              birthDate: birthDate,
+              deathDate: deathDate,
+              country: rawData.country,
+              occupation: rawData.occupation,
+              tags: rawData.tags,
+              imageUrl: rawData.imageUrl
+            };
+            
+            console.log("Updating family member with ID:", resolvedId);
+            console.log("Update data:", updatedData);
+
+            await updateFamilyMember(token, resolvedId, updatedData);
+            console.log("Family member updated successfully, fetching data...");
+            
+            // Explicitly trigger the check for similar family members
+            try {
+              console.log("Triggering check for similar family members...");
+              const response = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${resolvedId}`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              
+              if (response.ok) {
+                console.log("Similar family members check completed successfully");
+              } else {
+                console.error("Failed to check for similar family members:", await response.text());
+              }
+            } catch (error) {
+              console.error("Error checking for similar family members:", error);
+            }
+            
+            await props.fetchData();
+            console.log("Data fetched successfully, including new suggestion counts");
+
+            // Force a complete tree redraw
+            setTimeout(() => {
+              console.log("Forcing redraw to update suggestion badges");
+              family.draw();
+              
+              // Explicitly call our badge update function after redraw
+              updateSuggestionBadges();
+            }, 300);
+            
+          } catch (error) {
+            console.error("Error saving updated member:", error);
           }
+        })();
+      });
+
+      // Add event listener for click on nodes to ensure navigation works
+      family.on("click", function(sender: any, args: any) {
+        // Check if a badge was clicked
+        if (args.event) {
+          const target = args.event.target;
+          const badgeElement = target.closest('[data-suggestion-badge="true"]') || 
+                              target.closest('.suggestion-badge-svg') ||
+                              target.closest('.custom-suggestion-badge');
           
-
-          await updateFamilyMember(token, resolvedId, updatedData)
-          await props.fetchData()
-        } catch (error) {
-          console.error("Error saving updated member:", error)
+          if (badgeElement) {
+            args.preventDefault();
+            
+            // Get the actual node ID
+            const nodeId = args.node.id;
+            console.log("Badge clicked via tree click event, node ID:", nodeId);
+            
+            window.location.href = `/dashboard/suggestions/${nodeId}`;
+            return false;
+          }
         }
-      })()
+        
+        return true;
+      });
 
-      return true
-    })
-    const nodeBinding = props.nodeBinding
+      // Add cleanup function at the end of useEffect
+      return function cleanup() {
+        // Cleanup event listeners when component unmounts
+        document.removeEventListener('click', (e) => {
+          const target = e.target as Element;
+          const badgeElement = target.closest('[data-suggestion-badge="true"]') || 
+                              target.closest('.suggestion-badge-svg') ||
+                              target.closest('.custom-suggestion-badge');
+          if (badgeElement) {
+            e.stopPropagation();
+            e.preventDefault();
+          }
+        }, true);
+      };
+
+      const nodeBinding = props.nodeBinding;
 
       const canDeleteMember = (node: any) => {
         const hasPartner = node.pids && node.pids.length > 0;
@@ -406,32 +471,17 @@ function Familytree(props: {
         return false;
       };
 
-
-
-    // Update the node binding to include the new fields
-    // nodeBinding = {
-    //   field_0: "name",
-    //   field_1: "gender",
-    //   field_2: "status",
-    //   field_3: "birthDate",
-    //   field_4: "deathDate",
-    //   field_5: "country",
-    //   field_6: "occupation",
-    //   field_7: "tags",
-    //   // img_0: "imageUrl"
-    // }
-
-    family.nodeCircleMenuUI.on("show", (sender, args) => {
-      var node = family.getNode(args.nodeId)
-      delete args.menu.father
-      delete args.menu.mother
-      delete args.menu.wife
-      delete args.menu.husband
+      family.nodeCircleMenuUI.on("show", (sender: any, args: any) => {
+        var node = family.getNode(args.nodeId);
+        delete args.menu.father;
+        delete args.menu.mother;
+        delete args.menu.wife;
+        delete args.menu.husband;
 
         // Add parent options
         if (FamilyTree.isNEU(node.mid)) {
           args.menu.mother = {
-            icon: FamilyTree.icon.mother(24, 24, "#ec4899"),
+            icon: (FamilyTree.icon as any).mother(24, 24, "#ec4899"),
             text: "Add mother",
             color: "#1F2937",
           };
@@ -439,36 +489,36 @@ function Familytree(props: {
 
         if (FamilyTree.isNEU(node.fid)) {
           args.menu.father = {
-            icon: FamilyTree.icon.father(24, 24, "#3b82f6"),
+            icon: (FamilyTree.icon as any).father(24, 24, "#3b82f6"),
             text: "Add father",
             color: "#1F2937",
           };
         }
 
         // Check if node has a partner
-        const hasPartner = node.pids && node.pids.length > 0;
-        const partner = hasPartner ? family.getNode(node.pids[0]) : null;
+        const hasPartner = (node as any).pids && (node as any).pids.length > 0;
+        const partner = hasPartner ? family.getNode((node as any).pids[0]) : null;
 
         // Add children options
         if (hasPartner) {
           args.menu.addSon = {
-            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
+            icon: (FamilyTree.icon as any).son(24, 24, "#3b82f6"),
             text: `Add Son with partner`,
             color: "#1F2937",
           };
           args.menu.addDaughter = {
-            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
+            icon: (FamilyTree.icon as any).daughter(24, 24, "#ec4899"),
             text: `Add Daughter with partner`,
             color: "#1F2937",
           };
         } else {
           args.menu.addSon = {
-            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
+            icon: (FamilyTree.icon as any).son(24, 24, "#3b82f6"),
             text: "Add Son",
             color: "#1F2937",
           };
           args.menu.addDaughter = {
-            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
+            icon: (FamilyTree.icon as any).daughter(24, 24, "#ec4899"),
             text: "Add Daughter",
             color: "#1F2937",
           };
@@ -476,26 +526,26 @@ function Familytree(props: {
 
         // Add partner option if no partner exists
         if (!hasPartner) {
-          if (node.gender === "male") {
+          if ((node as any).gender === "male") {
             args.menu.wife = {
-              icon: FamilyTree.icon.wife(24, 24, "#ec4899"),
+              icon: (FamilyTree.icon as any).wife(24, 24, "#ec4899"),
               text: "Add wife",
               color: "#1F2937",
             };
-          } else if (node.gender === "female") {
+          } else if ((node as any).gender === "female") {
             args.menu.husband = {
-              icon: FamilyTree.icon.husband(24, 24, "#3b82f6"),
+              icon: (FamilyTree.icon as any).husband(24, 24, "#3b82f6"),
               text: "Add husband",
               color: "#1F2937",
             };
           }
         }
-    });
-    
-    family.nodeCircleMenuUI.on("click", async (sender, args) => {
-      const node = family.getNode(args.nodeId)
-      const token = localStorage.getItem("token")
-      if (!token) return
+      });
+      
+      family.nodeCircleMenuUI.on("click", (sender: any, args: any) => {
+        const node = family.getNode(args.nodeId);
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
         try {
           switch (args.menuItemName) {
@@ -513,56 +563,61 @@ function Familytree(props: {
                 return;
               }
 
-            await deleteFamilyMember(token, node.id)
-            await props.fetchData()
-            break
-          }
-          case "addSon":
-          case "addDaughter": {
-            const gender = args.menuItemName === "addSon" ? "male" : "female"
-            const newMemberData = {
-              name: "Unknown",
-              surname: "Unknown",
-              gender: gender,
+              deleteFamilyMember(token, String(node.id))
+                .then(() => props.fetchData())
+                .catch(error => console.error("Error deleting member:", error));
+              break;
             }
+            case "addSon":
+            case "addDaughter": {
+              const gender = args.menuItemName === "addSon" ? "male" : "female";
+              const newMemberData = {
+                name: "Unknown",
+                surname: "Unknown",
+                gender: gender,
+              } as any;
 
-              if (node.gender === "male") {
+              if ((node as any).gender === "male") {
                 newMemberData.fatherId = node.id;
-                if (node.pids && node.pids[0]) {
-                  newMemberData.motherId = node.pids[0];
+                if ((node as any).pids && (node as any).pids[0]) {
+                  newMemberData.motherId = (node as any).pids[0];
                 }
               } else {
                 newMemberData.motherId = node.id;
-                if (node.pids && node.pids[0]) {
-                  newMemberData.fatherId = node.pids[0];
+                if ((node as any).pids && (node as any).pids[0]) {
+                  newMemberData.fatherId = (node as any).pids[0];
                 }
               }
 
-              await handleAddMember(
+              handleAddMember(
                 token,
                 node,
                 gender === "male" ? "son" : "daughter",
                 props.fetchData,
                 newMemberData
-              );
+              ).catch(error => console.error("Error adding member:", error));
               break;
             }
             case "father":
-              await handleAddMember(token, node, "father", props.fetchData);
+              handleAddMember(token, node, "father", props.fetchData)
+                .catch(error => console.error("Error adding father:", error));
               break;
             case "mother":
-              await handleAddMember(token, node, "mother", props.fetchData);
+              handleAddMember(token, node, "mother", props.fetchData)
+                .catch(error => console.error("Error adding mother:", error));
               break;
             case "wife":
-              await handleAddMember(token, node, "wife", props.fetchData);
+              handleAddMember(token, node, "wife", props.fetchData)
+                .catch(error => console.error("Error adding wife:", error));
               break;
             case "husband":
-              await handleAddMember(token, node, "husband", props.fetchData);
+              handleAddMember(token, node, "husband", props.fetchData)
+                .catch(error => console.error("Error adding husband:", error));
               break;
             case "PDFProfile":
               family.exportPDFProfile({
                 id: args.nodeId,
-              });
+              } as any);
               break;
             case "editNode":
               family.editUI.show(args.nodeId);
@@ -573,6 +628,7 @@ function Familytree(props: {
           console.error("Error handling member addition:", error);
         }
       });
+      
     }
   }, [props.nodeBinding, props.nodes, props.fetchData]);
 
@@ -828,7 +884,7 @@ export default function TreeViewPage() {
     field_6: "country",
     field_7: "occupation",
     field_8: "tags",
-    field_9: "suggestionCount", // Add suggestion count binding
+    field_9: "suggestionCount", // This ensures the suggestion count is displayed in the badge
   }
 
   const handleShareTree = async () => {
