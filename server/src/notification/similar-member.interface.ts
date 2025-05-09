@@ -11,7 +11,12 @@ export interface SimilarMember {
   memberId: Types.ObjectId;
   name: string;
   surname: string;
+  status?: string;
+  birthDate?: Date;
+  deathDate?: Date;
+  country?: string;
   similarity: number;
+  similarFields: string[]; // List of fields that were found to be similar
 }
 
 export interface SimilarSurnameGroup {
