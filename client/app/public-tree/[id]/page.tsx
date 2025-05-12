@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Trees, Users, Clock, Eye, ArrowLeft, UserX } from "lucide-react"
+import { Trees, Users, Clock, Eye, ArrowLeft, UserX, ChevronLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
 import useUserSearchStore from "@/store/useUserSearchStore"
 import FamilyTree from "@balkangraph/familytree.js"
+import AnimatedNodes from "@/components/animated-nodes"
 
 export default function PublicTreeView() {
   const { id } = useParams()
@@ -156,10 +157,17 @@ export default function PublicTreeView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading family tree...</p>
+      <div className="min-h-screen bg-black text-white font-sans relative flex items-center justify-center">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
+        
+        {/* Animated Background */}
+        <AnimatedNodes />
+
+        <div className="relative text-center">
+          <div className="h-12 w-12 rounded-full border-2 border-teal-500/20 border-t-teal-500 animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading family tree...</p>
         </div>
       </div>
     )
@@ -167,10 +175,17 @@ export default function PublicTreeView() {
 
   if (error || !currentFamilyTree) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md p-6 bg-gray-800 rounded-xl border border-gray-700 shadow-lg">
+      <div className="min-h-screen bg-black text-white font-sans relative flex items-center justify-center">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
+        
+        {/* Animated Background */}
+        <AnimatedNodes />
+
+        <div className="relative text-center max-w-md p-8 bg-gray-900/30 backdrop-blur-sm rounded-2xl border border-gray-800/50 shadow-xl">
           <UserX className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-xl font-semibold mb-2">No Family Tree Available</h3>
+          <h3 className="text-xl font-semibold mb-2 text-white">No Family Tree Available</h3>
           <p className="text-gray-400 mb-6">
             {userData ? (
               <>
@@ -181,10 +196,10 @@ export default function PublicTreeView() {
             )}
           </p>
           <Button 
-            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600"
+            className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white"
             onClick={handleGoBack}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
             <span>Go Back</span>
           </Button>
         </div>
@@ -197,18 +212,29 @@ export default function PublicTreeView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen bg-gray-900 text-gray-100"
+      className="min-h-screen bg-black text-white font-sans relative"
     >
-      <div className="container mx-auto px-4 py-8">
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="mb-6 text-gray-400 hover:text-white"
-          onClick={handleGoBack}
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
+      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
+      
+      {/* Animated Background */}
+      <AnimatedNodes />
+
+      <div className="container mx-auto px-6 py-8 relative">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center mb-12"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Search
-        </Button>
+          <button
+            onClick={handleGoBack}
+            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+            <span className="ml-1">Back to Search</span>
+          </button>
+        </motion.div>
 
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -216,7 +242,7 @@ export default function PublicTreeView() {
           transition={{ delay: 0.2 }}
           className="mb-8 text-center"
         >
-          <h1 className="text-4xl font-bold text-gray-100 mb-3">
+          <h1 className="text-4xl font-semibold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent mb-3">
             {userData ? (
               <>{userData.firstName} {userData.lastName}'s Family Tree</>
             ) : (
@@ -232,26 +258,142 @@ export default function PublicTreeView() {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden mb-8"
+          className="bg-gray-900/30 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-800/50 overflow-hidden mb-8"
         >
-          <div className="bg-gray-700 p-4 border-b border-gray-600">
+          <div className="bg-gray-800/50 p-6 border-b border-gray-800/50">
             <div className="flex justify-between items-center">
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
                 {userData && (
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center mr-3 text-sm font-medium">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-sm font-medium">
                     {userData.firstName[0]}{userData.lastName[0]}
                   </div>
                 )}
-                <h2 className="text-xl font-semibold text-white">Family Tree View</h2>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Family Tree View</h2>
+                  <p className="text-sm text-gray-400">Interactive visualization of family relationships</p>
+                </div>
               </div>
-              <Badge variant="secondary" className="bg-gray-600 text-gray-300">
+              <Badge className="bg-teal-500/10 text-teal-400 border border-teal-500/20">
                 Read Only
               </Badge>
             </div>
           </div>
 
-          <div className="p-4">
+          <div className="p-6">
             <div ref={treeContainerRef} className="w-full h-[700px]"></div>
+          </div>
+        </motion.div>
+
+        {/* Help Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+        >
+          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+            <div className="text-teal-400 mb-4">
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Navigation Tips
+            </h3>
+            <ul className="space-y-3 text-gray-400">
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Click and drag to pan around the tree</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Use mouse wheel to zoom in and out</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Double-click a member to center the view</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+            <div className="text-teal-400 mb-4">
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Viewing Options
+            </h3>
+            <ul className="space-y-3 text-gray-400">
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Hover over members to see details</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Click on a member to view their profile</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Use the search to find specific members</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+            <div className="text-teal-400 mb-4">
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              About This Tree
+            </h3>
+            <ul className="space-y-3 text-gray-400">
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>This is a public view of the family tree</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Some information may be private</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-teal-400">•</span>
+                <span>Contact the owner for more details</span>
+              </li>
+            </ul>
           </div>
         </motion.div>
       </div>

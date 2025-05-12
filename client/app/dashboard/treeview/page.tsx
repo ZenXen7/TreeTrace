@@ -8,6 +8,7 @@ import { Filter, Share2 } from "lucide-react"
 import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
+import AnimatedNodes from "@/components/animated-nodes"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -1104,13 +1105,20 @@ export default function TreeViewPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen bg-[#0B1120] text-gray-100"
+      className="min-h-screen bg-black text-white font-sans relative"
     >
-      <div className="container mx-auto px-6 py-8">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
+      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
+      
+      {/* Animated Background */}
+      <AnimatedNodes />
+
+      <div className="container mx-auto px-6 py-8 relative">
         <div className="mb-8 flex items-center">
           <button
             onClick={() => router.push("/dashboard/main")}
-            className="flex items-center gap-2 text-gray-400 hover:text-emerald-400 transition-colors duration-200"
+            className="flex items-center gap-2 text-gray-400 hover:text-teal-400 transition-colors duration-200"
           >
             <svg
               className="w-5 h-5"
@@ -1135,7 +1143,7 @@ export default function TreeViewPage() {
           transition={{ delay: 0.2 }}
           className="mb-8 text-center"
         >
-          <h1 className="text-4xl font-semibold text-white mb-3">
+          <h1 className="text-4xl font-semibold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent mb-3">
             Family Tree Explorer
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
@@ -1152,7 +1160,7 @@ export default function TreeViewPage() {
             transition={{ delay: 0.3 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
           >
-            <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
               <h3 className="text-sm font-medium text-gray-400 mb-2">
                 Family Members
               </h3>
@@ -1160,10 +1168,10 @@ export default function TreeViewPage() {
                 <p className="text-3xl font-semibold text-white">
                   {stats.totalMembers}
                 </p>
-                <span className="text-sm text-emerald-400">Active</span>
+                <span className="text-sm text-teal-400">Active</span>
               </div>
             </div>
-            <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
               <h3 className="text-sm font-medium text-gray-400 mb-2">
                 Generations
               </h3>
@@ -1171,10 +1179,10 @@ export default function TreeViewPage() {
                 <p className="text-3xl font-semibold text-white">
                   {stats.generations}
                 </p>
-                <span className="text-sm text-emerald-400">Depth</span>
+                <span className="text-sm text-teal-400">Depth</span>
               </div>
             </div>
-            <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
               <h3 className="text-sm font-medium text-gray-400 mb-2">
                 Oldest Member
               </h3>
@@ -1185,7 +1193,7 @@ export default function TreeViewPage() {
                 {stats.oldestMember?.birthDate || "Unknown"}
               </p>
             </div>
-            <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
               <h3 className="text-sm font-medium text-gray-400 mb-2">
                 Suggestions
               </h3>
@@ -1209,12 +1217,12 @@ export default function TreeViewPage() {
           className="rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 overflow-hidden mb-8"
         >
           {/* Tree Header */}
-          <div className="bg-gray-700 p-4 border-b border-gray-600">
+          <div className="bg-gray-900/50 p-4 border-b border-gray-800/50">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-white">Interactive Family Tree</h2>
               <div className="flex gap-2">
                 <button 
-                  className={`px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors ${
+                  className={`px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 text-white text-sm rounded-lg transition-colors ${
                     (activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all') 
                       ? 'opacity-50 cursor-not-allowed' 
                       : ''
@@ -1234,7 +1242,7 @@ export default function TreeViewPage() {
                   Reset Filters
                 </button>
                 <button 
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md transition-colors flex items-center gap-2"
+                  className="px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
                   onClick={handleShareTree}
                 >
                   <Share2 className="h-4 w-4" />
@@ -1248,7 +1256,7 @@ export default function TreeViewPage() {
               <div className="flex items-center">
                 <Filter className="h-4 w-4 text-gray-400 mr-2" />
                 <select 
-                  className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.gender !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                  className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.gender !== 'all' ? 'border-teal-500' : ''}`}
                   value={activeFilters.gender}
                   onChange={(e) => handleFilterChange('gender', e.target.value)}
                 >
@@ -1259,7 +1267,7 @@ export default function TreeViewPage() {
               </div>
 
               <select 
-                className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.country !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.country !== 'all' ? 'border-teal-500' : ''}`}
                 value={activeFilters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
               >
@@ -1275,7 +1283,7 @@ export default function TreeViewPage() {
               </select>
 
               <select 
-                className={`bg-gray-600 text-white text-sm rounded-md px-2 py-1 ${activeFilters.status !== 'all' ? 'border-2 border-indigo-500' : ''}`}
+                className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.status !== 'all' ? 'border-teal-500' : ''}`}
                 value={activeFilters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
@@ -1292,17 +1300,17 @@ export default function TreeViewPage() {
             <div className="bg-gray-800 px-4 py-2 text-sm text-gray-300 border-b border-gray-700 flex items-center">
               <span className="mr-2">Active Filters:</span>
               {activeFilters.gender !== 'all' && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mr-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20 mr-2">
                   Gender: {activeFilters.gender}
                 </span>
               )}
               {activeFilters.country !== 'all' && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20 mr-2">
                   Country: {activeFilters.country}
                 </span>
               )}
               {activeFilters.status !== 'all' && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20 mr-2">
                   Status: {activeFilters.status}
                 </span>
               )}
@@ -1317,7 +1325,7 @@ export default function TreeViewPage() {
               className="flex justify-center items-center h-96"
             >
               <div className="relative">
-                <div className="h-12 w-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
+                <div className="h-12 w-12 rounded-full border-2 border-teal-500/20 border-t-teal-500 animate-spin"></div>
               </div>
             </motion.div>
           ) : error ? (
@@ -1331,7 +1339,7 @@ export default function TreeViewPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => fetchData()}
-                className="px-6 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg transition-all duration-300"
+                className="px-6 py-2 bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 rounded-lg transition-all duration-300"
               >
                 Try Again
               </motion.button>
@@ -1358,7 +1366,7 @@ export default function TreeViewPage() {
                       });
                       setLoading(true);
                     }}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-300"
+                    className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white rounded-lg transition-all duration-300"
                   >
                     Clear Filters
                   </button>
@@ -1369,7 +1377,7 @@ export default function TreeViewPage() {
                     Your family tree is empty. Start by adding your first family
                     member.
                   </p>
-                  <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-300">
+                  <button className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white rounded-lg transition-all duration-300">
                     Add First Member
                   </button>
                 </div>
@@ -1401,8 +1409,8 @@ export default function TreeViewPage() {
           transition={{ delay: 0.6 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
         >
-          <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
-            <div className="text-emerald-400 mb-4">
+          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+            <div className="text-teal-400 mb-4">
               <svg
                 className="w-8 h-8"
                 fill="none"
@@ -1422,22 +1430,22 @@ export default function TreeViewPage() {
             </h3>
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Click and drag to pan around the tree</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Use mouse wheel to zoom in and out</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Double-click a member to center the view</span>
               </li>
             </ul>
           </div>
 
-          <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
-            <div className="text-emerald-400 mb-4">
+          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+            <div className="text-teal-400 mb-4">
               <svg
                 className="w-8 h-8"
                 fill="none"
@@ -1457,22 +1465,22 @@ export default function TreeViewPage() {
             </h3>
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Click on a member to see available actions</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Add parents, children, or partners</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Edit details like birth dates and status</span>
               </li>
             </ul>
           </div>
 
-          <div className="rounded-xl bg-gray-800/50 p-6 backdrop-blur-sm border border-gray-700/50">
-            <div className="text-emerald-400 mb-4">
+          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+            <div className="text-teal-400 mb-4">
               <svg
                 className="w-8 h-8"
                 fill="none"
@@ -1492,15 +1500,15 @@ export default function TreeViewPage() {
             </h3>
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Export individual profiles as PDF</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Save the entire tree as an image</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-emerald-400">•</span>
+                <span className="mr-2 text-teal-400">•</span>
                 <span>Share your family history with relatives</span>
               </li>
             </ul>
@@ -1518,7 +1526,7 @@ export default function TreeViewPage() {
               Click on a family member and use the circular menu to add, edit,
               or remove members.
             </p>
-            <p className="text-sm text-emerald-400">
+            <p className="text-sm text-teal-400">
               Your family tree data is automatically saved as you make changes.
             </p>
           </div>
