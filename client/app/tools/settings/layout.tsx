@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 }
 
 export default function SettingsLayout({
-    children,
+  children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div className={`min-h-screen bg-white antialiased ${outfit.variable} ${outfit.className}`}>{children}</div>;
+  return <div className={`min-h-screen bg-black antialiased ${outfit.variable} ${outfit.className}`}>{children}</div>;
 }
