@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { ChevronLeft, Eye, EyeOff } from "lucide-react"
+import { ChevronLeft, Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { AnimatedBackground } from "@/components/AnimatedBackground"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -228,13 +228,16 @@ export default function Login() {
                     <Label htmlFor="email" className="text-sm font-medium text-gray-300">
                       Email
                     </Label>
-                    <Input
-                      {...register("email")}
-                      type="email"
-                      placeholder="name@example.com"
-                      className="h-11 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 transition-all"
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <Input
+                        {...register("email")}
+                        type="email"
+                        placeholder="name@example.com"
+                        className="h-11 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 transition-all pl-10"
+                        disabled={isLoading}
+                      />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    </div>
                     {errors.email && (
                       <p className="text-red-400 text-sm">{errors.email.message}</p>
                     )}
@@ -257,9 +260,10 @@ export default function Login() {
                         {...register("password")}
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
-                        className="h-11 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pr-10 transition-all"
+                        className="h-11 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pl-10 pr-10 transition-all"
                         disabled={isLoading}
                       />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { ChevronLeft, Eye, EyeOff } from "lucide-react"
+import { ChevronLeft, Eye, EyeOff, User, Mail, Lock } from "lucide-react"
 import { AnimatedBackground } from "@/components/AnimatedBackground"
 import { useAuthStore } from "@/store/useAuthStore"
 import { toast } from "sonner"
@@ -27,6 +27,9 @@ export default function Register() {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
+    setValue,
+    clearErrors,
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
   })
@@ -126,20 +129,26 @@ export default function Register() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      {...register("firstName")}
-                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500"
-                    />
+                    <div className="relative">
+                      <Input
+                        {...register("firstName")}
+                        className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pl-10"
+                      />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    </div>
                     {errors.firstName && (
                       <p className="text-red-400 text-sm">{errors.firstName.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      {...register("lastName")}
-                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500"
-                    />
+                    <div className="relative">
+                      <Input
+                        {...register("lastName")}
+                        className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pl-10"
+                      />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    </div>
                     {errors.lastName && (
                       <p className="text-red-400 text-sm">{errors.lastName.message}</p>
                     )}
@@ -148,30 +157,119 @@ export default function Register() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender</Label>
-                  <div className="flex gap-4">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id="male"
-                        value="male"
-                        {...register("gender")}
-                        className="h-4 w-4 mr-2"
-                      />
-                      <Label htmlFor="male" className="cursor-pointer">Male</Label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id="female"
-                        value="female"
-                        {...register("gender")}
-                        className="h-4 w-4 mr-2"
-                      />
-                      <Label htmlFor="female" className="cursor-pointer">Female</Label>
-                    </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        const genderField = "gender" as const;
+                        setValue(genderField, "male");
+                        clearErrors(genderField);
+                      }}
+                      className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
+                        watch("gender") === "male"
+                          ? "bg-gray-800/80 border-white/20 shadow-lg shadow-white/5"
+                          : "bg-gray-800/30 border-gray-700/50 hover:bg-gray-800/50"
+                      }`}
+                    >
+                      <div className={`w-12 h-12 mb-2 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                        watch("gender") === "male" ? "bg-blue-500/20" : "bg-gray-700/30"
+                      }`}>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className={`w-6 h-6 transition-colors duration-200 ${
+                            watch("gender") === "male" ? "text-blue-400" : "text-gray-400"
+                          }`}
+                        >
+                          <path
+                            d="M12 12a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M12 0c-.6 0-1 .4-1 1v7h2V1c0-.6-.4-1-1-1z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M17 5.6L15.6 7l3.5 3.5L20.4 9 17 5.6z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      </div>
+                      <span className={`font-medium transition-colors duration-200 ${
+                        watch("gender") === "male" ? "text-white" : "text-gray-400"
+                      }`}>
+                        Male
+                      </span>
+                      {watch("gender") === "male" && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center"
+                        >
+                          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                        </motion.div>
+                      )}
+                    </motion.button>
+
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        const genderField = "gender" as const;
+                        setValue(genderField, "female");
+                        clearErrors(genderField);
+                      }}
+                      className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
+                        watch("gender") === "female"
+                          ? "bg-gray-800/80 border-white/20 shadow-lg shadow-white/5"
+                          : "bg-gray-800/30 border-gray-700/50 hover:bg-gray-800/50"
+                      }`}
+                    >
+                      <div className={`w-12 h-12 mb-2 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                        watch("gender") === "female" ? "bg-pink-500/20" : "bg-gray-700/30"
+                      }`}>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className={`w-6 h-6 transition-colors duration-200 ${
+                            watch("gender") === "female" ? "text-pink-400" : "text-gray-400"
+                          }`}
+                        >
+                          <path
+                            d="M12 12a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M12 0c-.6 0-1 .4-1 1v7h2V1c0-.6-.4-1-1-1z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M8.5 4.5L7 5.9l2.1 2.1L10.6 6.5 8.5 4.5z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      </div>
+                      <span className={`font-medium transition-colors duration-200 ${
+                        watch("gender") === "female" ? "text-white" : "text-gray-400"
+                      }`}>
+                        Female
+                      </span>
+                      {watch("gender") === "female" && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center"
+                        >
+                          <div className="w-2 h-2 bg-pink-500 rounded-full" />
+                        </motion.div>
+                      )}
+                    </motion.button>
                   </div>
                   {errors.gender && (
-                    <p className="text-red-400 text-sm">{errors.gender.message}</p>
+                    <p className="text-red-400 text-sm mt-1">{errors.gender.message}</p>
                   )}
                 </div>
 
@@ -182,11 +280,14 @@ export default function Register() {
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    {...register("email")}
-                    type="email"
-                    className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500"
-                  />
+                  <div className="relative">
+                    <Input
+                      {...register("email")}
+                      type="email"
+                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pl-10"
+                    />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  </div>
                   {errors.email && (
                     <p className="text-red-400 text-sm">{errors.email.message}</p>
                   )}
@@ -198,8 +299,9 @@ export default function Register() {
                     <Input
                       {...register("password")}
                       type={showPassword ? "text" : "password"}
-                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pr-10"
+                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pl-10 pr-10"
                     />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
@@ -220,8 +322,9 @@ export default function Register() {
                     <Input
                       {...register("confirmPassword")}
                       type={showConfirmPassword ? "text" : "password"}
-                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pr-10"
+                      className="h-10 bg-gray-800/50 border-gray-700/50 focus:border-gray-500 text-white placeholder:text-gray-500 pl-10 pr-10"
                     />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
