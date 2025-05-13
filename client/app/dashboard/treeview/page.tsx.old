@@ -33,6 +33,12 @@ function Familytree(props: {
   <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
     <feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.4" floodColor="#000"/>
   </filter>
+  
+  <!-- Gradient for connectors based on gender -->
+  <linearGradient id="connector-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.7" />
+    <stop offset="100%" stop-color="#EC4899" stop-opacity="0.7" />
+  </linearGradient>
 </defs>
 `
       // Add the SVG content to the tree
@@ -241,13 +247,34 @@ function Familytree(props: {
         connectors: {
           type: "curved",
           style: {
-            "stroke-width": "1.5",
-            stroke: "#6B7280",
+            "stroke-width": "2.5",
+            stroke: "url(#connector-gradient)",
             "stroke-dasharray": "none",
-            "stroke-opacity": "0.8"
+            "stroke-opacity": "0.9",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round"
           },
         },
       });
+
+      // Custom event listener to enhance connector appearance
+      family.on('redraw', function() {
+        // Find all connector paths
+        setTimeout(() => {
+          const connectorPaths = family.element.querySelectorAll('path[stroke="#aeaeae"]');
+          connectorPaths.forEach((path) => {
+            path.setAttribute('stroke', 'url(#connector-gradient)');
+            path.setAttribute('stroke-width', '2.5');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+          });
+        }, 100);
+      });
+
+      // Custom connector link definitions
+      FamilyTree.templates.tommy.link = '<path stroke-linejoin="round" stroke="#aeaeae" stroke-width="1" fill="none" d="{rounded}" />';
+      FamilyTree.templates.tommy_male.link = FamilyTree.templates.tommy.link;
+      FamilyTree.templates.tommy_female.link = FamilyTree.templates.tommy.link;
 
       // Add event listener for tree initialization
       family.on("init", function() {
@@ -409,7 +436,7 @@ function Familytree(props: {
               window.location.href = `/dashboard/suggestions/${nodeId}`;
             });
           });
-        }, 500); // 500ms delay to ensure rendering is complete
+        }, 500);
       });
 
       // Add event listener for node click instead of relying on template placeholders
@@ -607,9 +634,7 @@ function Familytree(props: {
         }
       }, true); // Use capture phase to get events before they bubble up
 
-      return true
-    })
-    const nodeBinding = props.nodeBinding
+      const nodeBinding = props.nodeBinding
 
       const canDeleteMember = (node: any) => {
         const hasPartner = node.pids && node.pids.length > 0;
@@ -633,27 +658,12 @@ function Familytree(props: {
         return false;
       };
 
-
-
-    // Update the node binding to include the new fields
-    // nodeBinding = {
-    //   field_0: "name",
-    //   field_1: "gender",
-    //   field_2: "status",
-    //   field_3: "birthDate",
-    //   field_4: "deathDate",
-    //   field_5: "country",
-    //   field_6: "occupation",
-    //   field_7: "tags",
-    //   // img_0: "imageUrl"
-    // }
-
-    family.nodeCircleMenuUI.on("show", (sender, args) => {
-      var node = family.getNode(args.nodeId)
-      delete args.menu.father
-      delete args.menu.mother
-      delete args.menu.wife
-      delete args.menu.husband
+      family.nodeCircleMenuUI.on("show", (sender, args) => {
+        var node = family.getNode(args.nodeId)
+        delete args.menu.father
+        delete args.menu.mother
+        delete args.menu.wife
+        delete args.menu.husband
 
         // Add parent options
         if (FamilyTree.isNEU(node.mid)) {
@@ -717,12 +727,12 @@ function Familytree(props: {
             };
           }
         }
-    });
-    
-    family.nodeCircleMenuUI.on("click", async (sender, args) => {
-      const node = family.getNode(args.nodeId)
-      const token = localStorage.getItem("token")
-      if (!token) return
+      });
+      
+      family.nodeCircleMenuUI.on("click", async (sender, args) => {
+        const node = family.getNode(args.nodeId)
+        const token = localStorage.getItem("token")
+        if (!token) return
 
         try {
           switch (args.menuItemName) {
@@ -740,18 +750,18 @@ function Familytree(props: {
                 return;
               }
 
-            await deleteFamilyMember(token, node.id)
-            await props.fetchData()
-            break
-          }
-          case "addSon":
-          case "addDaughter": {
-            const gender = args.menuItemName === "addSon" ? "male" : "female"
-            const newMemberData = {
-              name: "Unknown",
-              surname: "Unknown",
-              gender: gender,
+              await deleteFamilyMember(token, node.id)
+              await props.fetchData()
+              break
             }
+            case "addSon":
+            case "addDaughter": {
+              const gender = args.menuItemName === "addSon" ? "male" : "female"
+              const newMemberData = {
+                name: "Unknown",
+                surname: "Unknown",
+                gender: gender,
+              }
 
               if (node.gender === "male") {
                 newMemberData.fatherId = node.id;
