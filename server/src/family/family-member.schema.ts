@@ -1,9 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { HealthCondition, HealthConditionDocument } from './health-condition.schema';
 
 export type FamilyMemberDocument = FamilyMember & Document;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, toJSON: { virtuals: true } })
 export class FamilyMember {
   // Remove explicit id field, Mongoose will handle it automatically
   // @Prop({ type: Types.ObjectId, required: true, unique: true, auto: true })
@@ -54,3 +55,30 @@ export class FamilyMember {
 }
 
 export const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMember);
+
+FamilyMemberSchema.virtual('healthConditions', {
+  ref: 'HealthCondition',
+  localField: '_id',
+  foreignField: 'familyMemberId',
+});
+
+FamilyMemberSchema.methods.addHealthCondition = async function(healthCondition: Partial<HealthCondition>): Promise<void> {
+  const HealthConditionModel = this.model('HealthCondition');
+  await HealthConditionModel.create({
+    ...healthCondition,
+    familyMemberId: this._id,
+  });
+};
+
+FamilyMemberSchema.methods.getHealthConditions = async function(): Promise<HealthConditionDocument[]> {
+  return await this.populate('healthConditions').execPopulate().then(doc => doc.healthConditions);
+};
+
+FamilyMemberSchema.methods.updateDetails = async function(): Promise<void> {
+  await this.save();
+};
+
+FamilyMemberSchema.methods.removeHealthCondition = async function(id: string): Promise<void> {
+  const HealthConditionModel = this.model('HealthCondition');
+  await HealthConditionModel.findByIdAndDelete(id);
+};
