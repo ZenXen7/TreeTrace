@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { FamilyMember, FamilyMemberDocument } from './family-member.schema';
+import { HealthCondition, HealthConditionDocument } from './health-condition.schema';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
+import { CreateHealthConditionDto } from './dto/create-health-condition.dto';
+import { UpdateHealthConditionDto } from './dto/update-health-condition.dto';
 import { FamilyMemberSimilarityService } from '../notification/family-member-similarity.service';
 import { FamilyMemberWithId } from '../notification/similar-member.interface';
 
@@ -29,6 +32,8 @@ export class FamilyService {
   constructor(
     @InjectModel(FamilyMember.name)
     private familyMemberModel: Model<FamilyMemberDocument>,
+    @InjectModel(HealthCondition.name)
+    private healthConditionModel: Model<HealthConditionDocument>,
     private familyMemberSimilarityService: FamilyMemberSimilarityService,
   ) {}
 
@@ -325,5 +330,59 @@ export class FamilyService {
     }
     
     return treeNode;
+  }
+
+  // Health Condition methods
+  async addHealthCondition(
+    familyMemberId: string,
+    createHealthConditionDto: CreateHealthConditionDto,
+  ): Promise<HealthCondition> {
+    const familyMember = await this.familyMemberModel.findById(familyMemberId);
+    if (!familyMember) {
+      throw new NotFoundException(`Family member with ID ${familyMemberId} not found`);
+    }
+
+    const healthCondition = new this.healthConditionModel({
+      ...createHealthConditionDto,
+      familyMemberId: new Types.ObjectId(familyMemberId),
+    });
+
+    return await healthCondition.save();
+  }
+
+  async getHealthConditions(familyMemberId: string): Promise<HealthCondition[]> {
+    const familyMember = await this.familyMemberModel.findById(familyMemberId);
+    if (!familyMember) {
+      throw new NotFoundException(`Family member with ID ${familyMemberId} not found`);
+    }
+
+    return await this.healthConditionModel.find({ familyMemberId }).exec();
+  }
+
+  async updateHealthCondition(
+    id: string,
+    updateHealthConditionDto: UpdateHealthConditionDto,
+  ): Promise<HealthCondition> {
+    const updatedHealthCondition = await this.healthConditionModel
+      .findByIdAndUpdate(id, updateHealthConditionDto, { new: true })
+      .exec();
+
+    if (!updatedHealthCondition) {
+      throw new NotFoundException(`Health condition with ID ${id} not found`);
+    }
+
+    return updatedHealthCondition;
+  }
+
+  async removeHealthCondition(id: string): Promise<HealthCondition> {
+    const deletedHealthCondition = await this.healthConditionModel
+      .findByIdAndDelete(id)
+      .exec();
+
+    if (!deletedHealthCondition) {
+      throw new NotFoundException(`Health condition with ID ${id} not found`);
+    }
+
+    return deletedHealthCondition;
   }
 }

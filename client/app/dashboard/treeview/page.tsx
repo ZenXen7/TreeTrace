@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
 import { handleAddMember, updateFamilyMember, deleteFamilyMember, fetchFilteredFamilyMembers, getSurnameSimilaritiesCount, getMemberSuggestionCount } from "./service/familyService"
@@ -9,6 +9,7 @@ import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import AnimatedNodes from "@/components/animated-nodes"
+import HealthConditionsModal from "@/components/HealthConditionsModal"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -24,6 +25,13 @@ function Familytree(props: {
   nodes: any;
   fetchData: () => Promise<void>;
 }) {
+  const treeContainer = useRef<HTMLDivElement | null>(null);
+  const [healthConditionsModal, setHealthConditionsModal] = useState({
+    isOpen: false,
+    familyMemberId: '',
+    familyMemberName: ''
+  });
+
   useEffect(() => {
     const treeElement = document.getElementById("tree");
     if (treeElement) {
@@ -311,8 +319,21 @@ function Familytree(props: {
                 ], 
                 label: 'Country', binding: 'country' },
               { type: 'textbox', label: 'Occupation', binding: 'occupation' },
-            ]
-          ]
+            ],
+            // Health Conditions section - button that will open a modal
+            { type: 'textbox', label: 'Manage Health Conditions', binding: 'healthConditions' }
+          ],
+          buttons: {
+            edit: {
+              text: 'Update'
+            },
+            share: {
+              text: 'Share'
+            },
+            pdf: {
+              text: 'Export PDF'
+            }
+          }
         },
 
         // Optimized spacing and layout for improved node design
@@ -990,7 +1011,23 @@ function Familytree(props: {
     }
   }, [props.nodeBinding, props.nodes, props.fetchData]);
 
-  return null;
+  return (
+    <div className="h-full w-full">
+      <div
+        id="tree"
+        ref={treeContainer}
+        className="h-full w-full bg-gray-50 dark:bg-slate-900"
+      ></div>
+      
+      {/* Health Conditions Modal */}
+      <HealthConditionsModal
+        isOpen={healthConditionsModal.isOpen}
+        onClose={() => setHealthConditionsModal(prev => ({ ...prev, isOpen: false }))}
+        familyMemberId={healthConditionsModal.familyMemberId}
+        familyMemberName={healthConditionsModal.familyMemberName}
+      />
+    </div>
+  );
 }
 
 // Update the TreeViewPage component to add more content and reduce whitespace
