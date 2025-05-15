@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './notification.schema';
+import { ProcessedSuggestion, ProcessedSuggestionDocument } from './processed-suggestion.schema';
 
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectModel(Notification.name)
     private notificationModel: Model<NotificationDocument>,
+    @InjectModel(ProcessedSuggestion.name)
+    private processedSuggestionModel: Model<ProcessedSuggestionDocument>,
   ) {}
 
   /**
@@ -95,5 +98,52 @@ export class NotificationService {
    */
   async delete(notificationId: string): Promise<Notification | null> {
     return this.notificationModel.findByIdAndDelete(notificationId).exec();
+  }
+
+  /**
+   * Mark a suggestion as processed for a specific member and user
+   * @param userId User ID
+   * @param memberId Member ID
+   * @param suggestionText The exact text of the suggestion that was processed
+   * @returns The created processed suggestion record
+   */
+  async markSuggestionAsProcessed(
+    userId: string,
+    memberId: string,
+    suggestionText: string,
+  ): Promise<ProcessedSuggestion> {
+    const userObjectId = new Types.ObjectId(userId);
+    const memberObjectId = new Types.ObjectId(memberId);
+
+    // Create a new processed suggestion record
+    const processedSuggestion = new this.processedSuggestionModel({
+      userId: userObjectId,
+      memberId: memberObjectId,
+      suggestionText,
+      processedAt: new Date(),
+    });
+
+    return processedSuggestion.save();
+  }
+
+  /**
+   * Get all processed suggestions for a specific member and user
+   * @param userId User ID
+   * @param memberId Member ID
+   * @returns Array of processed suggestion texts
+   */
+  async getProcessedSuggestions(
+    userId: string,
+    memberId: string,
+  ): Promise<string[]> {
+    const userObjectId = new Types.ObjectId(userId);
+    const memberObjectId = new Types.ObjectId(memberId);
+
+    const processedSuggestions = await this.processedSuggestionModel.find({
+      userId: userObjectId,
+      memberId: memberObjectId,
+    }).exec();
+
+    return processedSuggestions.map(ps => ps.suggestionText);
   }
 }
