@@ -135,6 +135,97 @@ function Familytree(props: {
 </g>
 `;
 
+      // Add a style element to hide the avatar in edit forms
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        .bft-edit-form-avatar, #bft-avatar, div[id="bft-avatar"] {
+          display: none !important;
+        }
+        .bft-edit-form-title {
+          margin-top: 20px !important;
+        }
+      `;
+      document.head.appendChild(styleElement);
+
+      // Add a script to replace any "Unknown" text in the header with the person's name
+      // Only add the script if it doesn't already exist
+      if (!document.getElementById('tree-trace-form-fixer')) {
+        const script = document.createElement('script');
+        script.id = 'tree-trace-form-fixer';
+        script.textContent = `
+          // Check if we've already initialized
+          if (!window.treeTraceFixerInitialized) {
+            window.treeTraceFixerInitialized = true;
+            
+            // Function to fix the edit form title
+            function fixEditFormTitle() {
+              // Find all forms
+              const forms = document.querySelectorAll('.bft-edit-form');
+              forms.forEach(form => {
+                // Get the title element
+                const titleElement = form.querySelector('.bft-edit-form-title');
+                if (titleElement && titleElement.textContent === 'Unknown') {
+                  // Find the node ID
+                  const nodeId = form.getAttribute('data-bft-node-id');
+                  if (nodeId) {
+                    // Find name and surname inputs
+                    const nameInput = form.querySelector('input[data-binding="name"]');
+                    const surnameInput = form.querySelector('input[data-binding="surname"]');
+                    
+                    // Create a full name from the inputs
+                    let fullName = '';
+                    if (nameInput && nameInput.value) {
+                      fullName += nameInput.value;
+                    }
+                    if (surnameInput && surnameInput.value) {
+                      if (fullName) fullName += ' ';
+                      fullName += surnameInput.value;
+                    }
+                    
+                    // Update the title if we have a name
+                    if (fullName) {
+                      titleElement.textContent = fullName;
+                    }
+                  }
+                }
+              });
+            }
+            
+            // Watch for edit forms being added to the DOM
+            const observer = new MutationObserver(mutations => {
+              mutations.forEach(mutation => {
+                if (mutation.addedNodes.length) {
+                  // Look for edit forms among the added nodes
+                  mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) { // ELEMENT_NODE
+                      const element = node;
+                      if (element.classList && element.classList.contains('bft-edit-form')) {
+                        // Fix the title immediately
+                        setTimeout(fixEditFormTitle, 100);
+                      }
+                      // Also check if added node contains edit forms
+                      const forms = element.querySelectorAll ? element.querySelectorAll('.bft-edit-form') : [];
+                      if (forms.length) {
+                        setTimeout(fixEditFormTitle, 100);
+                      }
+                    }
+                  });
+                }
+              });
+            });
+            
+            // Start observing the body for edit forms
+            observer.observe(document.body, { 
+              childList: true, 
+              subtree: true 
+            });
+            
+            console.log('Tree-Trace form fixer initialized');
+          }
+        `;
+        document.head.appendChild(script);
+      }
+
       // Update the node menu button position for the larger cards
       FamilyTree.templates.tommy.nodeCircleMenuButton =
         FamilyTree.templates.tommy_female.nodeCircleMenuButton =
@@ -190,6 +281,7 @@ function Familytree(props: {
         editForm: {
           readOnly: false,
           titleBinding: "name",
+          photoBinding: "",
           generateElementsFromFields: false,
           elements: [
             [
@@ -252,6 +344,41 @@ function Familytree(props: {
       // Add event listener for tree initialization
       family.on("init", function() {
         console.log("Tree initialized");
+      });
+      
+      // Add event listener to remove the avatar from edit forms
+      family.editUI.on("show", function(sender, args) {
+        setTimeout(() => {
+          // Hide avatar elements in the edit form
+          const avatarElement = document.querySelector('.bft-edit-form-avatar');
+          if (avatarElement) {
+            (avatarElement as HTMLElement).style.display = 'none';
+          }
+          
+          const bftAvatar = document.getElementById('bft-avatar');
+          if (bftAvatar) {
+            bftAvatar.style.display = 'none';
+          }
+          
+          // Update the title with the person's name and surname
+          const titleElement = document.querySelector('.bft-edit-form-title');
+          if (titleElement) {
+            // Get the node data for the person being edited
+            const nodeId = args.nodeId;
+            const nodeData = family.get(nodeId);
+            if (nodeData) {
+              // Cast to any to access the name and surname properties
+              const node = nodeData as any;
+              // Create a display name from name and surname
+              const displayName = `${node.name || ''} ${node.surname || ''}`.trim();
+              if (displayName) {
+                titleElement.textContent = displayName;
+              }
+            }
+            
+            (titleElement as HTMLElement).style.marginTop = '20px';
+          }
+        }, 100);
       });
       
       // Enhance the redraw event handler to ensure proper IDs are used
@@ -606,6 +733,28 @@ function Familytree(props: {
           }
         }
       }, true); // Use capture phase to get events before they bubble up
+
+      // Override how the form sets the title
+      FamilyTree.editUI.prototype._createFormElements = function() {
+        const originalCreateFormElements = FamilyTree.editUI.prototype._createFormElements;
+        const result = originalCreateFormElements.apply(this, arguments);
+        
+        // Find and update the edit form title
+        setTimeout(() => {
+          const titleElement = document.querySelector('.bft-edit-form-title');
+          if (titleElement && this.obj && this.node) {
+            const nodeData = this.obj._get(this.node.id);
+            if (nodeData) {
+              const fullName = `${nodeData.name || ''} ${nodeData.surname || ''}`.trim();
+              if (fullName) {
+                titleElement.textContent = fullName;
+              }
+            }
+          }
+        }, 0);
+        
+        return result;
+      };
 
       return true
     })
