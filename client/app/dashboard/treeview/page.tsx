@@ -417,9 +417,9 @@ function Familytree(props: {
           
           // Get all nodes that have suggestions
           const nodesWithSuggestions = nodes.filter((node: any) => 
-            node.hasSimilarityMatch === true || 
-            (node.tags && node.tags.includes("suggestion")) ||
-            (node.suggestionCount && node.suggestionCount !== '')
+            (node.actualSuggestionCount && node.actualSuggestionCount > 0) ||
+            (node.hasSimilarityMatch === true && (node.suggestionCount === undefined || parseInt(node.suggestionCount) > 0)) || 
+            (node.tags && node.tags.includes("suggestion"))
           );
           
           console.log(`Found ${nodesWithSuggestions.length} nodes with suggestions`);
@@ -485,16 +485,19 @@ function Familytree(props: {
                 `;
                 document.head.appendChild(style);
                 
-                // Show the suggestion count
-                if (node.suggestionCount && node.suggestionCount !== '') {
-                  badgeLink.textContent = node.suggestionCount;
-                } else if (node.hasSimilarityMatch || (node.tags && node.tags.includes("suggestion"))) {
- 
-                  badgeLink.textContent = '0';
-                } else {
-                  // Failsafe - should never happen but just in case
-                  badgeLink.textContent = '1';
+                // Show the suggestion count - THIS is where we need accuracy
+                // Get the actual count from an API call if possible, or use the value directly
+                const actualCount = node.actualSuggestionCount !== undefined 
+                  ? node.actualSuggestionCount 
+                  : (node.suggestionCount && node.suggestionCount !== '' ? parseInt(node.suggestionCount) : 0);
+                
+                // Only add the badge if there are actually suggestions to show
+                if (actualCount <= 0) {
+                  console.log(`No suggestions for node ${nodeId}, skipping badge`);
+                  return; // Skip adding badge for nodes with 0 suggestions
                 }
+                
+                badgeLink.textContent = actualCount.toString();
                 
                 // Add a click event just to ensure it works even if href doesn't
                 badgeLink.addEventListener('click', (e) => {
@@ -557,7 +560,7 @@ function Familytree(props: {
               window.location.href = `/dashboard/suggestions/${nodeId}`;
             });
           });
-        }, 500); // 500ms delay to ensure rendering is complete
+        }, 500);
       });
 
       // Add event listener for node click instead of relying on template placeholders
@@ -1129,9 +1132,62 @@ export default function TreeViewPage() {
         // Fetch suggestion counts for each member
         let totalSuggestionsCount = 0;
         const processedDataPromises = strictFiltered.map(async (member:any) => {
-          // Get suggestion count for this member
-          const suggestionCount = await getMemberSuggestionCount(token, member._id);
-          totalSuggestionsCount += suggestionCount; // Add to total count
+          // Get raw suggestion count for this member
+          const rawSuggestionCount = await getMemberSuggestionCount(token, member._id);
+          
+          // Get processed suggestions
+          let processedSuggestions = [];
+          try {
+            const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${member._id}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+              }
+            });
+            
+            if (processedResponse.ok) {
+              const processedData = await processedResponse.json();
+              processedSuggestions = processedData.data || [];
+            }
+          } catch (err) {
+            console.warn(`Error fetching processed suggestions for ${member.name}:`, err);
+          }
+          
+          // Get actual suggestions data to filter using same logic as suggestions page
+          let filteredSuggestionCount = 0;
+          try {
+            const suggestionsResponse = await fetch(`http://localhost:3001/notifications/member-similarities/${member._id}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+              }
+            });
+            
+            if (suggestionsResponse.ok) {
+              const suggestionsData = await suggestionsResponse.json();
+              
+              // Apply the same filtering logic as the suggestions page
+              if (suggestionsData && suggestionsData.data && suggestionsData.data.similarMembers) {
+                // Filter out any suggestions that were already processed
+                const filteredSimilarMembers = suggestionsData.data.similarMembers.map((similar: any) => ({
+                  ...similar,
+                  suggestions: similar.suggestions.filter(
+                    (suggestion: string) => !processedSuggestions.includes(suggestion)
+                  )
+                })).filter((similar: any) => similar.suggestions.length > 0);
+                
+                // Count suggestions using the exact same logic as suggestions page
+                filteredSuggestionCount = filteredSimilarMembers.reduce(
+                  (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 0
+                );
+              }
+            }
+          } catch (err) {
+            console.warn(`Error fetching suggestion details for ${member.name}:`, err);
+          }
+          
+          // Add this member's filtered count to the total
+          totalSuggestionsCount += filteredSuggestionCount;
           
           // Format dates properly for display and edit form
           const formattedBirthDate = member.birthDate
@@ -1166,7 +1222,9 @@ export default function TreeViewPage() {
             occupation: member.occupation || '',
             tags: Array.isArray(member.tags) ? member.tags.join(', ') : '',
             imageUrl,
-            suggestionCount: suggestionCount > 0 ? suggestionCount.toString() : '', // Display suggestion count
+            // Use the filtered count that exactly matches the suggestions page
+            suggestionCount: filteredSuggestionCount.toString(),
+            actualSuggestionCount: filteredSuggestionCount, // Using same count for both fields
           };
         });
         
