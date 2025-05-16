@@ -76,8 +76,22 @@ async function makeApiCall(url: string, options: RequestInit = {}) {
       throw new Error(errorMessage);
     }
     
-    const data = await response.json();
-    return data;
+    const responseData = await response.json();
+    
+    // Check if the response is in the format {statusCode, message, data}
+    // If so, return the data directly for convenience
+    if (responseData && 
+        typeof responseData === 'object' && 
+        'statusCode' in responseData && 
+        'data' in responseData && 
+        responseData.data !== null && 
+        typeof responseData.data === 'object') {
+      console.log("API response contains nested data, extracting it");
+      return responseData.data;
+    }
+    
+    // Otherwise, return the full response
+    return responseData;
   } catch (error) {
     console.error("API call failed:", error);
     throw error;
@@ -132,56 +146,128 @@ export default function MemberSuggestionsPage() {
         
         console.log("Fetching data for member ID:", cleanMemberId);
         
-        // Fetch member data, suggestions, and processed suggestions in parallel
-        const [memberResponse, suggestionsResult, processedSuggestionsResult] = await Promise.all([
-          makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`),
-          makeApiCall(`http://localhost:3001/notifications/member-similarities/${cleanMemberId}`),
-          makeApiCall(`http://localhost:3001/notifications/processed-suggestions/${cleanMemberId}`)
-        ]);
-        
-        console.log("Member data:", memberResponse);
-        console.log("Suggestions data:", suggestionsResult);
-        console.log("Processed suggestions:", processedSuggestionsResult);
-        
-        setMemberData(memberResponse);
-        
-        // Add processed suggestions to our local state
-        if (processedSuggestionsResult && processedSuggestionsResult.data) {
-          setAppliedSuggestions(processedSuggestionsResult.data);
+        // Get token for authorization
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
         }
         
-        // Filter out already applied suggestions
-        if (suggestionsResult && suggestionsResult.data) {
-          // Get all processed suggestions to filter out
-          const processedSuggestions = processedSuggestionsResult && processedSuggestionsResult.data 
-            ? processedSuggestionsResult.data 
-            : [];
-            
-          // Combine with local applied suggestions
-          const allAppliedSuggestions = [...appliedSuggestions, ...processedSuggestions];
-          
-          // Filter out any suggestions that were already applied
-          const filteredSimilarMembers = suggestionsResult.data.similarMembers.map((similar: any) => ({
-            ...similar,
-            suggestions: similar.suggestions.filter(
-              (suggestion: string) => !allAppliedSuggestions.includes(suggestion)
-            )
-          })).filter((similar: any) => similar.suggestions.length > 0);
-          
-          // Update suggestion counts
-          const filteredSuggestionCount = filteredSimilarMembers.reduce(
-            (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 0
-          );
-          
-          // Update the suggestions data state
-          setSuggestionsData({
-            ...suggestionsResult.data,
-            similarMembers: filteredSimilarMembers,
-            suggestionCount: filteredSuggestionCount,
-            count: filteredSimilarMembers.length
+        // IMPORTANT: Match the exact approach from treeview/page.tsx
+        // Step 1: Fetch basic member data
+        const memberResponse = await fetch(`http://localhost:3001/family-members/${cleanMemberId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        
+        if (!memberResponse.ok) {
+          throw new Error(`Failed to fetch member: ${memberResponse.status}`);
+        }
+        
+        const memberData = await memberResponse.json();
+        console.log("Member data from API:", memberData);
+        
+        // Extract the actual member data (handle nested response)
+        const actualMemberData = memberData.data || memberData;
+        
+        // Validate member data
+        if (!actualMemberData || typeof actualMemberData !== 'object' || !actualMemberData._id) {
+          console.error("Invalid member data received:", actualMemberData);
+          throw new Error("Invalid member data received from API");
+        }
+        
+        setMemberData(actualMemberData);
+        console.log("Set member data:", actualMemberData);
+        
+        // Step 2: Get processed suggestions
+        let processedSuggestions = [];
+        try {
+          const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${cleanMemberId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
           });
-        } else {
-          setSuggestionsData(suggestionsResult.data);
+          
+          if (processedResponse.ok) {
+            const processedData = await processedResponse.json();
+            processedSuggestions = processedData.data || [];
+          }
+        } catch (err) {
+          console.warn(`Error fetching processed suggestions:`, err);
+        }
+        
+        console.log("Processed suggestions:", processedSuggestions);
+        setAppliedSuggestions(processedSuggestions);
+        
+        // Step 3: Get member similarities (suggestions)
+        try {
+          const suggestionsResponse = await fetch(`http://localhost:3001/notifications/member-similarities/${cleanMemberId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          });
+          
+          if (!suggestionsResponse.ok) {
+            console.warn(`Suggestions API returned ${suggestionsResponse.status}`);
+            // Initialize with empty data
+            setSuggestionsData({
+              count: 0,
+              suggestionCount: 0,
+              similarMembers: [],
+              hasMore: false
+            });
+          } else {
+            // Process normal suggestions response
+            const suggestionsData = await suggestionsResponse.json();
+            console.log("Suggestions data from API:", suggestionsData);
+            
+            // Extract data from response
+            const actualSuggestionsData = suggestionsData.data;
+            
+            // Filter out processed suggestions
+            if (actualSuggestionsData && actualSuggestionsData.similarMembers) {
+              const filteredSimilarMembers = actualSuggestionsData.similarMembers
+                .map((similar: any) => ({
+                  ...similar,
+                  suggestions: similar.suggestions.filter(
+                    (suggestion: string) => !processedSuggestions.includes(suggestion)
+                  )
+                }))
+                .filter((similar: any) => similar.suggestions && similar.suggestions.length > 0);
+              
+              // Count suggestions
+              const filteredSuggestionCount = filteredSimilarMembers.reduce(
+                (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 
+                0
+              );
+              
+              // Update UI
+              setSuggestionsData({
+                count: filteredSimilarMembers.length,
+                suggestionCount: filteredSuggestionCount,
+                similarMembers: filteredSimilarMembers,
+                hasMore: false
+              });
+            } else {
+              setSuggestionsData({
+                count: 0,
+                suggestionCount: 0,
+                similarMembers: [],
+                hasMore: false
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching suggestions:", err);
+          setSuggestionsData({
+            count: 0,
+            suggestionCount: 0,
+            similarMembers: [],
+            hasMore: false
+          });
         }
       } catch (error) {
         console.error("Error in fetchData:", error);
@@ -401,6 +487,14 @@ export default function MemberSuggestionsPage() {
     } else if (suggestion.includes("Consider adding father") || suggestion.includes("adding father")) {
       console.log("Found father suggestion:", suggestion);
       
+      // Ask for confirmation before proceeding with parent addition
+      const confirmed = window.confirm(`Do you want to add a father for this family member? This will create a new parent node in your family tree.`);
+      
+      if (!confirmed) {
+        console.log("User declined to add father");
+        return;
+      }
+      
       // Mark this suggestion as special and don't process it like regular field changes
       updateData._specialAction = "addFather";
       
@@ -409,10 +503,44 @@ export default function MemberSuggestionsPage() {
       if (fatherNameMatch && fatherNameMatch[1]) {
         updateData._fatherName = fatherNameMatch[1].trim();
         console.log("Extracted father name:", updateData._fatherName);
+        
+        // Try to extract surname if the name has a format "FirstName Surname"
+        const nameParts = updateData._fatherName.split(' ');
+        if (nameParts.length > 1) {
+          updateData._fatherSurname = nameParts[nameParts.length - 1];
+          console.log("Extracted father surname:", updateData._fatherSurname);
+        }
+      }
+      
+      // Also try to extract surname directly if available
+      const fatherSurnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
+      if (fatherSurnameMatch && fatherSurnameMatch[1]) {
+        updateData._fatherSurname = fatherSurnameMatch[1].trim();
+        console.log("Directly extracted father surname:", updateData._fatherSurname);
+      }
+      
+      // Try different possible formats
+      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member[^\w]+(\w{24})/i); // Match MongoDB ObjectIds
+      
+      if (sourceMemberMatch && sourceMemberMatch[1]) {
+        updateData._sourceMemberId = sourceMemberMatch[1].trim();
+        console.log("Extracted source member ID:", updateData._sourceMemberId);
       }
       
     } else if (suggestion.includes("Consider adding mother") || suggestion.includes("adding mother")) {
       console.log("Found mother suggestion:", suggestion);
+      
+      // Ask for confirmation before proceeding with parent addition
+      const confirmed = window.confirm(`Do you want to add a mother for this family member? This will create a new parent node in your family tree.`);
+      
+      if (!confirmed) {
+        console.log("User declined to add mother");
+        return;
+      }
       
       // Mark this suggestion as special and don't process it like regular field changes
       updateData._specialAction = "addMother";
@@ -422,6 +550,32 @@ export default function MemberSuggestionsPage() {
       if (motherNameMatch && motherNameMatch[1]) {
         updateData._motherName = motherNameMatch[1].trim();
         console.log("Extracted mother name:", updateData._motherName);
+        
+        // Try to extract surname if the name has a format "FirstName Surname"
+        const nameParts = updateData._motherName.split(' ');
+        if (nameParts.length > 1) {
+          updateData._motherSurname = nameParts[nameParts.length - 1];
+          console.log("Extracted mother surname:", updateData._motherSurname);
+        }
+      }
+      
+      // Also try to extract surname directly if available
+      const motherSurnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
+      if (motherSurnameMatch && motherSurnameMatch[1]) {
+        updateData._motherSurname = motherSurnameMatch[1].trim();
+        console.log("Directly extracted mother surname:", updateData._motherSurname);
+      }
+      
+      // Try different possible formats
+      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member[^\w]+(\w{24})/i); // Match MongoDB ObjectIds
+      
+      if (sourceMemberMatch && sourceMemberMatch[1]) {
+        updateData._sourceMemberId = sourceMemberMatch[1].trim();
+        console.log("Extracted source member ID:", updateData._sourceMemberId);
       }
     }
     
@@ -439,111 +593,155 @@ export default function MemberSuggestionsPage() {
           throw new Error("No authentication token found");
         }
         
-        if (!memberData) {
-          throw new Error("Member data not available");
+        // Get the clean member ID for API calls
+        const cleanMemberId = typeof memberId === 'object' 
+          ? (memberId as any).toString()
+          : String(memberId);
+        
+        console.log("Working with member ID:", cleanMemberId);
+        
+        // ALWAYS fetch fresh data to ensure we have the latest
+        console.log("Fetching fresh member data...");
+        let validMemberData: MemberData;
+        
+        try {
+          const freshMemberResponse = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
+          console.log("API returned response:", freshMemberResponse);
+          
+          // Extract the actual member data from the response structure
+          // The API returns { statusCode, message, data } where data is the actual member object
+          let actualMemberData;
+          
+          // Check if we have a nested response structure
+          if (freshMemberResponse && typeof freshMemberResponse === 'object') {
+            if (freshMemberResponse.data && typeof freshMemberResponse.data === 'object') {
+              console.log("Extracting member data from nested response");
+              actualMemberData = freshMemberResponse.data;
+            } else {
+              // If not nested, assume the response itself is the member data
+              actualMemberData = freshMemberResponse;
+            }
+          }
+          
+          console.log("Extracted member object:", actualMemberData);
+          
+          // Validate that we have a proper object with _id
+          if (!actualMemberData || typeof actualMemberData !== 'object' || !actualMemberData._id) {
+            console.error("API returned invalid member data:", actualMemberData);
+            toast.error("Could not retrieve valid member data");
+            return;
+          }
+          
+          // Update component state with fresh data
+          setMemberData(actualMemberData);
+          validMemberData = actualMemberData;
+        } catch (fetchError) {
+          console.error("Failed to fetch member data:", fetchError);
+          toast.error("Failed to get member data");
+          return;
         }
         
-        // Create a synthetic node that mimics the FamilyTree node structure
-        const syntheticNode = {
-          id: memberData._id,
-          gender: memberData.gender,
-          fid: memberData.fatherId,
-          mid: memberData.motherId,
-          pids: memberData.partnerId || []
-        };
+        console.log("Using validated member data:", validMemberData);
+        console.log("Adding parent from suggestion:", updateData);
         
+        // Double-check that we have a valid ID before proceeding
+        if (!validMemberData._id) {
+          console.error("Member data is missing ID:", validMemberData);
+          toast.error("Cannot add parent: Missing member ID");
+          return;
+        }
+        
+        // Store the parent suggestion in pending changes instead of applying immediately
         const relation = updateData._specialAction === "addFather" ? "father" : "mother";
         
         // Prepare data for the new parent
-        const parentData = {
+        const parentData: {
+          name: string;
+          surname: string;
+          gender: string;
+          status: string;
+          country: string;
+          occupation: string;
+          birthDate?: string;
+          deathDate?: string;
+        } = {
           name: updateData._specialAction === "addFather" 
             ? (updateData._fatherName || "Unknown")
             : (updateData._motherName || "Unknown"),
-          surname: memberData.surname || "Unknown",
+          surname: updateData._specialAction === "addFather"
+            ? (updateData._fatherSurname || validMemberData.surname || "Unknown")
+            : (updateData._motherSurname || validMemberData.surname || "Unknown"),
           gender: updateData._specialAction === "addFather" ? "male" : "female",
-          status: "alive"
+          status: "alive",
+          country: validMemberData.country || "",
+          occupation: ""
         };
         
-        // Import the handler function
-        const { handleAddMember } = await import("../../treeview/service/familyService");
-        
-        // Call the handler function to add the parent
-        await handleAddMember(token, syntheticNode, relation, async () => {
-          // Refresh data after parent is added
+        // Try to get additional details from source member if available
+        if (updateData._sourceMemberId) {
           try {
-            setLoading(true);
-            setError(null);
+            console.log(`Fetching details from source member ${updateData._sourceMemberId}`);
+            const sourceResponse = await makeApiCall(`http://localhost:3001/family-members/${updateData._sourceMemberId}`);
             
-            // Ensure we have a clean string ID
-            const cleanMemberId = typeof memberId === 'object' 
-              ? (memberId as any).toString()
-              : String(memberId);
-            
-            // Fetch member data, suggestions, and processed suggestions in parallel
-            const [memberResponse, suggestionsResult, processedSuggestionsResult] = await Promise.all([
-              makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`),
-              makeApiCall(`http://localhost:3001/notifications/member-similarities/${cleanMemberId}`),
-              makeApiCall(`http://localhost:3001/notifications/processed-suggestions/${cleanMemberId}`)
-            ]);
-            
-            setMemberData(memberResponse);
-            
-            // Add processed suggestions to our local state
-            if (processedSuggestionsResult && processedSuggestionsResult.data) {
-              setAppliedSuggestions(processedSuggestionsResult.data);
+            if (sourceResponse && (sourceResponse.data || sourceResponse)) {
+              const sourceData = sourceResponse.data || sourceResponse;
+              console.log("Found source member data:", sourceData);
+              
+              // Use source member's surname instead of child's surname
+              if (sourceData.surname) parentData.surname = sourceData.surname;
+              
+              // Copy relevant fields if they exist
+              if (sourceData.birthDate) parentData.birthDate = sourceData.birthDate;
+              if (sourceData.deathDate) parentData.deathDate = sourceData.deathDate;
+              if (sourceData.status) parentData.status = sourceData.status;
+              if (sourceData.country) parentData.country = sourceData.country;
+              if (sourceData.occupation) parentData.occupation = sourceData.occupation;
             }
-            
-            // Filter out already applied suggestions
-            if (suggestionsResult && suggestionsResult.data) {
-              // Get all processed suggestions to filter out
-              const processedSuggestions = processedSuggestionsResult && processedSuggestionsResult.data 
-                ? processedSuggestionsResult.data 
-                : [];
-                
-              // Combine with local applied suggestions
-              const allAppliedSuggestions = [...appliedSuggestions, ...processedSuggestions];
-              
-              // Filter out any suggestions that were already applied
-              const filteredSimilarMembers = suggestionsResult.data.similarMembers.map((similar: any) => ({
-                ...similar,
-                suggestions: similar.suggestions.filter(
-                  (suggestion: string) => !allAppliedSuggestions.includes(suggestion)
-                )
-              })).filter((similar: any) => similar.suggestions.length > 0);
-              
-              // Update suggestion counts
-              const filteredSuggestionCount = filteredSimilarMembers.reduce(
-                (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 0
-              );
-              
-              // Update the suggestions data state
-              setSuggestionsData({
-                ...suggestionsResult.data,
-                similarMembers: filteredSimilarMembers,
-                suggestionCount: filteredSuggestionCount,
-                count: filteredSimilarMembers.length
-              });
-            } else {
-              setSuggestionsData(suggestionsResult.data);
-            }
-          } catch (error) {
-            console.error("Error refreshing data after adding parent:", error);
-            setError(error instanceof Error ? error.message : "An unknown error occurred");
-          } finally {
-            setLoading(false);
+          } catch (sourceError) {
+            console.warn("Could not fetch source member data:", sourceError);
+            // Continue with the basic data we have
           }
-        }, parentData);
+        }
         
-        // Mark the suggestion as processed
-        await markSuggestionAsProcessed(memberId, suggestion);
+        // Create a serializable version of the parent data for pending changes
+        const pendingParentAddition = {
+          _specialAction: updateData._specialAction,
+          parentData: parentData,
+          targetMemberId: validMemberData._id
+        };
         
-        toast.success(`${relation === "father" ? "Father" : "Mother"} added successfully!`);
+        // Store previous data for comparison
+        prevMemberDataRef.current = memberData ? { ...memberData } : null;
         
-        // Return early as we've already handled this suggestion
+        // Add to pending changes, merging with any existing pending changes
+        setPendingChanges(prev => {
+          const newChanges = { ...prev.changes };
+          
+          // Add the parent addition action to pending changes
+          // Use a unique key so it won't conflict with other changes
+          const actionKey = updateData._specialAction === "addFather" ? "_addFatherAction" : "_addMotherAction";
+          newChanges[actionKey] = pendingParentAddition;
+          
+          return {
+            changes: newChanges,
+            sourceSuggestions: [...prev.sourceSuggestions, suggestion],
+          };
+        });
+        
+        // Store the suggestion text to filter it out from the UI first
+        setAppliedSuggestions(prev => [...prev, suggestion]);
+        
+        // Update the UI to indicate the pending change
+        const displayName = relation === "father" ? "Father" : "Mother";
+        const displayValue = parentData.name + " " + parentData.surname;
+        
+        toast.success(`${displayName} "${displayValue}" will be added after saving changes`);
+        
         return;
+        
       } catch (error) {
-        console.error("Error adding parent:", error);
-        toast.error(`Failed to add ${updateData._specialAction === "addFather" ? "father" : "mother"}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error("Error preparing parent addition:", error);
+        toast.error(`Failed to prepare parent addition: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return;
       }
     }
@@ -599,7 +797,7 @@ export default function MemberSuggestionsPage() {
       const updatedSimilarMembers = suggestionsData.similarMembers.map((similar: any) => ({
         ...similar,
         suggestions: similar.suggestions.filter((s: string) => s !== suggestion)
-      })).filter((similar: any) => similar.suggestions.length > 0);
+      })).filter(similar => similar.suggestions.length > 0);
       
       const updatedSuggestionCount = updatedSimilarMembers.reduce(
         (count: number, member: any) => count + member.suggestions.length, 0
@@ -666,17 +864,87 @@ export default function MemberSuggestionsPage() {
         ? (memberId as any).toString()
         : String(memberId);
       
-      console.log(`Sending PATCH request to update member ${cleanMemberId} with data:`, pendingChanges.changes);
+      // Handle special parent actions separately
+      const regularChanges: Record<string, any> = {};
+      const specialActions: Array<{action: string, data: any}> = [];
       
-      const result = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`, {
-        method: "PATCH",
-        body: JSON.stringify(pendingChanges.changes)
-      });
+      for (const [key, value] of Object.entries(pendingChanges.changes)) {
+        if (key === "_addFatherAction" || key === "_addMotherAction") {
+          specialActions.push({action: key, data: value});
+        } else {
+          regularChanges[key] = value;
+        }
+      }
       
-      console.log("Update successful, response:", result);
+      // First apply regular changes if any
+      if (Object.keys(regularChanges).length > 0) {
+        console.log(`Sending PATCH request to update member ${cleanMemberId} with data:`, regularChanges);
+        
+        const result = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`, {
+          method: "PATCH",
+          body: JSON.stringify(regularChanges)
+        });
+        
+        console.log("Update successful, response:", result);
+      }
       
-      // Handle both result formats to ensure we get the updated member data
-      const updatedMember = result.data || result;
+      // Then handle any parent additions
+      if (specialActions.length > 0) {
+        for (const action of specialActions) {
+          try {
+            console.log(`Processing special action: ${action.action}`, action.data);
+            
+            // Import the handler function on demand
+            const { handleAddMember } = await import("../../treeview/service/familyService");
+            
+            // Extract parent data
+            const parentAction = action.data as {
+              _specialAction: string;
+              parentData: any;
+              targetMemberId: string;
+            };
+            
+            // Create synthetic node representing the target member
+            const syntheticNode = {
+              id: parentAction.targetMemberId,
+              _id: parentAction.targetMemberId,
+              gender: memberData.gender || "unknown",
+              fid: memberData.fatherId || null,
+              mid: memberData.motherId || null,
+              pids: memberData.partnerId || []
+            };
+            
+            // Determine relation
+            const relation = parentAction._specialAction === "addFather" ? "father" : "mother";
+            
+            // Create a refresh function for the handleAddMember call
+            const refreshFunction = async () => {
+              try {
+                // Re-fetch the member data
+                const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
+                setMemberData(refreshedMemberData);
+              } catch (refreshError) {
+                console.error("Error refreshing member data:", refreshError);
+              }
+            };
+            
+            // Call the handler to add the parent
+            console.log(`Adding ${relation} with data:`, parentAction.parentData);
+            const result = await handleAddMember(
+              localStorage.getItem("token") || "", 
+              syntheticNode, 
+              relation, 
+              refreshFunction, 
+              parentAction.parentData
+            );
+            
+            console.log(`${relation} addition result:`, result);
+          } catch (actionError) {
+            console.error(`Error processing ${action.action}:`, actionError);
+            toast.error(`Failed to add family member: ${actionError instanceof Error ? actionError.message : 'Unknown error'}`);
+          }
+        }
+      }
       
       // Mark all applied suggestions as processed in the database
       if (pendingChanges.sourceSuggestions.length > 0) {
@@ -826,14 +1094,29 @@ export default function MemberSuggestionsPage() {
     try {
       console.log(`Marking suggestion as processed: "${suggestionText}"`);
       
-      const result = await makeApiCall(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+      // Get token for authorization
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+      
+      const response = await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           memberId,
           suggestionText
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`Failed to mark suggestion as processed: ${response.status}`);
+      }
+      
+      const result = await response.json();
       console.log("Suggestion marked as processed:", result);
       return true;
     } catch (error) {
@@ -843,8 +1126,16 @@ export default function MemberSuggestionsPage() {
   };
 
   const SuggestionCard = ({ similarMember }: { similarMember: any }) => {
+    // Add debugging logs
+    console.log("Rendering SuggestionCard with:", {
+      memberName: similarMember.name,
+      suggestionsCount: similarMember.suggestions?.length || 0,
+      appliedSuggestionsCount: appliedSuggestions.length
+    });
+    
     // Don't render if no suggestions
     if (!similarMember.suggestions || similarMember.suggestions.length === 0) {
+      console.log("Skipping card - no suggestions");
       return null;
     }
     
@@ -853,8 +1144,11 @@ export default function MemberSuggestionsPage() {
       (suggestion: string) => !appliedSuggestions.includes(suggestion)
     );
     
+    console.log("Filtered suggestions count:", filteredSuggestions.length);
+    
     // Don't render if all suggestions have been applied
     if (filteredSuggestions.length === 0) {
+      console.log("Skipping card - all suggestions applied");
       return null;
     }
     
@@ -1114,18 +1408,50 @@ export default function MemberSuggestionsPage() {
                   </h2>
                   
                   <div className="space-y-3 mb-6">
-                    {Object.entries(pendingChanges.changes).map(([field, value]) => (
-                      <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
-                        <div>
-                          <div className="text-sm text-yellow-200/70">{formatFieldName(field)}</div>
-                          <div className="text-yellow-100">
-                            {field === 'birthDate' || field === 'deathDate' 
-                              ? formatDate(value as string)
-                              : value?.toString() || ''}
+                    {Object.entries(pendingChanges.changes).map(([field, value]) => {
+                      // Handle special actions for adding parents
+                      if (field === "_addFatherAction") {
+                        const parentData = (value as any).parentData;
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">Add Father</div>
+                              <div className="text-yellow-100">
+                                {parentData.name} {parentData.surname}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      } 
+                      else if (field === "_addMotherAction") {
+                        const parentData = (value as any).parentData;
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">Add Mother</div>
+                              <div className="text-yellow-100">
+                                {parentData.name} {parentData.surname}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      // Regular field changes
+                      else {
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">{formatFieldName(field)}</div>
+                              <div className="text-yellow-100">
+                                {field === 'birthDate' || field === 'deathDate' 
+                                  ? formatDate(value as string)
+                                  : value?.toString() || ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                    })}
                   </div>
                   
                   <div className="flex gap-3">
@@ -1193,8 +1519,21 @@ export default function MemberSuggestionsPage() {
                       );
                     }
                     
-                    if (suggestionsData.similarMembers.length === 0 || 
-                        suggestionsData.suggestionCount === 0) {
+                    // Log data for debugging
+                    console.log("Rendering suggestions section with data:", {
+                      similarMembersLength: suggestionsData.similarMembers.length,
+                      suggestionCount: suggestionsData.suggestionCount,
+                      appliedSuggestions
+                    });
+                    
+                    // Modified condition to check if we have similarMembers with actual suggestions after filtering
+                    const hasSimilarMembers = suggestionsData.similarMembers.some(similar => 
+                      similar.suggestions && similar.suggestions.filter(
+                        suggestion => !appliedSuggestions.includes(suggestion)
+                      ).length > 0
+                    );
+                    
+                    if (!hasSimilarMembers) {
                       return (
                         <div className="p-4 rounded-lg bg-gray-700/50 border border-gray-600/50">
                           <p className="text-gray-300">No suggestions available for this member</p>

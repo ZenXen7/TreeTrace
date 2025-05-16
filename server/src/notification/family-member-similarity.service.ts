@@ -1122,8 +1122,6 @@ export class FamilyMemberSimilarityService {
     
     console.log(`Generated ${suggestionsForMember1.length} suggestions for member1 and ${suggestionsForMember2.length} for member2`);
     
-    suggestionsForMember1.push('DEBUG: This is a test suggestion');
-    
     return {
       suggestionsForMember1,
       suggestionsForMember2,
