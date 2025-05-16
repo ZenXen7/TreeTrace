@@ -142,10 +142,19 @@ async function handleAddMember(
   newMemberData?: any
 ) {
   try {
+    // Log only necessary node properties instead of the entire node object
+    // to avoid circular reference issues
     console.log("handleAddMember called with:", { 
       relation, 
-      node: JSON.stringify(node),
-      newMemberData: newMemberData ? JSON.stringify(newMemberData) : null 
+      nodeInfo: {
+        id: node.id || node._id,
+        name: node.name,
+        gender: node.gender,
+        fid: node.fid,
+        mid: node.mid,
+        hasPartner: node.pids && node.pids.length > 0
+      },
+      newMemberData: newMemberData || null 
     });
     
     if (relation === "son" || relation === "daughter") {
