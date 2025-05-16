@@ -56,26 +56,18 @@ function Familytree(props: {
 
       const img_0 ="https://preview.redd.it/some-random-black-dude-i-found-v0-7b7ipzz5af0c1.jpg?auto=webp&s=50dde31529bf146611d82a09c0e0e7cf3948a2d3"
 
-      // Updated text positioning for larger node cards with better spacing
-      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="25" y="50">{val}</text>` // First name
-      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="25" y="75">{val}</text>` // Surname
+      // Updated text positioning for a cleaner card with fewer fields
+      FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="25" y="60">{val}</text>` // First name
+      FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="25" y="85">{val}</text>` // Surname
+      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="25" y="110">Birth: {val}</text>` // Birth date
       
-      // Gender field with more space from top
-      FamilyTree.templates.tommy.field_2 = `<text class="bft-field-2" ${roleStyle} x="25" y="100">{val}</text>`
-      
-      // Occupation with icon and better spacing
-      FamilyTree.templates.tommy.field_7 = `<text class="bft-field-7" ${roleStyle} x="140" y="100">💼 {val}</text>`
-      
-      // Birth/Death dates with more bottom padding
-      FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="25" y="125">Birth: {val}</text>`
-      FamilyTree.templates.tommy.field_5 = `<text class="bft-field-5" ${detailStyle} x="150" y="125">Death: {val}</text>`
-      
-      // Remove any unused fields from previous template
-      FamilyTree.templates.tommy.field_3 = ``; 
+      // Clear all other fields that we don't want to display
+      FamilyTree.templates.tommy.field_2 = ``;
+      FamilyTree.templates.tommy.field_3 = ``;
+      FamilyTree.templates.tommy.field_5 = ``;
       FamilyTree.templates.tommy.field_6 = ``;
+      FamilyTree.templates.tommy.field_7 = ``;
       FamilyTree.templates.tommy.field_8 = ``;
-
-      // Initialize SVG with our custom suggestion badge definitions
       FamilyTree.templates.tommy.field_9 = `
         <g class="suggestion-badge-svg" data-suggestion-badge="true" transform="translate(20, 20)" style="cursor:pointer;">
           <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -100,48 +92,63 @@ function Familytree(props: {
       FamilyTree.templates.tommy_female.field_9 = FamilyTree.templates.tommy.field_9;
       FamilyTree.templates.tommy_male.field_9 = FamilyTree.templates.tommy.field_9;
 
-      // Enhanced family tree node templates with larger size and better padding
+      // Adjust node sizes for a cleaner look with fewer fields
       FamilyTree.templates.tommy.node = `
 <g filter="url(#card-shadow)">
-  <!-- Card background with rounded corners and subtle gradient -->
-  <rect x="0" y="0" height="160" width="280" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
+  <!-- Card background with rounded corners -->
+  <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
   
-  <!-- Gender-neutral accent -->
-  <rect x="0" y="0" height="10" width="280" rx="10" ry="0" fill="#80cbc4"/>
+  <!-- Neutral accent -->
+  <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#80cbc4"/>
   
   <!-- Small icon placeholder for gender icon at top right -->
-  <circle cx="255" cy="30" r="15" fill="#374151" stroke="#4B5563" strokeWidth="1.5"/>
+  <circle cx="225" cy="30" r="15" fill="#374151" stroke="#4B5563" strokeWidth="1.5"/>
 </g>
 `
       FamilyTree.templates.tommy_female.node = `
 <g filter="url(#card-shadow)">
-  <!-- Card background with rounded corners and subtle gradient -->
-  <rect x="0" y="0" height="160" width="280" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
+  <!-- Card background with rounded corners -->
+  <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
   
   <!-- Female accent -->
-  <rect x="0" y="0" height="10" width="280" rx="10" ry="0" fill="#EC4899"/>
+  <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#EC4899"/>
   
   <!-- Female icon placeholder at top right -->
-  <circle cx="255" cy="30" r="15" fill="#EC4899" stroke="#4B5563" strokeWidth="1.5"/>
+  <circle cx="225" cy="30" r="15" fill="#EC4899" stroke="#4B5563" strokeWidth="1.5"/>
   <!-- Female symbol -->
-  <path d="M255,22 L255,29 M251,25 L259,25 M255,29 L255,38 M250,34 L260,34" stroke="white" stroke-width="2" fill="none" />
+  <path d="M225,22 L225,29 M221,25 L229,25 M225,29 L225,38 M220,34 L230,34" stroke="white" stroke-width="2" fill="none" />
 </g>
 `;
 
       FamilyTree.templates.tommy_male.node = `
 <g filter="url(#card-shadow)">
-  <!-- Card background with rounded corners and subtle gradient -->
-  <rect x="0" y="0" height="160" width="280" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
+  <!-- Card background with rounded corners -->
+  <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
   
   <!-- Male accent -->
-  <rect x="0" y="0" height="10" width="280" rx="10" ry="0" fill="#3B82F6"/>
+  <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#3B82F6"/>
   
   <!-- Male icon placeholder at top right -->
-  <circle cx="255" cy="30" r="15" fill="#3B82F6" stroke="#4B5563" strokeWidth="1.5"/>
+  <circle cx="225" cy="30" r="15" fill="#3B82F6" stroke="#4B5563" strokeWidth="1.5"/>
   <!-- Male symbol -->
-  <path d="M250,23 L260,33 M260,23 L260,33 L250,33" stroke="white" stroke-width="2" fill="none" />
+  <path d="M220,23 L230,33 M230,23 L230,33 L220,33" stroke="white" stroke-width="2" fill="none" />
 </g>
 `;
+
+      // Update the node menu button position for the cards
+      FamilyTree.templates.tommy.nodeCircleMenuButton =
+        FamilyTree.templates.tommy_female.nodeCircleMenuButton =
+        FamilyTree.templates.tommy_male.nodeCircleMenuButton =
+          {
+            radius: 18,
+            x: 220,
+            y: 100,
+            color: "#1F2937",
+            stroke: "#4B5563",
+            strokeWidth: 2,
+            hoverColor: "#374151",
+            hoverStroke: "#00CCAA",
+          };
 
       // Add a style element to hide the avatar in edit forms
       const styleElement = document.createElement('style');
@@ -151,6 +158,29 @@ function Familytree(props: {
         }
         .bft-edit-form-title {
           margin-top: 20px !important;
+        }
+        
+        /* Female edit form styles - more specific selectors to ensure they apply */
+        .bft-edit-form.female-edit-form {
+          border: 2px solid rgba(236, 72, 153, 0.5) !important;
+        }
+        .bft-edit-form.female-edit-form .bft-form-header,
+        .bft-edit-form.female-edit-form .bft-edit-form-header {
+          background-color: rgba(236, 72, 153, 0.15) !important;
+          border-bottom: 1px solid rgba(236, 72, 153, 0.3) !important;
+        }
+        .bft-edit-form.female-edit-form .bft-edit-form-title,
+        .bft-edit-form.female-edit-form .bft-form-title {
+          color: rgb(236, 72, 153) !important;
+        }
+        .bft-edit-form.female-edit-form button.bft-form-btn,
+        .bft-edit-form.female-edit-form .bft-submit {
+          background-color: rgb(236, 72, 153) !important;
+          border-color: rgb(216, 52, 133) !important;
+        }
+        .bft-edit-form.female-edit-form button.bft-form-btn:hover,
+        .bft-edit-form.female-edit-form .bft-submit:hover {
+          background-color: rgb(216, 52, 133) !important;
         }
       `;
       document.head.appendChild(styleElement);
@@ -234,21 +264,6 @@ function Familytree(props: {
         document.head.appendChild(script);
       }
 
-      // Update the node menu button position for the larger cards
-      FamilyTree.templates.tommy.nodeCircleMenuButton =
-        FamilyTree.templates.tommy_female.nodeCircleMenuButton =
-        FamilyTree.templates.tommy_male.nodeCircleMenuButton =
-          {
-            radius: 20,
-            x: 250,
-            y: 120,
-            color: "#1F2937",
-            stroke: "#4B5563",
-            strokeWidth: 2,
-            hoverColor: "#374151",
-            hoverStroke: "#00CCAA",
-          };
-          
       // Apply the same field styling to male and female templates
       for (let i = 0; i <= 9; i++) {
         FamilyTree.templates.tommy_female[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
@@ -282,7 +297,44 @@ function Familytree(props: {
         showYScroll: false,
         // miniMap: true,
         enableSearch: true,
-        enableFilter: false,
+        searchFields: ["name", "surname"], // Only search in name and surname fields
+        searchDisplayField: "name", // Display name in search results
+        searchFieldsWeight: {
+          "name": 100,
+          "surname": 80
+        }, // Give higher priority to exact name matches
+        
+        // Custom search method for more precise full name matching
+        searchMethod: function(query, data, searchFields, searchFieldsWeight) {
+          // Convert search query to lowercase for case-insensitive matching
+          const searchQuery = query.toLowerCase();
+          const results = [];
+          
+          // First try exact full name match (name + surname)
+          for (let i = 0; i < data.length; i++) {
+            const node = data[i];
+            // Create a full name from name and surname fields
+            const fullName = `${node.name || ''} ${node.surname || ''}`.toLowerCase().trim();
+            
+            // If we have an exact full name match, only return this result
+            if (fullName === searchQuery) {
+              return [node];
+            }
+            
+            // Check if full name contains the search query
+            if (fullName.includes(searchQuery)) {
+              results.push(node);
+            }
+            // Also check individual fields
+            else if ((node.name && node.name.toLowerCase().includes(searchQuery)) || 
+                     (node.surname && node.surname.toLowerCase().includes(searchQuery))) {
+              results.push(node);
+            }
+          }
+          
+          return results;
+        },
+        
         filterBy: [],
         
         // Update the editForm configuration to match the example
@@ -343,7 +395,7 @@ function Familytree(props: {
         padding: 50,
         orientation: FamilyTree.orientation.top,
         layout: FamilyTree.layout.normal,
-        scaleInitial: FamilyTree.match.boundary,
+        // scaleInitial: FamilyTree.match.boundary,
         // enableSearch: true,
         enableDragDrop: true,
         enablePan: true,
@@ -394,6 +446,23 @@ function Familytree(props: {
               const displayName = `${node.name || ''} ${node.surname || ''}`.trim();
               if (displayName) {
                 titleElement.textContent = displayName;
+              }
+              
+              // Apply female styling if the node is female
+              const editForm = document.querySelector('.bft-edit-form');
+              if (editForm && node.gender === 'female') {
+                editForm.classList.add('female-edit-form');
+                
+                // Force refresh styles
+                setTimeout(() => {
+                  const submitButtons = editForm.querySelectorAll('button');
+                  submitButtons.forEach(button => {
+                    if (button.textContent === 'Update' || button.textContent === 'Save') {
+                      button.style.backgroundColor = 'rgb(236, 72, 153)';
+                      button.style.borderColor = 'rgb(216, 52, 133)';
+                    }
+                  });
+                }, 10);
               }
             }
             
@@ -1330,14 +1399,8 @@ export default function TreeViewPage() {
   const nodeBinding = {
     field_0: "name",
     field_1: "surname",
-    field_2: "gender",
-    field_3: "status",
-    field_4: "birthDate",
-    field_5: "deathDate",
-    field_6: "country",
-    field_7: "occupation",
-    field_8: "tags",
-    field_9: "suggestionCount", // Add suggestion count binding
+    field_4: "birthDate", 
+    field_9: "suggestionCount", // Keep suggestion count binding
   }
 
   const handleShareTree = async () => {
@@ -1644,7 +1707,7 @@ export default function TreeViewPage() {
               className="relative"
             >
               <div className="p-2">
-                <div id="tree" className="w-full h-[900px]"></div>
+                <div id="tree" className="w-full h-[1100px]"></div>
                 <Familytree
                   key={treeKey}
                   nodes={data}
