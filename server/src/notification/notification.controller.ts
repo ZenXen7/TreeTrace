@@ -273,7 +273,7 @@ export class NotificationController {
             // If similarity is above threshold and we have at least one similar field
             if (similarity > 0.7 && similarFields.length > 0) {
               // Generate suggestions based on differences
-              const suggestions = this.generateSuggestions(currentMember, otherMember, similarFields);
+              const suggestions = await this.generateSuggestions(currentMember, otherMember, similarFields);
               totalSuggestionCount += suggestions.length;
               
               userSimilarities.push({
@@ -334,12 +334,12 @@ export class NotificationController {
   }
 
   // Generate suggestions for differences between family members
-  private generateSuggestions(
+  private async generateSuggestions(
     currentMember: FamilyMemberWithId,
     otherMember: FamilyMemberWithId,
     similarFields: string[]
-  ): string[] {
-    const suggestions: string[] = [];
+  ): Promise<string[]> {
+    let suggestions: string[] = [];
     
     // Get first names and surnames (trimmed, lowercased)
     const firstName1 = currentMember.name ? currentMember.name.split(' ')[0].trim().toLowerCase() : '';
@@ -349,27 +349,34 @@ export class NotificationController {
     const surname1 = this.extractSurnameFromName(currentMember.name).trim().toLowerCase();
     const surname2 = this.extractSurnameFromName(otherMember.name).trim().toLowerCase();
 
-    // STRICT CHECK: Both first name AND surname must match exactly
-    const hasSameFirstNameAndSurname = firstName1 === firstName2 && surname1 === surname2 && surname1 !== '' && surname2 !== '';
+    // Check if basic name components match - relax requirements to allow for matching on first name if needed
+    const hasSameFirstName = firstName1 === firstName2 && firstName1 !== '';
+    const hasSameSurname = surname1 === surname2 && surname1 !== '';
+    
+    // RELAXED CHECK: Use either exact name match OR similarity check result to generate suggestions
+    const shouldGenerateSuggestions = 
+      // Either same first name AND surname
+      (hasSameFirstName && hasSameSurname) || 
+      // OR high name similarity as calculated by the similarity service
+      (similarFields.includes('firstName') && similarFields.includes('surname')) ||
+      similarFields.includes('fullName');
     
     // Log name comparison for debugging
     console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
-    console.log(`STRICT CHECK - Same first name and surname: ${hasSameFirstNameAndSurname}`);
+    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
+    console.log(`Should generate suggestions: ${shouldGenerateSuggestions}`);
 
-    // If names don't match exactly (both first name AND surname), return empty suggestions
-    if (!hasSameFirstNameAndSurname) {
-      console.log("Names don't match exactly - no suggestions generated");
+    // Only generate suggestions if there's a good name match
+    if (!shouldGenerateSuggestions) {
+      console.log("Names don't match well enough - no suggestions generated");
       return suggestions;
     }
     
-    // Modified code for the rest: ALL suggestion generation is protected by the strict name check above
-    console.log("Names match exactly - generating suggestions");
-    
-    // Remove redundant additional name check
-    const hasExactNameMatch = hasSameFirstNameAndSurname;
+    console.log("Names match well enough - generating suggestions");
     
     // Check for parent relationship suggestions
-    this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);
+    suggestions = await this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);
+    console.log(`After parent check, have ${suggestions.length} suggestions`);
     
     // Status differences
     if (currentMember.status && otherMember.status) {
@@ -379,10 +386,12 @@ export class NotificationController {
           suggestions.push(
             `Consider updating status to "dead" for "${currentMember.name}". Another user has recorded this person as dead.`
           );
+          console.log("Added suggestion for updating status to dead");
         } else if (currentMember.status === 'dead' && otherMember.status === 'alive') {
           suggestions.push(
             `Verify status of "${currentMember.name}". Another user has recorded this person as alive.`
           );
+          console.log("Added suggestion for verifying alive status");
         }
       } else {
         // Even for matching status, suggest confirming
@@ -390,6 +399,7 @@ export class NotificationController {
           suggestions.push(
             `Confirm dead status for "${currentMember.name}". Another user has also recorded this person as dead.`
           );
+          console.log("Added suggestion for confirming dead status");
         }
       }
     }
@@ -399,6 +409,8 @@ export class NotificationController {
       const date1 = new Date(currentMember.birthDate);
       const date2 = new Date(otherMember.birthDate);
       
+      console.log(`Comparing birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
+      
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
@@ -406,23 +418,28 @@ export class NotificationController {
         suggestions.push(
           `Consider updating birth date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different birth date.`
         );
+        console.log("Added suggestion for updating birth date");
       } else {
         const date1Str = date1.toISOString().split('T')[0];
         suggestions.push(
           `Confirm birth date ${date1Str} for "${currentMember.name}". Another user has recorded the same birth date.`
         );
+        console.log("Added suggestion for confirming birth date");
       }
     } else if (!currentMember.birthDate && otherMember.birthDate) {
       const dateStr = new Date(otherMember.birthDate).toISOString().split('T')[0];
       suggestions.push(
         `Consider adding birth date (${dateStr}) for "${currentMember.name}". Another user has recorded this birth date.`
       );
+      console.log("Added suggestion for adding birth date");
     }
     
     // Death date
     if (currentMember.deathDate && otherMember.deathDate) {
       const date1 = new Date(currentMember.deathDate);
       const date2 = new Date(otherMember.deathDate);
+      
+      console.log(`Comparing death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
       
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
         const date1Str = date1.toISOString().split('T')[0];
@@ -431,17 +448,20 @@ export class NotificationController {
         suggestions.push(
           `Consider updating death date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different death date.`
         );
+        console.log("Added suggestion for updating death date");
       } else {
         const date1Str = date1.toISOString().split('T')[0];
         suggestions.push(
           `Confirm death date ${date1Str} for "${currentMember.name}". Another user has recorded the same death date.`
         );
+        console.log("Added suggestion for confirming death date");
       }
     } else if (!currentMember.deathDate && otherMember.deathDate) {
       const dateStr = new Date(otherMember.deathDate).toISOString().split('T')[0];
       suggestions.push(
         `Consider adding death date (${dateStr}) for "${currentMember.name}". Another user has recorded this death date.`
       );
+      console.log("Added suggestion for adding death date");
     }
     
     // Country
@@ -451,73 +471,94 @@ export class NotificationController {
         suggestions.push(
           `Consider updating country from "${currentMember.country}" to "${otherMember.country}" for "${currentMember.name}". Another user has recorded a different country.`
         );
+        console.log("Added suggestion for updating country");
       } else {
         suggestions.push(
           `Confirm country "${currentMember.country}" for "${currentMember.name}". Another user has recorded the same country.`
         );
+        console.log("Added suggestion for confirming country");
       }
     } else if (!currentMember.country && otherMember.country) {
       suggestions.push(
         `Consider adding country "${otherMember.country}" for "${currentMember.name}". Another user has recorded this country.`
       );
+      console.log("Added suggestion for adding country");
     }
     
+    console.log(`Final suggestion count: ${suggestions.length}`);
     return suggestions;
   }
 
-  // Add parent relationship suggestions
-  private addParentRelationshipSuggestions(
+  // Add parent relationship suggestions - directly check for parent data regardless of other similarities
+  private async addParentRelationshipSuggestions(
     currentMember: FamilyMemberWithId,
     otherMember: FamilyMemberWithId,
     suggestions: string[]
-  ): void {
-    // Since we're only calling this method after strict name matching,
-    // we can assume these two members have the same name and surname
+  ): Promise<string[]> {
+    const newSuggestions = [...suggestions]; // Create a new array to hold suggestions
     
-    // Check father information
-    if (otherMember.fatherId && !currentMember.fatherId) {
-      // Try to find the father's name
-      this.familyMemberModel.findById(otherMember.fatherId).exec()
-        .then(father => {
+    // Since we're only calling this method after strict name matching,
+    // the members have the same name and surname and are likely the same person in different trees
+    
+    try {
+      console.log(`Checking parent data for ${currentMember.name} (current) vs ${otherMember.name} (other)`);
+      console.log(`Current member parents: fatherId=${currentMember.fatherId}, motherId=${currentMember.motherId}`);
+      console.log(`Other member parents: fatherId=${otherMember.fatherId}, motherId=${otherMember.motherId}`);
+      
+      // Check father information - simpler check: if other member has a father and current doesn't
+      if (otherMember.fatherId && !currentMember.fatherId) {
+        try {
+          // Try to find the father's name
+          const father = await this.familyMemberModel.findById(otherMember.fatherId).exec();
           if (father) {
-            suggestions.push(
+            newSuggestions.push(
               `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person.`
             );
+            console.log(`Added father suggestion for ${currentMember.name}`);
           } else {
-            suggestions.push(
+            newSuggestions.push(
               `Consider adding father information to "${currentMember.name}". Another user has recorded a father for this person.`
             );
+            console.log(`Added generic father suggestion for ${currentMember.name}`);
           }
-        })
-        .catch(err => {
+        } catch (err) {
           console.error("Error finding father:", err);
-          suggestions.push(
+          newSuggestions.push(
             `Consider adding father information to "${currentMember.name}". Another user has recorded a father for this person.`
           );
-        });
-    }
-    
-    // Check mother information
-    if (otherMember.motherId && !currentMember.motherId) {
-      // Try to find the mother's name
-      this.familyMemberModel.findById(otherMember.motherId).exec()
-        .then(mother => {
+          console.log(`Added generic father suggestion after error for ${currentMember.name}`);
+        }
+      }
+      
+      // Check mother information - simpler check: if other member has a mother and current doesn't
+      if (otherMember.motherId && !currentMember.motherId) {
+        try {
+          // Try to find the mother's name
+          const mother = await this.familyMemberModel.findById(otherMember.motherId).exec();
           if (mother) {
-            suggestions.push(
+            newSuggestions.push(
               `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person.`
             );
+            console.log(`Added mother suggestion for ${currentMember.name}`);
           } else {
-            suggestions.push(
+            newSuggestions.push(
               `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for this person.`
             );
+            console.log(`Added generic mother suggestion for ${currentMember.name}`);
           }
-        })
-        .catch(err => {
+        } catch (err) {
           console.error("Error finding mother:", err);
-          suggestions.push(
+          newSuggestions.push(
             `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for this person.`
           );
-        });
+          console.log(`Added generic mother suggestion after error for ${currentMember.name}`);
+        }
+      }
+      
+      return newSuggestions;
+    } catch (error) {
+      console.error("Error in addParentRelationshipSuggestions:", error);
+      return newSuggestions;
     }
   }
 
@@ -553,6 +594,7 @@ export class NotificationController {
       
       console.log(`Found member: ${member.name}${member.surname ? ' ' + member.surname : ''}`);
       console.log(`Member details: status=${member.status}, country=${member.country}, birthDate=${member.birthDate}, deathDate=${member.deathDate}`);
+      console.log(`Member parent info: fatherId=${member.fatherId}, motherId=${member.motherId}`);
       
       // Get all family members from other users
       const otherUserMembers = await this.familyMemberModel
@@ -564,6 +606,7 @@ export class NotificationController {
       otherUserMembers.forEach((m, i) => {
         if (i < 10) { // Limit logging to first 10 members
           console.log(`  ${i+1}. ${m.name} (User ID: ${m.userId}, status=${m.status}, country=${m.country})`);
+          console.log(`     Parent info: fatherId=${m.fatherId}, motherId=${m.motherId}`);
         }
       });
       
@@ -578,18 +621,24 @@ export class NotificationController {
         suggestions: string[];
       }> = [];
       
+      // Process each member from other users
       for (const otherMember of otherUserMembers) {
         console.log(`\nComparing with: ${otherMember.name} (country=${otherMember.country}, status=${otherMember.status})`);
         
         // Extract first names and surnames for comparison
-        const firstName1 = member.name ? member.name.split(' ')[0].toLowerCase() : '';
-        const firstName2 = otherMember.name ? otherMember.name.split(' ')[0].toLowerCase() : '';
-        const surname1 = this.extractSurnameFromName(member.name).toLowerCase();
-        const surname2 = this.extractSurnameFromName(otherMember.name).toLowerCase();
+        const firstName1 = member.name ? member.name.split(' ')[0].toLowerCase().trim() : '';
+        const firstName2 = otherMember.name ? otherMember.name.split(' ')[0].toLowerCase().trim() : '';
+        const surname1 = this.extractSurnameFromName(member.name).toLowerCase().trim();
+        const surname2 = this.extractSurnameFromName(otherMember.name).toLowerCase().trim();
         
         console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
         console.log(`Same first name: ${firstName1 === firstName2}, Same surname: ${surname1 === surname2}`);
         
+        // Check for exact name match
+        const exactNameMatch = firstName1 === firstName2 && surname1 === surname2 && surname1 !== '' && surname2 !== '';
+        console.log(`Exact name match: ${exactNameMatch}`);
+        
+        // Continue with similarity calculation regardless of exact name match
         const { similarity, similarFields } = this.familyMemberSimilarityService.calculateMemberSimilarity(
           member,
           otherMember
@@ -597,28 +646,33 @@ export class NotificationController {
         
         console.log(`Similarity score: ${similarity.toFixed(2)}, similar fields: ${similarFields.join(', ')}`);
         
-        // If similarity is above threshold and we have at least one similar field
-        if (similarity > 0.7 && similarFields.length > 0) {
+        // Generate suggestions if either we have high similarity OR exact name match
+        if ((similarity > 0.6 && similarFields.length > 0) || exactNameMatch) {
           similarityCount++;
           console.log(`Found similar member: ${otherMember.name} (similarity: ${similarity.toFixed(2)})`);
           console.log(`Similar fields: ${similarFields.join(', ')}`);
           
           // Generate suggestions based on differences
-          const suggestions = this.generateSuggestions(member, otherMember, similarFields);
-          suggestionCount += suggestions.length;
+          console.log(`Generating suggestions for ${member.name} vs ${otherMember.name}...`);
+          const suggestions = await this.generateSuggestions(member, otherMember, similarFields);
           
           console.log(`Generated ${suggestions.length} suggestions:`);
           suggestions.forEach((s, i) => console.log(`  ${i+1}. ${s}`));
           
-          // Add to similar members list for detailed info
-          similarMembers.push({
-            memberId: otherMember._id.toString(),
-            name: otherMember.name,
-            similarity,
-            similarFields,
-            userId: otherMember.userId.toString(),
-            suggestions
-          });
+          suggestionCount += suggestions.length;
+          
+          // Only add to similar members list if we have suggestions
+          if (suggestions.length > 0) {
+            // Add to similar members list for detailed info
+            similarMembers.push({
+              memberId: otherMember._id.toString(),
+              name: otherMember.name,
+              similarity,
+              similarFields,
+              userId: otherMember.userId.toString(),
+              suggestions
+            });
+          }
         } else {
           console.log(`Not similar enough or no similar fields - skipping suggestions`);
         }
@@ -626,6 +680,7 @@ export class NotificationController {
       
       console.log(`Total: ${similarityCount} similar members, ${suggestionCount} suggestions`);
       
+      // Always return a valid structure even if no suggestions or similar members are found
       const responseData = { 
         count: similarityCount,
         suggestionCount,

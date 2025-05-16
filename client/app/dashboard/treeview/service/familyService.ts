@@ -142,6 +142,12 @@ async function handleAddMember(
   newMemberData?: any
 ) {
   try {
+    console.log("handleAddMember called with:", { 
+      relation, 
+      node: JSON.stringify(node),
+      newMemberData: newMemberData ? JSON.stringify(newMemberData) : null 
+    });
+    
     if (relation === "son" || relation === "daughter") {
       const child = await addFamilyMember(token, {
         ...newMemberData,
@@ -153,18 +159,31 @@ async function handleAddMember(
       return;
     }
 
+    // Base member data - will be overridden with newMemberData if provided
     let memberData: any = { 
       name: "Unknown",
       status: "alive",
       country: "",
       occupation: ""
     };
+    
+    // If we have newMemberData, use it to override defaults
+    if (newMemberData) {
+      console.log("Using provided member data:", newMemberData);
+      memberData = {
+        ...memberData,
+        ...newMemberData
+      };
+    }
+    
     let updateCurrentNode: any = {};
     let existingParentUpdate: any = null;
 
     switch (relation) {
       case "father":
         memberData.gender = "male";
+        console.log("Adding father with data:", memberData);
+        console.log("Child node data:", node);
         if (node.mid) {
           memberData.partnerId = [node.mid];
           existingParentUpdate = {
@@ -174,6 +193,7 @@ async function handleAddMember(
         }
         const father = await addFamilyMember(token, memberData);
         const fatherId = father.id || father["_id"] || father.data?._id;
+        console.log("Created father with ID:", fatherId);
         updateCurrentNode.fatherId = fatherId;
 
         if (existingParentUpdate) {
@@ -183,6 +203,8 @@ async function handleAddMember(
 
       case "mother":
         memberData.gender = "female";
+        console.log("Adding mother with data:", memberData);
+        console.log("Child node data:", node);
         if (node.fid) {
           memberData.partnerId = [node.fid];
           existingParentUpdate = {
@@ -192,6 +214,7 @@ async function handleAddMember(
         }
         const mother = await addFamilyMember(token, memberData);
         const motherId = mother.id || mother["_id"] || mother.data?._id;
+        console.log("Created mother with ID:", motherId);
         updateCurrentNode.motherId = motherId;
 
         if (existingParentUpdate) {
@@ -202,7 +225,7 @@ async function handleAddMember(
       case "wife":
       case "husband": {
         memberData.gender = relation === "wife" ? "female" : "male";
-        memberData.partnerId = [node.id];
+        memberData.partnerId = [node.id || node._id];
         const partner = await addFamilyMember(token, memberData);
         const partnerId = partner.id || partner["_id"] || partner.data?._id;
         updateCurrentNode.partnerId = [partnerId];
@@ -211,8 +234,8 @@ async function handleAddMember(
         const children = await fetchFamilyMembers(token);
         const nodeChildren = children.filter(
           (child: any) =>
-            (node.gender === "male" && child.fatherId === node.id) ||
-            (node.gender === "female" && child.motherId === node.id)
+            (node.gender === "male" && child.fatherId === (node.id || node._id)) ||
+            (node.gender === "female" && child.motherId === (node.id || node._id))
         );
 
         for (const child of nodeChildren) {
@@ -228,18 +251,52 @@ async function handleAddMember(
         return;
     }
 
-    await updateFamilyMember(token, node.id, updateCurrentNode);
-
-    if (existingParentUpdate) {
-      await updateFamilyMember(
-        token,
-        existingParentUpdate.id,
-        existingParentUpdate.update
-      );
+    // Get the nodeId safely - use either id or _id, ensuring it's not undefined
+    const nodeId = node._id || node.id;
+    
+    if (!nodeId) {
+      console.error("No valid ID found for node:", JSON.stringify(node));
+      console.error("Node type:", typeof node);
+      console.error("Node keys:", Object.keys(node));
+      throw new Error("Cannot update family member: No valid ID found");
+    }
+    
+    console.log("Updating family member with ID:", nodeId, "with data:", updateCurrentNode);
+    try {
+      await updateFamilyMember(token, nodeId, updateCurrentNode);
+    } catch (updateError) {
+      console.error("Error updating the family member:", updateError);
+      
+      // Even though the update failed, we've already created the parent
+      // We should inform the user and proceed with fetch
+      console.log("Parent was created but couldn't update the child's parent reference");
     }
 
+    if (existingParentUpdate) {
+      try {
+        await updateFamilyMember(
+          token,
+          existingParentUpdate.id,
+          existingParentUpdate.update
+        );
+      } catch (partnerUpdateError) {
+        console.error("Failed to update partner reference:", partnerUpdateError);
+      }
+    }
+
+    // Always call fetchData to refresh the tree even if some updates failed
     await fetchData();
+    
+    // Return the result of the operation
+    return {
+      parentId: relation === "father" ? updateCurrentNode.fatherId : 
+                relation === "mother" ? updateCurrentNode.motherId : null,
+      childId: nodeId,
+      relationship: relation,
+      success: true
+    };
   } catch (error) {
+    console.error("handleAddMember failed:", error);
     throw error;
   }
 }
