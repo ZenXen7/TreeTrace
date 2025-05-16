@@ -341,363 +341,183 @@ export class NotificationController {
   ): string[] {
     const suggestions: string[] = [];
     
-    // Get surnames for comparison
-    const surname1 = this.extractSurnameFromName(currentMember.name);
-    const surname2 = this.extractSurnameFromName(otherMember.name);
+    // Get first names and surnames (trimmed, lowercased)
+    const firstName1 = currentMember.name ? currentMember.name.split(' ')[0].trim().toLowerCase() : '';
+    const firstName2 = otherMember.name ? otherMember.name.split(' ')[0].trim().toLowerCase() : '';
     
-    // Get first names for comparison
-    const firstName1 = currentMember.name ? currentMember.name.split(' ')[0] : '';
-    const firstName2 = otherMember.name ? otherMember.name.split(' ')[0] : '';
+    // Get surnames properly - use the last part of the name
+    const surname1 = this.extractSurnameFromName(currentMember.name).trim().toLowerCase();
+    const surname2 = this.extractSurnameFromName(otherMember.name).trim().toLowerCase();
+
+    // STRICT CHECK: Both first name AND surname must match exactly
+    const hasSameFirstNameAndSurname = firstName1 === firstName2 && surname1 === surname2 && surname1 !== '' && surname2 !== '';
     
-    // Check if they have the same name components
-    const hasSameFirstName = firstName1 && firstName2 && firstName1.toLowerCase() === firstName2.toLowerCase();
-    const hasSameSurname = surname1 && surname2 && surname1.toLowerCase() === surname2.toLowerCase();
-    
-    // Check for high similarity in name components
-    const hasSimilarFirstName = similarFields.includes('firstName');
-    const hasSimilarSurname = similarFields.includes('surname');
-    const hasSimilarFullName = similarFields.includes('fullName');
-    
-    // First, check for exact name matches
-    const hasExactNameMatch = hasSameFirstName && hasSameSurname; 
-    
-    // Then check for full name equality (as a fallback)
-    const hasFullNameEquality = currentMember.name && otherMember.name && 
-                              currentMember.name.toLowerCase() === otherMember.name.toLowerCase();
-    
-    // We will generate suggestions ONLY if they have the same first name and surname
-    // or if they have exactly the same full name
-    const shouldGenerateSuggestions = hasExactNameMatch || hasFullNameEquality;
-    
-    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
-    console.log(`Full name equality: ${hasFullNameEquality}`);
-    console.log(`Should generate suggestions: ${shouldGenerateSuggestions}`);
-    
-    // Check for parent relationship suggestions - only if names match
-    if (shouldGenerateSuggestions) {
-      console.log("Checking for parent relationship suggestions");
-      this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);
-    } else {
-      console.log("Skipping parent relationship suggestions - names don't match");
-      return suggestions; // Return early if names don't match
-    }
-    
-    // For identical names that might not be caught by the similarity algorithm
-    if (currentMember.name && otherMember.name && 
-        currentMember.name.toLowerCase() === otherMember.name.toLowerCase()) {
-      console.log("Found identical names - adding suggestions for identical names");
-      // This is the same person between different users, add suggestions
-      
-      // Status differences
-      if (currentMember.status && otherMember.status) {
-        console.log(`Checking status: ${currentMember.status} vs ${otherMember.status}`);
-        if (currentMember.status !== otherMember.status) {
-          if (currentMember.status === 'alive' && otherMember.status === 'dead') {
-            suggestions.push(
-              `Consider updating status to "dead" for "${currentMember.name}". Another user has recorded this person as dead.`
-            );
-            console.log("Added suggestion for updating status to dead");
-          } else if (currentMember.status === 'dead' && otherMember.status === 'alive') {
-            suggestions.push(
-              `Verify status of "${currentMember.name}". Another user has recorded this person as alive.`
-            );
-            console.log("Added suggestion for verifying alive status");
-          }
-        } else {
-          // Even for matching status, suggest confirming
-          if (currentMember.status === 'dead') {
-            suggestions.push(
-              `Confirm dead status for "${currentMember.name}". Another user has also recorded this person as dead.`
-            );
-            console.log("Added suggestion for confirming dead status");
-          }
-        }
-      }
-      
-      // Birth date
-      if (currentMember.birthDate && otherMember.birthDate) {
-        const date1 = new Date(currentMember.birthDate);
-        const date2 = new Date(otherMember.birthDate);
-        
-        console.log(`Comparing birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
-        
-        if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
-          const date1Str = date1.toISOString().split('T')[0];
-          const date2Str = date2.toISOString().split('T')[0];
-          
-          suggestions.push(
-            `Consider updating birth date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different birth date.`
-          );
-          console.log("Added suggestion for updating birth date");
-        } else {
-          const date1Str = date1.toISOString().split('T')[0];
-          suggestions.push(
-            `Confirm birth date ${date1Str} for "${currentMember.name}". Another user has recorded the same birth date.`
-          );
-          console.log("Added suggestion for confirming birth date");
-        }
-      } else if (!currentMember.birthDate && otherMember.birthDate) {
-        const dateStr = new Date(otherMember.birthDate).toISOString().split('T')[0];
-        suggestions.push(
-          `Consider adding birth date (${dateStr}) for "${currentMember.name}". Another user has recorded this birth date.`
-        );
-        console.log("Added suggestion for adding birth date");
-      }
-      
-      // Death date
-      if (currentMember.deathDate && otherMember.deathDate) {
-        const date1 = new Date(currentMember.deathDate);
-        const date2 = new Date(otherMember.deathDate);
-        
-        console.log(`Comparing death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
-        
-        if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
-          const date1Str = date1.toISOString().split('T')[0];
-          const date2Str = date2.toISOString().split('T')[0];
-          
-          suggestions.push(
-            `Consider updating death date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different death date.`
-          );
-          console.log("Added suggestion for updating death date");
-        } else {
-          const date1Str = date1.toISOString().split('T')[0];
-          suggestions.push(
-            `Confirm death date ${date1Str} for "${currentMember.name}". Another user has recorded the same death date.`
-          );
-          console.log("Added suggestion for confirming death date");
-        }
-      } else if (!currentMember.deathDate && otherMember.deathDate) {
-        const dateStr = new Date(otherMember.deathDate).toISOString().split('T')[0];
-        suggestions.push(
-          `Consider adding death date (${dateStr}) for "${currentMember.name}". Another user has recorded this death date.`
-        );
-        console.log("Added suggestion for adding death date");
-      }
-      
-      // Country
-      if (currentMember.country && otherMember.country) {
-        console.log(`Comparing countries: "${currentMember.country}" vs "${otherMember.country}"`);
-        if (currentMember.country !== otherMember.country) {
-          suggestions.push(
-            `Consider updating country from "${currentMember.country}" to "${otherMember.country}" for "${currentMember.name}". Another user has recorded a different country.`
-          );
-          console.log("Added suggestion for updating country");
-        } else {
-          suggestions.push(
-            `Confirm country "${currentMember.country}" for "${currentMember.name}". Another user has recorded the same country.`
-          );
-          console.log("Added suggestion for confirming country");
-        }
-      } else if (!currentMember.country && otherMember.country) {
-        suggestions.push(
-          `Consider adding country "${otherMember.country}" for "${currentMember.name}". Another user has recorded this country.`
-        );
-        console.log("Added suggestion for adding country");
-      }
-      
-      // Return early since we've handled this special case
+    // Log name comparison for debugging
+    console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
+    console.log(`STRICT CHECK - Same first name and surname: ${hasSameFirstNameAndSurname}`);
+
+    // If names don't match exactly (both first name AND surname), return empty suggestions
+    if (!hasSameFirstNameAndSurname) {
+      console.log("Names don't match exactly - no suggestions generated");
       return suggestions;
     }
     
-    // If we get here, we have same first name and surname but not identical full names
-    console.log("Processing suggestions for members with same first name and surname but not identical full names");
+    // Modified code for the rest: ALL suggestion generation is protected by the strict name check above
+    console.log("Names match exactly - generating suggestions");
     
-    // Check status differences - only generate if we should based on name similarity
-    if (shouldGenerateSuggestions && currentMember.status && otherMember.status && currentMember.status !== otherMember.status) {
-      console.log(`Checking status differences: ${currentMember.status} vs ${otherMember.status}`);
-      // Only make suggestions for actual status differences between alive/dead, not unknown
-      if (currentMember.status !== 'unknown' && otherMember.status !== 'unknown') {
-        // If current member is alive but other member is dead, suggest updating status
+    // Remove redundant additional name check
+    const hasExactNameMatch = hasSameFirstNameAndSurname;
+    
+    // Check for parent relationship suggestions
+    this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);
+    
+    // Status differences
+    if (currentMember.status && otherMember.status) {
+      console.log(`Checking status: ${currentMember.status} vs ${otherMember.status}`);
+      if (currentMember.status !== otherMember.status) {
         if (currentMember.status === 'alive' && otherMember.status === 'dead') {
           suggestions.push(
-            `Consider updating status to "dead" for "${currentMember.name}". Another user has recorded "${otherMember.name}" as dead.`
+            `Consider updating status to "dead" for "${currentMember.name}". Another user has recorded this person as dead.`
           );
-          console.log("Added suggestion for updating to dead status");
-        } 
-        // If current member is dead but other member is alive, suggest verifying status
-        else if (currentMember.status === 'dead' && otherMember.status === 'alive') {
+        } else if (currentMember.status === 'dead' && otherMember.status === 'alive') {
           suggestions.push(
-            `Verify status of "${currentMember.name}". Another user has recorded "${otherMember.name}" as alive.`
+            `Verify status of "${currentMember.name}". Another user has recorded this person as alive.`
           );
-          console.log("Added suggestion for verifying alive status");
+        }
+      } else {
+        // Even for matching status, suggest confirming
+        if (currentMember.status === 'dead') {
+          suggestions.push(
+            `Confirm dead status for "${currentMember.name}". Another user has also recorded this person as dead.`
+          );
         }
       }
     }
     
-    // Add suggestions for identical information that might be useful to confirm
-    // If members have the same name, suggest confirming the information
-    if (shouldGenerateSuggestions) {
-      if (currentMember.status === otherMember.status && currentMember.status === 'dead') {
-        suggestions.push(
-          `Confirm dead status for "${currentMember.name}". Another user has also recorded this person as dead.`
-        );
-        console.log("Added suggestion for confirming dead status");
-      }
-      
-      if (currentMember.birthDate && otherMember.birthDate && 
-          new Date(currentMember.birthDate).toISOString().split('T')[0] === 
-          new Date(otherMember.birthDate).toISOString().split('T')[0]) {
-        suggestions.push(
-          `Confirm birth date for "${currentMember.name}". Another user has recorded the same birth date.`
-        );
-        console.log("Added suggestion for confirming birth date");
-      }
-      
-      if (currentMember.deathDate && otherMember.deathDate && 
-          new Date(currentMember.deathDate).toISOString().split('T')[0] === 
-          new Date(otherMember.deathDate).toISOString().split('T')[0]) {
-        suggestions.push(
-          `Confirm death date for "${currentMember.name}". Another user has recorded the same death date.`
-        );
-        console.log("Added suggestion for confirming death date");
-      }
-      
-      if (currentMember.country && otherMember.country && currentMember.country === otherMember.country) {
-        suggestions.push(
-          `Confirm country "${currentMember.country}" for "${currentMember.name}". Another user has recorded the same country.`
-        );
-        console.log("Added suggestion for confirming country");
-      }
-    }
-    
-    // Check for birth date differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && currentMember.birthDate && otherMember.birthDate) {
+    // Birth date
+    if (currentMember.birthDate && otherMember.birthDate) {
       const date1 = new Date(currentMember.birthDate);
       const date2 = new Date(otherMember.birthDate);
       
-      console.log(`Comparing birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
-      
-      if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) { // More than 1 day difference
+      if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
         
         suggestions.push(
-          `Consider updating birth date to ${date2Str} for "${currentMember.name}". Another user has recorded "${otherMember.name}" with this birth date.`
+          `Consider updating birth date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different birth date.`
         );
-        console.log("Added suggestion for updating birth date");
+      } else {
+        const date1Str = date1.toISOString().split('T')[0];
+        suggestions.push(
+          `Confirm birth date ${date1Str} for "${currentMember.name}". Another user has recorded the same birth date.`
+        );
       }
-    } else if (shouldGenerateSuggestions && !currentMember.birthDate && otherMember.birthDate) {
-      // First member is missing birth date
+    } else if (!currentMember.birthDate && otherMember.birthDate) {
       const dateStr = new Date(otherMember.birthDate).toISOString().split('T')[0];
       suggestions.push(
-        `Consider adding birth date (${dateStr}) for "${currentMember.name}". Another user has recorded this birth date for "${otherMember.name}".`
+        `Consider adding birth date (${dateStr}) for "${currentMember.name}". Another user has recorded this birth date.`
       );
-      console.log("Added suggestion for adding birth date");
     }
     
-    // Check for death date differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && currentMember.deathDate && otherMember.deathDate) {
+    // Death date
+    if (currentMember.deathDate && otherMember.deathDate) {
       const date1 = new Date(currentMember.deathDate);
       const date2 = new Date(otherMember.deathDate);
       
-      console.log(`Comparing death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
-      
-      if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) { // More than 1 day difference
+      if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
         
         suggestions.push(
-          `Consider updating death date to ${date2Str} for "${currentMember.name}". Another user has recorded "${otherMember.name}" with this death date.`
+          `Consider updating death date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different death date.`
         );
-        console.log("Added suggestion for updating death date");
+      } else {
+        const date1Str = date1.toISOString().split('T')[0];
+        suggestions.push(
+          `Confirm death date ${date1Str} for "${currentMember.name}". Another user has recorded the same death date.`
+        );
       }
-    } else if (shouldGenerateSuggestions && !currentMember.deathDate && otherMember.deathDate) {
-      // First member is missing death date
+    } else if (!currentMember.deathDate && otherMember.deathDate) {
       const dateStr = new Date(otherMember.deathDate).toISOString().split('T')[0];
       suggestions.push(
-        `Consider adding death date (${dateStr}) for "${currentMember.name}". Another user has recorded this death date for "${otherMember.name}".`
+        `Consider adding death date (${dateStr}) for "${currentMember.name}". Another user has recorded this death date.`
       );
-      console.log("Added suggestion for adding death date");
     }
     
-    // Check for country differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && currentMember.country && otherMember.country) {
+    // Country
+    if (currentMember.country && otherMember.country) {
       console.log(`Comparing countries: "${currentMember.country}" vs "${otherMember.country}"`);
       if (currentMember.country !== otherMember.country) {
         suggestions.push(
-          `Consider updating country to "${otherMember.country}" for "${currentMember.name}". Another user has recorded "${otherMember.name}" with this country.`
+          `Consider updating country from "${currentMember.country}" to "${otherMember.country}" for "${currentMember.name}". Another user has recorded a different country.`
         );
-        console.log("Added suggestion for updating country");
+      } else {
+        suggestions.push(
+          `Confirm country "${currentMember.country}" for "${currentMember.name}". Another user has recorded the same country.`
+        );
       }
-    } else if (shouldGenerateSuggestions && !currentMember.country && otherMember.country) {
-      // First member is missing country
+    } else if (!currentMember.country && otherMember.country) {
       suggestions.push(
-        `Consider adding country "${otherMember.country}" for "${currentMember.name}". Another user has recorded this country for "${otherMember.name}".`
+        `Consider adding country "${otherMember.country}" for "${currentMember.name}". Another user has recorded this country.`
       );
-      console.log("Added suggestion for adding country");
     }
     
     return suggestions;
   }
 
-  // Add suggestions for parent relationships
+  // Add parent relationship suggestions
   private addParentRelationshipSuggestions(
     currentMember: FamilyMemberWithId,
     otherMember: FamilyMemberWithId,
     suggestions: string[]
   ): void {
-    // Check if they are siblings (share at least one parent) or likely the same person
-    const areSiblings = (
-      // Share father
-      (currentMember.fatherId && otherMember.fatherId && 
-       currentMember.fatherId.toString() === otherMember.fatherId.toString()) ||
-      // Share mother
-      (currentMember.motherId && otherMember.motherId && 
-       currentMember.motherId.toString() === otherMember.motherId.toString())
-    );
+    // Since we're only calling this method after strict name matching,
+    // we can assume these two members have the same name and surname
     
-    const isSamePerson = currentMember.name && otherMember.name && 
-                        (currentMember.name.toLowerCase() === otherMember.name.toLowerCase() ||
-                         this.familyMemberSimilarityService.calculateSimilarityPublic(
-                           currentMember.name, otherMember.name) > 0.9);
+    // Check father information
+    if (otherMember.fatherId && !currentMember.fatherId) {
+      // Try to find the father's name
+      this.familyMemberModel.findById(otherMember.fatherId).exec()
+        .then(father => {
+          if (father) {
+            suggestions.push(
+              `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person.`
+            );
+          } else {
+            suggestions.push(
+              `Consider adding father information to "${currentMember.name}". Another user has recorded a father for this person.`
+            );
+          }
+        })
+        .catch(err => {
+          console.error("Error finding father:", err);
+          suggestions.push(
+            `Consider adding father information to "${currentMember.name}". Another user has recorded a father for this person.`
+          );
+        });
+    }
     
-    // Only generate parent suggestions if they are siblings or the same person
-    if (areSiblings || isSamePerson) {
-      // Check father information
-      if (otherMember.fatherId && !currentMember.fatherId) {
-        // Try to find the father's name
-        this.familyMemberModel.findById(otherMember.fatherId).exec()
-          .then(father => {
-            if (father) {
-              suggestions.push(
-                `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for ${isSamePerson ? 'this person' : 'their sibling'}.`
-              );
-            } else {
-              suggestions.push(
-                `Consider adding father information to "${currentMember.name}". Another user has recorded a father for ${isSamePerson ? 'this person' : 'their sibling'}.`
-              );
-            }
-          })
-          .catch(err => {
-            console.error("Error finding father:", err);
+    // Check mother information
+    if (otherMember.motherId && !currentMember.motherId) {
+      // Try to find the mother's name
+      this.familyMemberModel.findById(otherMember.motherId).exec()
+        .then(mother => {
+          if (mother) {
             suggestions.push(
-              `Consider adding father information to "${currentMember.name}". Another user has recorded a father for ${isSamePerson ? 'this person' : 'their sibling'}.`
+              `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person.`
             );
-          });
-      }
-      
-      // Check mother information
-      if (otherMember.motherId && !currentMember.motherId) {
-        // Try to find the mother's name
-        this.familyMemberModel.findById(otherMember.motherId).exec()
-          .then(mother => {
-            if (mother) {
-              suggestions.push(
-                `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for ${isSamePerson ? 'this person' : 'their sibling'}.`
-              );
-            } else {
-              suggestions.push(
-                `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for ${isSamePerson ? 'this person' : 'their sibling'}.`
-              );
-            }
-          })
-          .catch(err => {
-            console.error("Error finding mother:", err);
+          } else {
             suggestions.push(
-              `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for ${isSamePerson ? 'this person' : 'their sibling'}.`
+              `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for this person.`
             );
-          });
-      }
+          }
+        })
+        .catch(err => {
+          console.error("Error finding mother:", err);
+          suggestions.push(
+            `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for this person.`
+          );
+        });
     }
   }
 

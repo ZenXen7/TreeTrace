@@ -383,7 +383,7 @@ export class FamilyMemberSimilarityService {
           // Generate suggestions based on differences
           const { suggestionsForMember1: suggestionsForCurrentUser, 
                   suggestionsForMember2: suggestionsForOtherUser,
-                  suggestionCount } = this.generateSuggestions(newMember, otherMember, similarFields);
+                  suggestionCount } = await this.generateSuggestions(newMember, otherMember, similarFields);
           
           totalSuggestionCount += suggestionCount;
           
@@ -674,8 +674,7 @@ export class FamilyMemberSimilarityService {
             
             // Generate suggestions
             const { suggestionsForMember1: suggestionsForCurrentUser, 
-                   suggestionsForMember2: suggestionsForOtherUser } = 
-                   this.generateSuggestions(currentMember, otherMember, similarFields);
+                   suggestionsForMember2: suggestionsForOtherUser } = await this.generateSuggestions(currentMember, otherMember, similarFields);
             
             const key = `${currentMemberKey}|${otherMember._id.toString()}`;
             if (!foundSimilarities.has(key)) {
@@ -943,15 +942,15 @@ export class FamilyMemberSimilarityService {
    * @param similarFields List of fields that are similar
    * @returns Object with suggestions for each member
    */
-  private generateSuggestions(
+  private async generateSuggestions(
     member1: FamilyMemberWithId,
     member2: FamilyMemberWithId,
     similarFields: string[]
-  ): { 
+  ): Promise<{ 
     suggestionsForMember1: string[]; 
     suggestionsForMember2: string[];
     suggestionCount: number;
-  } {
+  }> {
     console.log(`Generating suggestions for "${member1.name}" vs "${member2.name}"`);
     console.log(`Similar fields: ${similarFields.join(', ')}`);
     
@@ -984,20 +983,24 @@ export class FamilyMemberSimilarityService {
     
     // We will generate suggestions ONLY if they have the same first name and surname
     // or if they have exactly the same full name
-    const shouldGenerateSuggestions = hasExactNameMatch || hasFullNameEquality;
-    
-    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
-    console.log(`Full name equality: ${hasFullNameEquality}`);
-    console.log(`Should generate suggestions: ${shouldGenerateSuggestions}`);
-    
-    // Check for sibling relationship with different parent information
-    // Only if they have the same name
-    if (shouldGenerateSuggestions) {
-      this.checkAndGenerateParentSuggestions(member1, member2, suggestionsForMember1, suggestionsForMember2);
+    const hasSameNameAndSurname =
+      member1.name && member2.name &&
+      member1.surname && member2.surname &&
+      member1.name.trim().toLowerCase() === member2.name.trim().toLowerCase() &&
+      member1.surname.trim().toLowerCase() === member2.surname.trim().toLowerCase();
+
+    if (hasSameNameAndSurname) {
+      console.log('MATCH:', member1.name, member1.surname, 'vs', member2.name, member2.surname);
+      console.log('member1 parents:', member1.fatherId, member1.motherId);
+      console.log('member2 parents:', member2.fatherId, member2.motherId);
+      await Promise.all([
+        this.checkAndSuggestParent(member1, member2, 'father', suggestionsForMember1, suggestionsForMember2),
+        this.checkAndSuggestParent(member1, member2, 'mother', suggestionsForMember1, suggestionsForMember2)
+      ]);
     }
     
     // Check status differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && member1.status && member2.status && member1.status !== member2.status) {
+    if (hasSameNameAndSurname && member1.status && member2.status && member1.status !== member2.status) {
       console.log(`Status difference found: ${member1.status} vs ${member2.status}`);
       // Only make suggestions for actual status differences between alive/dead, not unknown
       if (member1.status !== 'unknown' && member2.status !== 'unknown') {
@@ -1023,7 +1026,7 @@ export class FamilyMemberSimilarityService {
     }
     
     // Check for birth date differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && member1.birthDate && member2.birthDate) {
+    if (hasSameNameAndSurname && member1.birthDate && member2.birthDate) {
       const date1 = new Date(member1.birthDate);
       const date2 = new Date(member2.birthDate);
       
@@ -1042,14 +1045,14 @@ export class FamilyMemberSimilarityService {
           `Birth date may be ${date1Str} (recorded by another user) instead of ${date2Str}.`
         );
       }
-    } else if (shouldGenerateSuggestions && !member1.birthDate && member2.birthDate) {
+    } else if (hasSameNameAndSurname && !member1.birthDate && member2.birthDate) {
       // First member is missing birth date
       const dateStr = new Date(member2.birthDate).toISOString().split('T')[0];
       console.log(`Member1 missing birth date, suggesting to add: ${dateStr}`);
       suggestionsForMember1.push(
         `Consider adding birth date (${dateStr}). Another user has recorded this birth date.`
       );
-    } else if (shouldGenerateSuggestions && member1.birthDate && !member2.birthDate) {
+    } else if (hasSameNameAndSurname && member1.birthDate && !member2.birthDate) {
       // Second member is missing birth date
       const dateStr = new Date(member1.birthDate).toISOString().split('T')[0];
       console.log(`Member2 missing birth date, suggesting to add: ${dateStr}`);
@@ -1059,7 +1062,7 @@ export class FamilyMemberSimilarityService {
     }
     
     // Check for death date differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && member1.deathDate && member2.deathDate) {
+    if (hasSameNameAndSurname && member1.deathDate && member2.deathDate) {
       const date1 = new Date(member1.deathDate);
       const date2 = new Date(member2.deathDate);
       
@@ -1078,14 +1081,14 @@ export class FamilyMemberSimilarityService {
           `Death date may be ${date1Str} (recorded by another user) instead of ${date2Str}.`
         );
       }
-    } else if (shouldGenerateSuggestions && !member1.deathDate && member2.deathDate) {
+    } else if (hasSameNameAndSurname && !member1.deathDate && member2.deathDate) {
       // First member is missing death date
       const dateStr = new Date(member2.deathDate).toISOString().split('T')[0];
       console.log(`Member1 missing death date, suggesting to add: ${dateStr}`);
       suggestionsForMember1.push(
         `Consider adding death date (${dateStr}). Another user has recorded this death date.`
       );
-    } else if (shouldGenerateSuggestions && member1.deathDate && !member2.deathDate) {
+    } else if (hasSameNameAndSurname && member1.deathDate && !member2.deathDate) {
       // Second member is missing death date
       const dateStr = new Date(member1.deathDate).toISOString().split('T')[0];
       console.log(`Member2 missing death date, suggesting to add: ${dateStr}`);
@@ -1095,7 +1098,7 @@ export class FamilyMemberSimilarityService {
     }
     
     // Check for country differences - only if we should generate suggestions
-    if (shouldGenerateSuggestions && member1.country && member2.country && member1.country !== member2.country) {
+    if (hasSameNameAndSurname && member1.country && member2.country && member1.country !== member2.country) {
       console.log(`Country difference found: ${member1.country} vs ${member2.country}`);
       suggestionsForMember1.push(
         `Country may be ${member2.country} (recorded by another user) instead of ${member1.country}.`
@@ -1103,13 +1106,13 @@ export class FamilyMemberSimilarityService {
       suggestionsForMember2.push(
         `Country may be ${member1.country} (recorded by another user) instead of ${member2.country}.`
       );
-    } else if (shouldGenerateSuggestions && !member1.country && member2.country) {
+    } else if (hasSameNameAndSurname && !member1.country && member2.country) {
       // First member is missing country
       console.log(`Member1 missing country, suggesting to add: ${member2.country}`);
       suggestionsForMember1.push(
         `Consider adding country "${member2.country}". Another user has recorded this country.`
       );
-    } else if (shouldGenerateSuggestions && member1.country && !member2.country) {
+    } else if (hasSameNameAndSurname && member1.country && !member2.country) {
       // Second member is missing country
       console.log(`Member2 missing country, suggesting to add: ${member1.country}`);
       suggestionsForMember2.push(
@@ -1118,6 +1121,8 @@ export class FamilyMemberSimilarityService {
     }
     
     console.log(`Generated ${suggestionsForMember1.length} suggestions for member1 and ${suggestionsForMember2.length} for member2`);
+    
+    suggestionsForMember1.push('DEBUG: This is a test suggestion');
     
     return {
       suggestionsForMember1,
@@ -1130,40 +1135,24 @@ export class FamilyMemberSimilarityService {
    * Check if two members are siblings or the same person with different parent information
    * and generate appropriate suggestions
    */
-  private checkAndGenerateParentSuggestions(
+  private async checkAndGenerateParentSuggestions(
     member1: FamilyMemberWithId,
     member2: FamilyMemberWithId,
     suggestionsForMember1: string[],
     suggestionsForMember2: string[]
-  ): void {
-    // Check if they have the same name or very similar names (likely same person)
+  ): Promise<void> {
     const isSamePerson = member1.name && member2.name && 
-                        (member1.name.toLowerCase() === member2.name.toLowerCase() ||
-                         this.calculateStringSimilarity(member1.name, member2.name) > 0.9);
-    
-    // Check if they are siblings (share at least one parent)
+      (member1.name.toLowerCase() === member2.name.toLowerCase() ||
+        this.calculateStringSimilarity(member1.name, member2.name) > 0.9);
     const areSiblings = (member1.fatherId && member2.fatherId && 
-                         member1.fatherId.toString() === member2.fatherId.toString()) ||
-                        (member1.motherId && member2.motherId && 
-                         member1.motherId.toString() === member2.motherId.toString());
-    
-    console.log(`Checking parent relationships - Same person: ${isSamePerson}, Siblings: ${areSiblings}`);
-    
-    // If they are the same person or siblings, check for parent information differences
+      member1.fatherId.toString() === member2.fatherId.toString()) ||
+      (member1.motherId && member2.motherId && 
+        member1.motherId.toString() === member2.motherId.toString());
     if (isSamePerson || areSiblings) {
-      // Check father information
-      this.checkAndSuggestParent(
-        member1, member2, 
-        'father', 
-        suggestionsForMember1, suggestionsForMember2
-      );
-      
-      // Check mother information
-      this.checkAndSuggestParent(
-        member1, member2, 
-        'mother', 
-        suggestionsForMember1, suggestionsForMember2
-      );
+      await Promise.all([
+        this.checkAndSuggestParent(member1, member2, 'father', suggestionsForMember1, suggestionsForMember2),
+        this.checkAndSuggestParent(member1, member2, 'mother', suggestionsForMember1, suggestionsForMember2)
+      ]);
     }
   }
   
@@ -1171,54 +1160,42 @@ export class FamilyMemberSimilarityService {
    * Check if one member has parent information that the other doesn't,
    * and generate appropriate suggestions
    */
-  private checkAndSuggestParent(
+  private async checkAndSuggestParent(
     member1: FamilyMemberWithId,
     member2: FamilyMemberWithId,
     parentType: 'father' | 'mother',
     suggestionsForMember1: string[],
     suggestionsForMember2: string[]
-  ): void {
+  ): Promise<void> {
     const parentIdField = parentType === 'father' ? 'fatherId' : 'motherId';
-    
-    // Check if one has parent info that the other doesn't
-    if (member1[parentIdField] && !member2[parentIdField]) {
-      console.log(`Member1 has ${parentType} (${member1[parentIdField]}) but Member2 doesn't`);
-      
-      // We need to fetch the parent's name to make a meaningful suggestion
-      this.getParentNameAsync(member1[parentIdField]).then(parentName => {
+    try {
+      if (member1[parentIdField] && !member2[parentIdField]) {
+        console.log(`Suggesting to add ${parentType} for`, member2.name, member2.surname);
+        const parentName = await this.getParentNameAsync(member1[parentIdField]);
         const parentDisplayName = parentName || `${parentType === 'father' ? 'Papa' : 'Mama'} ${this.getSurname(member1)}`;
-        
         suggestionsForMember2.push(
           `Consider adding ${parentType} "${parentDisplayName}" to your family tree. Another user has recorded this ${parentType} for ${member2.name}.`
         );
-      }).catch(err => {
-        console.error(`Error getting ${parentType} name:`, err);
-        // Fallback suggestion without the parent's name
-        suggestionsForMember2.push(
-          `Consider adding ${parentType} to your family tree. Another user has recorded a ${parentType} for ${member2.name}.`
-        );
-      });
-    } 
-    else if (!member1[parentIdField] && member2[parentIdField]) {
-      console.log(`Member2 has ${parentType} (${member2[parentIdField]}) but Member1 doesn't`);
-      
-      // We need to fetch the parent's name to make a meaningful suggestion
-      this.getParentNameAsync(member2[parentIdField]).then(parentName => {
+      } else if (!member1[parentIdField] && member2[parentIdField]) {
+        const parentName = await this.getParentNameAsync(member2[parentIdField]);
         const parentDisplayName = parentName || `${parentType === 'father' ? 'Papa' : 'Mama'} ${this.getSurname(member2)}`;
-        
         suggestionsForMember1.push(
           `Consider adding ${parentType} "${parentDisplayName}" to your family tree. Another user has recorded this ${parentType} for ${member1.name}.`
         );
-      }).catch(err => {
-        console.error(`Error getting ${parentType} name:`, err);
-        // Fallback suggestion without the parent's name
+      }
+    } catch (err) {
+      console.error(`Error getting ${parentType} name:`, err);
+      // Fallback suggestion without the parent's name
+      if (member1[parentIdField] && !member2[parentIdField]) {
+        suggestionsForMember2.push(
+          `Consider adding ${parentType} to your family tree. Another user has recorded a ${parentType} for ${member2.name}.`
+        );
+      } else if (!member1[parentIdField] && member2[parentIdField]) {
         suggestionsForMember1.push(
           `Consider adding ${parentType} to your family tree. Another user has recorded a ${parentType} for ${member1.name}.`
         );
-      });
+      }
     }
-    // If both have different parents, we could suggest checking for discrepancies,
-    // but that's more complex and might be confusing
   }
   
   /**

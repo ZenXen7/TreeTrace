@@ -31,6 +31,9 @@ interface MemberData {
   country?: string;
   occupation?: string;
   imageUrl?: string;
+  fatherId?: string;
+  motherId?: string;
+  partnerId?: string[];
 }
 
 // Helper function for making consistent API calls
@@ -158,26 +161,12 @@ export default function MemberSuggestionsPage() {
           const allAppliedSuggestions = [...appliedSuggestions, ...processedSuggestions];
           
           // Filter out any suggestions that were already applied
-          const filteredSimilarMembers = suggestionsResult.data.similarMembers.map((similar: {
-            memberId: string;
-            name: string;
-            similarity: number;
-            similarFields: string[];
-            userId: string;
-            suggestions: string[];
-          }) => ({
+          const filteredSimilarMembers = suggestionsResult.data.similarMembers.map((similar: any) => ({
             ...similar,
             suggestions: similar.suggestions.filter(
               (suggestion: string) => !allAppliedSuggestions.includes(suggestion)
             )
-          })).filter((similar: {
-            memberId: string;
-            name: string;
-            similarity: number;
-            similarFields: string[];
-            userId: string;
-            suggestions: string[];
-          }) => similar.suggestions.length > 0);
+          })).filter((similar: any) => similar.suggestions.length > 0);
           
           // Update suggestion counts
           const filteredSuggestionCount = filteredSimilarMembers.reduce(
@@ -409,12 +398,154 @@ export default function MemberSuggestionsPage() {
         updateData.status = "alive";
         console.log("Setting status to alive");
       }
+    } else if (suggestion.includes("Consider adding father") || suggestion.includes("adding father")) {
+      console.log("Found father suggestion:", suggestion);
+      
+      // Mark this suggestion as special and don't process it like regular field changes
+      updateData._specialAction = "addFather";
+      
+      // Try to extract father's name if available
+      const fatherNameMatch = suggestion.match(/adding father "([^"]+)"/i);
+      if (fatherNameMatch && fatherNameMatch[1]) {
+        updateData._fatherName = fatherNameMatch[1].trim();
+        console.log("Extracted father name:", updateData._fatherName);
+      }
+      
+    } else if (suggestion.includes("Consider adding mother") || suggestion.includes("adding mother")) {
+      console.log("Found mother suggestion:", suggestion);
+      
+      // Mark this suggestion as special and don't process it like regular field changes
+      updateData._specialAction = "addMother";
+      
+      // Try to extract mother's name if available
+      const motherNameMatch = suggestion.match(/adding mother "([^"]+)"/i);
+      if (motherNameMatch && motherNameMatch[1]) {
+        updateData._motherName = motherNameMatch[1].trim();
+        console.log("Extracted mother name:", updateData._motherName);
+      }
     }
     
     // Only proceed if we have something to update
     if (Object.keys(updateData).length === 0) {
       toast.error("Couldn't parse the suggestion to apply it");
       return;
+    }
+    
+    // Handle special parent addition actions immediately
+    if (updateData._specialAction === "addFather" || updateData._specialAction === "addMother") {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+        
+        if (!memberData) {
+          throw new Error("Member data not available");
+        }
+        
+        // Create a synthetic node that mimics the FamilyTree node structure
+        const syntheticNode = {
+          id: memberData._id,
+          gender: memberData.gender,
+          fid: memberData.fatherId,
+          mid: memberData.motherId,
+          pids: memberData.partnerId || []
+        };
+        
+        const relation = updateData._specialAction === "addFather" ? "father" : "mother";
+        
+        // Prepare data for the new parent
+        const parentData = {
+          name: updateData._specialAction === "addFather" 
+            ? (updateData._fatherName || "Unknown")
+            : (updateData._motherName || "Unknown"),
+          surname: memberData.surname || "Unknown",
+          gender: updateData._specialAction === "addFather" ? "male" : "female",
+          status: "alive"
+        };
+        
+        // Import the handler function
+        const { handleAddMember } = await import("../../treeview/service/familyService");
+        
+        // Call the handler function to add the parent
+        await handleAddMember(token, syntheticNode, relation, async () => {
+          // Refresh data after parent is added
+          try {
+            setLoading(true);
+            setError(null);
+            
+            // Ensure we have a clean string ID
+            const cleanMemberId = typeof memberId === 'object' 
+              ? (memberId as any).toString()
+              : String(memberId);
+            
+            // Fetch member data, suggestions, and processed suggestions in parallel
+            const [memberResponse, suggestionsResult, processedSuggestionsResult] = await Promise.all([
+              makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`),
+              makeApiCall(`http://localhost:3001/notifications/member-similarities/${cleanMemberId}`),
+              makeApiCall(`http://localhost:3001/notifications/processed-suggestions/${cleanMemberId}`)
+            ]);
+            
+            setMemberData(memberResponse);
+            
+            // Add processed suggestions to our local state
+            if (processedSuggestionsResult && processedSuggestionsResult.data) {
+              setAppliedSuggestions(processedSuggestionsResult.data);
+            }
+            
+            // Filter out already applied suggestions
+            if (suggestionsResult && suggestionsResult.data) {
+              // Get all processed suggestions to filter out
+              const processedSuggestions = processedSuggestionsResult && processedSuggestionsResult.data 
+                ? processedSuggestionsResult.data 
+                : [];
+                
+              // Combine with local applied suggestions
+              const allAppliedSuggestions = [...appliedSuggestions, ...processedSuggestions];
+              
+              // Filter out any suggestions that were already applied
+              const filteredSimilarMembers = suggestionsResult.data.similarMembers.map((similar: any) => ({
+                ...similar,
+                suggestions: similar.suggestions.filter(
+                  (suggestion: string) => !allAppliedSuggestions.includes(suggestion)
+                )
+              })).filter((similar: any) => similar.suggestions.length > 0);
+              
+              // Update suggestion counts
+              const filteredSuggestionCount = filteredSimilarMembers.reduce(
+                (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 0
+              );
+              
+              // Update the suggestions data state
+              setSuggestionsData({
+                ...suggestionsResult.data,
+                similarMembers: filteredSimilarMembers,
+                suggestionCount: filteredSuggestionCount,
+                count: filteredSimilarMembers.length
+              });
+            } else {
+              setSuggestionsData(suggestionsResult.data);
+            }
+          } catch (error) {
+            console.error("Error refreshing data after adding parent:", error);
+            setError(error instanceof Error ? error.message : "An unknown error occurred");
+          } finally {
+            setLoading(false);
+          }
+        }, parentData);
+        
+        // Mark the suggestion as processed
+        await markSuggestionAsProcessed(memberId, suggestion);
+        
+        toast.success(`${relation === "father" ? "Father" : "Mother"} added successfully!`);
+        
+        // Return early as we've already handled this suggestion
+        return;
+      } catch (error) {
+        console.error("Error adding parent:", error);
+        toast.error(`Failed to add ${updateData._specialAction === "addFather" ? "father" : "mother"}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return;
+      }
     }
     
     // Format any dates for display
