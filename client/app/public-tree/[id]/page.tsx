@@ -71,6 +71,11 @@ export default function PublicTreeView() {
         // Initialize the family tree
         const treeElement = treeContainerRef.current;
         
+        // Define styling
+        const nameStyle = 'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;" fill="#F3F4F6"';
+        const roleStyle = 'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 400;" fill="#D1D5DB"';
+        const detailStyle = 'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 400;" fill="#9CA3AF"';
+
         // Define male and female avatars
         const maleAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4=";
         const femaleAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzgwMzQ2RCIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzRBMUY0MCIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiM0QTFGNDAiLz48L3N2Zz4=";
@@ -78,61 +83,197 @@ export default function PublicTreeView() {
         // Clear any existing tree
         treeElement.innerHTML = "";
         
+        // Set up pre-processing function for date formatting
+        const formatDate = (dateString: string | undefined): string => {
+          if (!dateString) return '';
+          
+          try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            return date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            });
+          } catch (e) {
+            console.error("Error formatting date:", e);
+            return dateString;
+          }
+        };
+        
+        // Format the processed nodes
+        const formattedNodes = Array.isArray(currentFamilyTree) 
+          ? currentFamilyTree.map(node => ({
+              ...node,
+              birthDate: formatDate(node.birthDate)
+            }))
+          : [];
+        
+        // Updated template definitions to match main tree
+        FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="25" y="60">{val}</text>` // First name
+        FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="25" y="85">{val}</text>` // Surname
+        FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="25" y="110">Birth: {val}</text>` // Birth date
+        
+        // Clear all other fields that we don't want to display
+        FamilyTree.templates.tommy.field_2 = ``;
+        FamilyTree.templates.tommy.field_3 = ``;
+        FamilyTree.templates.tommy.field_5 = ``;
+        FamilyTree.templates.tommy.field_6 = ``;
+        FamilyTree.templates.tommy.field_7 = ``;
+        FamilyTree.templates.tommy.field_8 = ``;
+        FamilyTree.templates.tommy.field_9 = ``;
+
+        // Define node templates similar to main tree
+        FamilyTree.templates.tommy.node = `
+<g filter="url(#card-shadow)">
+  <!-- Card background with rounded corners -->
+  <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
+  
+  <!-- Neutral accent -->
+  <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#80cbc4"/>
+  
+  <!-- Simple gender icon at top right -->
+  <circle cx="225" cy="30" r="15" fill="#374151" stroke="#4B5563" strokeWidth="1.5"/>
+</g>
+`;
+
+        FamilyTree.templates.tommy_female.node = `
+<g filter="url(#card-shadow)">
+  <!-- Card background with rounded corners -->
+  <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
+  
+  <!-- Female accent -->
+  <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#EC4899"/>
+  
+  <!-- Female icon at top right -->
+  <circle cx="225" cy="30" r="15" fill="#EC4899" stroke="#4B5563" strokeWidth="1.5"/>
+  <!-- Female symbol -->
+  <path d="M225,22 L225,29 M221,25 L229,25 M225,29 L225,38 M220,34 L230,34" stroke="white" stroke-width="2" fill="none" />
+</g>
+`;
+
+        FamilyTree.templates.tommy_male.node = `
+<g filter="url(#card-shadow)">
+  <!-- Card background with rounded corners -->
+  <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
+  
+  <!-- Male accent -->
+  <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#3B82F6"/>
+  
+  <!-- Male icon at top right -->
+  <circle cx="225" cy="30" r="15" fill="#3B82F6" stroke="#4B5563" strokeWidth="1.5"/>
+  <!-- Male symbol -->
+  <path d="M220,23 L230,33 M230,23 L230,33 L220,33" stroke="white" stroke-width="2" fill="none" />
+</g>
+`;
+
+        // Apply the same field styling to male and female templates
+        for (let i = 0; i <= 9; i++) {
+          FamilyTree.templates.tommy_female[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
+          FamilyTree.templates.tommy_male[`field_${i}`] = FamilyTree.templates.tommy[`field_${i}`];
+        }
+        
+        // Add shadow filter
+        const svgContent = `
+<defs>
+  <!-- Filter for card shadow -->
+  <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
+    <feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.4" floodColor="#000"/>
+  </filter>
+</defs>
+`;
+
         // Initialize the FamilyTree with the array of nodes
         familyTreeRef.current = new FamilyTree(treeElement, {
-          // Configure with read-only settings
-          nodeMenu: {
-            edit: { text: "View", icon: Eye },
-            details: null,
-            add: null,
-            remove: null,
-          } as any,
+          // Configure with no menus for a cleaner view
+          
           nodeBinding: {
             field_0: "name",
             field_1: "surname",
-            field_2: "gender",
-            field_3: "status", 
-            field_4: "birthDate",
-            field_5: "deathDate",
-            field_6: "country",
-            field_7: "occupation",
-            img_0: "imageUrl"
+            field_4: "birthDate", 
           },
-          enableDragDrop: false,
-          enableTouch: true,
-          enablePan: true,
-          enableZoom: true,
-          scaleInitial: FamilyTree.match.boundary,
+          mode: "dark",
           template: "tommy",
-          nodes: Array.isArray(currentFamilyTree) ? currentFamilyTree : [],
+          nodes: formattedNodes,
+          
+          // Interactive settings for navigation
+          mouseScrool: FamilyTree.action.zoom,
+          
           // Add better styling
-          levelSeparation: 100,
-          siblingSeparation: 60,
-          subtreeSeparation: 80,
-          padding: 20,
+          levelSeparation: 160,
+          siblingSeparation: 90,
+          subtreeSeparation: 120,
+          padding: 50,
           orientation: FamilyTree.orientation.top,
           layout: FamilyTree.layout.normal,
-          anim: { func: FamilyTree.anim.outBack, duration: 200 },
-          connectors: {
-            type: "straight",
-            style: {
-              "stroke-width": "1",
-              stroke: "#4B5563",
-            },
+          anim: { func: FamilyTree.anim.outBack, duration: 300 },
+          
+          // Enable search but only for name and surname
+          enableSearch: true,
+          searchFields: ["name", "surname"],
+          searchDisplayField: "name",
+          searchFieldsWeight: {
+            "name": 100,
+            "surname": 80
           }
+        } as any); // Using type assertion to bypass strict type checking
+
+        // Add event listener for tree initialization
+        familyTreeRef.current.on("init", function() {
+          console.log("Tree initialized");
+          
+          // Add the SVG content to the tree
+          const svgElement = treeElement.querySelector("svg");
+          if (svgElement) {
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgContent, "image/svg+xml");
+            const defs = svgDoc.documentElement.querySelector("defs");
+            if (defs) {
+              svgElement.appendChild(defs);
+            }
+          }
+        });
+
+        // Add event listener for node click - just show a simple view (no editing)
+        familyTreeRef.current.on("click", function(sender: any, args: any) {
+          // Show details of member but don't allow editing
+          const node = args.node;
+          if (node) {
+            console.log("Node clicked:", node);
+            
+            // Birth date should already be formatted, but in case it isn't:
+            const birthInfo = node.birthDate ? `Born: ${node.birthDate}` : '';
+            
+            // We could use toast to show the info, or could implement a custom view
+            if (node.name) {
+              toast.success(`${node.name} ${node.surname || ''} ${birthInfo ? '• ' + birthInfo : ''}`, {
+                duration: 3000,
+                style: {
+                  background: '#1F2937',
+                  color: '#F3F4F6',
+                  border: '1px solid #374151'
+                }
+              });
+            }
+          }
+          
+          // Prevent default to avoid any built-in edit
+          return false;
         });
         
         // Add default avatars based on gender
-        familyTreeRef.current.on('render', (sender: any, args: any) => {
-          if (!args.nodes || !Array.isArray(args.nodes)) return;
-          
-          for (let i = 0; i < args.nodes.length; i++) {
-            const node = args.nodes[i];
-            if (node && node.data && !node.data.imageUrl) {
-              if (node.data.gender === 'male') {
-                node.data.imageUrl = maleAvatar;
-              } else if (node.data.gender === 'female') {
-                node.data.imageUrl = femaleAvatar;
+        familyTreeRef.current.on('render', (sender: any) => {
+          // Update node appearance based on gender
+          const nodes = sender.nodes || [];
+          for (const nodeId in nodes) {
+            const node = nodes[nodeId];
+            if (node && node.data) {
+              // Apply gender-specific template
+              if (node.data.gender === 'female') {
+                node.templateName = 'tommy_female';
+              } else if (node.data.gender === 'male') {
+                node.templateName = 'tommy_male';
               }
             }
           }
@@ -250,7 +391,7 @@ export default function PublicTreeView() {
             )}
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Viewing a shared family tree in read-only mode
+            Explore this shared family tree - you can navigate, search, and view details
           </p>
         </motion.div>
 
@@ -273,16 +414,64 @@ export default function PublicTreeView() {
                   <p className="text-sm text-gray-400">Interactive visualization of family relationships</p>
                 </div>
               </div>
-              <Badge className="bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                Read Only
-              </Badge>
             </div>
           </div>
 
-          <div className="p-6">
-            <div ref={treeContainerRef} className="w-full h-[700px]"></div>
+          <div className="p-2">
+            <div ref={treeContainerRef} className="w-full h-[1100px]"></div>
           </div>
         </motion.div>
+
+        {!loading && !error && currentFamilyTree && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+          >
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+              <h3 className="text-sm font-medium text-gray-400 mb-2">
+                Family Members
+              </h3>
+              <div className="flex items-end justify-between">
+                <p className="text-3xl font-semibold text-white">
+                  {Array.isArray(currentFamilyTree) ? currentFamilyTree.length : 0}
+                </p>
+                <span className="text-sm text-teal-400">Total</span>
+              </div>
+            </div>
+            
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+              <h3 className="text-sm font-medium text-gray-400 mb-2">
+                Tree Owner
+              </h3>
+              <div className="flex items-center gap-3">
+                {userData && (
+                  <>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-sm font-medium">
+                      {userData.firstName[0]}{userData.lastName[0]}
+                    </div>
+                    <p className="text-xl font-semibold text-white truncate">
+                      {userData.firstName} {userData.lastName}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
+              <h3 className="text-sm font-medium text-gray-400 mb-2">
+                Viewing Mode
+              </h3>
+              <div className="flex items-end justify-between">
+                <p className="text-xl font-semibold text-white">
+                  Interactive View
+                </p>
+                <span className="text-sm text-teal-400">Public Access</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Help Section */}
         <motion.div
@@ -394,6 +583,22 @@ export default function PublicTreeView() {
                 <span>Contact the owner for more details</span>
               </li>
             </ul>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="text-center rounded-xl bg-gray-800/50 p-8 backdrop-blur-sm border border-gray-700/50"
+        >
+          <div className="max-w-3xl mx-auto">
+            <p className="text-gray-300 text-lg mb-2">
+              You can navigate, zoom, and explore this family tree interactively.
+            </p>
+            <p className="text-sm text-teal-400">
+              Click on a family member to view their basic details.
+            </p>
           </div>
         </motion.div>
       </div>
