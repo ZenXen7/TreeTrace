@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { toast } from "react-hot-toast"
 import { motion, AnimatePresence } from "framer-motion"
-import { User, Mail, Lock, Save, ChevronLeft, Eye, EyeOff, Check, AlertCircle } from 'lucide-react'
+import { User, Mail, Lock, Save, ChevronLeft, Eye, EyeOff, Check, AlertCircle, Users } from 'lucide-react'
 import AnimatedNodes from "@/components/animated-nodes"
 
 const ProfileSettings = () => {
@@ -22,17 +22,20 @@ const ProfileSettings = () => {
     firstName: string
     lastName: string
     email: string
+    gender: string
   } | null>(null)
 
   const [formData, setFormData] = useState<{
     firstName: string
     lastName: string
     email: string
+    gender: string
     password?: string
   }>({
     firstName: "",
     lastName: "",
     email: "",
+    gender: "",
     password: "",
   })
 
@@ -43,6 +46,7 @@ const ProfileSettings = () => {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
+        gender: user.gender || "",
         password: "", // Never pre-fill the password field for security reasons
       })
       setIsDirty(false)
@@ -50,6 +54,7 @@ const ProfileSettings = () => {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
+        gender: user.gender || "",
       })
     }
   }, [user])
@@ -61,7 +66,7 @@ const ProfileSettings = () => {
     }
   }, []) // Empty dependency array to run only once
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prevData) => ({
       ...prevData,
@@ -70,12 +75,13 @@ const ProfileSettings = () => {
     
     // Check if the new value is different from the original user data
     if (user) {
-      const hasNameChanges = 
+      const hasChanges = 
         (name === 'firstName' && value !== (user.firstName || "")) ||
         (name === 'lastName' && value !== (user.lastName || "")) ||
+        (name === 'gender' && value !== (user.gender || "")) ||
         (name === 'password' && value.trim() !== "")
       
-      setIsDirty(hasNameChanges)
+      setIsDirty(hasChanges)
     }
     
     // Clear success/error states when user makes changes
@@ -111,6 +117,7 @@ const ProfileSettings = () => {
           ...initialData,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          gender: formData.gender,
         })
       }
       
@@ -162,7 +169,7 @@ const ProfileSettings = () => {
         >
           <button
             onClick={() => window.history.back()}
-            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors"
+            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors cursor-pointer"
           >
             <ChevronLeft className="h-5 w-5" />
             <span className="ml-1">Back</span>
@@ -224,6 +231,34 @@ const ProfileSettings = () => {
                       className="w-full pl-10 py-2.5 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors"
                       placeholder="Enter your last name"
                     />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-300 mb-2">
+                  Gender
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="w-full pl-10 py-2.5 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Select your gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
                   </div>
                 </div>
               </div>

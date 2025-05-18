@@ -149,7 +149,7 @@ export default function PublicTreeView() {
   <!-- Female icon at top right -->
   <circle cx="225" cy="30" r="15" fill="#EC4899" stroke="#4B5563" strokeWidth="1.5"/>
   <!-- Female symbol -->
-  <path d="M225,22 L225,29 M221,25 L229,25 M225,29 L225,38 M220,34 L230,34" stroke="white" stroke-width="2" fill="none" />
+  <image href="https://cdn-icons-png.flaticon.com/128/1019/1019071.png" x="210" y="15" height="30" width="30" preserveAspectRatio="xMidYMid meet"/>
 </g>
 `;
 
@@ -163,8 +163,8 @@ export default function PublicTreeView() {
   
   <!-- Male icon at top right -->
   <circle cx="225" cy="30" r="15" fill="#3B82F6" stroke="#4B5563" strokeWidth="1.5"/>
-  <!-- Male symbol -->
-  <path d="M220,23 L230,33 M230,23 L230,33 L220,33" stroke="white" stroke-width="2" fill="none" />
+  <!-- Male Image -->
+  <image href="https://cdn-icons-png.flaticon.com/128/1019/1019070.png" x="212" y="17" height="26" width="26" preserveAspectRatio="xMidYMid meet"/>
 </g>
 `;
 
@@ -370,7 +370,7 @@ export default function PublicTreeView() {
         >
           <button
             onClick={handleGoBack}
-            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors"
+            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors cursor-pointer"
           >
             <ChevronLeft className="h-5 w-5" />
             <span className="ml-1">Back to Search</span>
@@ -510,7 +510,7 @@ export default function PublicTreeView() {
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
-                <span>Double-click a member to center the view</span>
+                <span>Use the search bar to find specific family members</span>
               </li>
             </ul>
           </div>
@@ -583,22 +583,6 @@ export default function PublicTreeView() {
                 <span>Contact the owner for more details</span>
               </li>
             </ul>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="text-center rounded-xl bg-gray-800/50 p-8 backdrop-blur-sm border border-gray-700/50"
-        >
-          <div className="max-w-3xl mx-auto">
-            <p className="text-gray-300 text-lg mb-2">
-              You can navigate, zoom, and explore this family tree interactively.
-            </p>
-            <p className="text-sm text-teal-400">
-              Click on a family member to view their basic details.
-            </p>
           </div>
         </motion.div>
       </div>

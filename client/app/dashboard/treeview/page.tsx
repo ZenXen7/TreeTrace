@@ -9,6 +9,7 @@ import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import AnimatedNodes from "@/components/animated-nodes"
+import "./tree.css" // Import FamilyTreeJS styling fixes
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -109,8 +110,8 @@ function Familytree(props: {
   
   <!-- Female icon placeholder at top right -->
   <circle cx="225" cy="30" r="15" fill="#EC4899" stroke="#4B5563" strokeWidth="1.5"/>
-  <!-- Female symbol -->
-  <path d="M225,22 L225,29 M221,25 L229,25 M225,29 L225,38 M220,34 L230,34" stroke="white" stroke-width="2" fill="none" />
+  <!-- Female icon image -->
+  <image href="https://cdn-icons-png.flaticon.com/128/1019/1019071.png" x="210" y="15" height="30" width="30" preserveAspectRatio="xMidYMid meet"/>
 </g>
 `;
 
@@ -124,8 +125,8 @@ function Familytree(props: {
   
   <!-- Male icon placeholder at top right -->
   <circle cx="225" cy="30" r="15" fill="#3B82F6" stroke="#4B5563" strokeWidth="1.5"/>
-  <!-- Male symbol -->
-  <path d="M220,23 L230,33 M230,23 L230,33 L220,33" stroke="white" stroke-width="2" fill="none" />
+  <!-- Male icon image -->
+  <image href="https://cdn-icons-png.flaticon.com/128/1019/1019070.png" x="212" y="17" height="26" width="26" preserveAspectRatio="xMidYMid meet"/>
 </g>
 `;
 
@@ -1431,7 +1432,7 @@ export default function TreeViewPage() {
         <div className="mb-8 flex items-center">
           <button
             onClick={() => router.push("/dashboard/main")}
-            className="flex items-center gap-2 text-gray-400 hover:text-teal-400 transition-colors duration-200"
+            className="flex items-center gap-2 text-gray-400 hover:text-teal-400 transition-colors duration-200 cursor-pointer"
           >
             <svg
               className="w-5 h-5"
@@ -1742,7 +1743,7 @@ export default function TreeViewPage() {
               Navigation Tips
             </h3>
             <ul className="space-y-3 text-gray-400">
-              <li className="flex items-start">image.png
+              <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
                 <span>Click and drag to pan around the tree</span>
               </li>
@@ -1752,7 +1753,7 @@ export default function TreeViewPage() {
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
-                <span>Double-click a member to center the view</span>
+                <span>Use the search bar to find specific family members</span>
               </li>
             </ul>
           </div>
@@ -1783,7 +1784,7 @@ export default function TreeViewPage() {
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
-                <span>Add parents, children, or partners</span>
+                <span>Add parents, children, or partners with the circular menu</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
@@ -1809,41 +1810,25 @@ export default function TreeViewPage() {
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-white mb-4">
-              Sharing & Export
+              Family Tree Suggestions
             </h3>
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
-                <span>Export individual profiles as PDF</span>
+                <span>Click the orange badge to see suggestions</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
-                <span>Save the entire tree as an image</span>
+                <span>Add preset family members to your tree</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-teal-400">•</span>
-                <span>Share your family history with relatives</span>
+                <span>Change or add details from suggestions to your tree</span>
               </li>
             </ul>
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="text-center rounded-xl bg-gray-800/50 p-8 backdrop-blur-sm border border-gray-700/50"
-        >
-          <div className="max-w-3xl mx-auto">
-            <p className="text-gray-300 text-lg mb-2">
-              Click on a family member and use the circular menu to add, edit,
-              or remove members.
-            </p>
-            <p className="text-sm text-teal-400">
-              Your family tree data is automatically saved as you make changes.
-            </p>
-          </div>
-        </motion.div>
       </div>
     </motion.div>
   );

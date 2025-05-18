@@ -1,0 +1,24 @@
+.bft-dark * {
+  box-sizing: content-box;
+}
+
+.bft-dark svg {
+  display: inline;
+  vertical-align: baseline;
+}
+
+.bft-dark .bft-edit-form,
+.bft-edit-form-header {
+  border-radius: 0px !important;
+}
+
+.bft-dark div hr {
+  margin-bottom: 5px !important;
+  background-color: #404040 !important;
+}
+
+.bft-dark .bft-family-menu [data-item] {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}

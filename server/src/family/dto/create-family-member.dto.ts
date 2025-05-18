@@ -57,4 +57,12 @@ export class CreateFamilyMemberDto {
   @IsArray()
   @IsMongoId({ each: true })
   partnerId?: string[]; // Foreign key to FamilyMember
+  
+  @IsOptional()
+  @IsString()
+  relationship?: string; // Type of relationship to the user
+  
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
