@@ -15,8 +15,6 @@ import {
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { FamilyService, FamilyTreeNode } from './family.service';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
-import { CreateHealthConditionDto } from './dto/create-health-condition.dto';
-import { UpdateHealthConditionDto } from './dto/update-health-condition.dto';
 import { Model, Types } from 'mongoose';
 
 @Controller('family-members')
@@ -220,98 +218,6 @@ export class FamilyController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error fetching family tree',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Health Condition endpoints
-  @Post(':id/health-conditions')
-  @UseGuards(JwtAuthGuard)
-  async addHealthCondition(
-    @Param('id') id: string,
-    @Body() createHealthConditionDto: CreateHealthConditionDto,
-  ) {
-    try {
-      // Set the familyMemberId from the URL parameter
-      createHealthConditionDto.familyMemberId = id;
-      
-      const healthCondition = await this.familyService.addHealthCondition(
-        id,
-        createHealthConditionDto,
-      );
-      
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Health condition added successfully',
-        data: healthCondition,
-      };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error adding health condition',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Get(':id/health-conditions')
-  @UseGuards(JwtAuthGuard)
-  async getHealthConditions(@Param('id') id: string) {
-    try {
-      const healthConditions = await this.familyService.getHealthConditions(id);
-      
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Health conditions retrieved successfully',
-        data: healthConditions,
-      };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error retrieving health conditions',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Patch('health-conditions/:id')
-  @UseGuards(JwtAuthGuard)
-  async updateHealthCondition(
-    @Param('id') id: string,
-    @Body() updateHealthConditionDto: UpdateHealthConditionDto,
-  ) {
-    try {
-      const updatedHealthCondition = await this.familyService.updateHealthCondition(
-        id,
-        updateHealthConditionDto,
-      );
-      
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Health condition updated successfully',
-        data: updatedHealthCondition,
-      };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error updating health condition',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Delete('health-conditions/:id')
-  @UseGuards(JwtAuthGuard)
-  async removeHealthCondition(@Param('id') id: string) {
-    try {
-      const deletedHealthCondition = await this.familyService.removeHealthCondition(id);
-      
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Health condition deleted successfully',
-        data: deletedHealthCondition,
-      };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error deleting health condition',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

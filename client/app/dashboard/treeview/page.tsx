@@ -9,7 +9,6 @@ import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import AnimatedNodes from "@/components/animated-nodes"
-import HealthConditionsModal from "@/components/HealthConditionsModal"
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -26,11 +25,6 @@ function Familytree(props: {
   fetchData: () => Promise<void>;
 }) {
   const treeContainer = useRef<HTMLDivElement | null>(null);
-  const [healthConditionsModal, setHealthConditionsModal] = useState({
-    isOpen: false,
-    familyMemberId: '',
-    familyMemberName: ''
-  });
 
   useEffect(() => {
     const treeElement = document.getElementById("tree");
@@ -276,9 +270,11 @@ function Familytree(props: {
         nodeBinding: props.nodeBinding,
         nodes: props.nodes,
         nodeCircleMenu: {
-          PDFProfile: {
-            icon: FamilyTree.icon.pdf(22, 22, "#D1D5DB"),
-            text: "PDF Profile",
+          medicalHistory: {
+            icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 7H15M7 11H17M9 15H15M8.8 3H15.2C16.8802 3 17.7202 3 18.362 3.32698C18.9265 3.6146 19.3854 4.07354 19.673 4.63803C20 5.27976 20 6.11984 20 7.8V16.2C20 17.8802 20 18.7202 19.673 19.362C19.3854 19.9265 18.9265 20.3854 18.362 20.673C17.7202 21 16.8802 21 15.2 21H8.8C7.11984 21 6.27976 21 5.63803 20.673C5.07354 20.3854 4.6146 19.9265 4.32698 19.362C4 18.7202 4 17.8802 4 16.2V7.8C4 6.11984 4 5.27976 4.32698 4.63803C4.6146 4.07354 5.07354 3.6146 5.63803 3.32698C6.27976 3 7.11984 3 8.8 3Z" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`,
+            text: "Medical History",
             color: "#1F2937",
           },
           editNode: {
@@ -371,9 +367,7 @@ function Familytree(props: {
                 ], 
                 label: 'Country', binding: 'country' },
               { type: 'textbox', label: 'Occupation', binding: 'occupation' },
-            ],
-            // Health Conditions section - button that will open a modal
-            { type: 'textbox', label: 'Manage Health Conditions', binding: 'healthConditions' }
+            ]
           ],
           buttons: {
             edit: {
@@ -414,13 +408,16 @@ function Familytree(props: {
         },
       });
 
+      // Cast the family object to any to avoid TypeScript errors
+      const familyAny = family as any;
+
       // Add event listener for tree initialization
-      family.on("init", function() {
+      familyAny.on("init", function() {
         console.log("Tree initialized");
       });
       
       // Add event listener to remove the avatar from edit forms
-      family.editUI.on("show", function(sender, args) {
+      familyAny.editUI.on("show", function(sender, args) {
         setTimeout(() => {
           // Hide avatar elements in the edit form
           const avatarElement = document.querySelector('.bft-edit-form-avatar');
@@ -472,7 +469,7 @@ function Familytree(props: {
       });
       
       // Enhance the redraw event handler to ensure proper IDs are used
-      family.on("redraw", function(sender: any) {
+      familyAny.on("redraw", function(sender: any) {
         console.log("Tree redrawn, checking for nodes with suggestions");
         
         try {
@@ -590,7 +587,7 @@ function Familytree(props: {
       });
 
       // Add event listener for tree render completion
-      family.on("render", function() {
+      familyAny.on("render", function() {
         console.log("Tree rendered, attaching badge click handlers");
         
         // Use setTimeout to ensure all elements are fully rendered
@@ -633,7 +630,7 @@ function Familytree(props: {
       });
 
       // Add event listener for node click instead of relying on template placeholders
-      family.on("click", function(sender, args) {
+      familyAny.on("click", function(sender, args) {
         // If a family member is clicked directly (not a suggestion badge), normal behavior applies
         if (!args.event || !args.event.target) {
           return true; // Allow default behavior if no event target
@@ -664,7 +661,7 @@ function Familytree(props: {
         return false;
       });
 
-      family.editUI.on("save", (sender, editedData) => {
+      familyAny.editUI.on("save", (sender, editedData) => {
         (async () => {
           try {
             const token = localStorage.getItem("token");
@@ -875,32 +872,36 @@ function Familytree(props: {
         return false;
       };
 
+      // Update the node binding to include the new fields
+      // nodeBinding = {
+      //   field_0: "name",
+      //   field_1: "gender",
+      //   field_2: "status",
+      //   field_3: "birthDate",
+      //   field_4: "deathDate",
+      //   field_5: "country",
+      //   field_6: "occupation",
+      //   field_7: "tags",
+      //   // img_0: "imageUrl"
+      // }
 
+      familyAny.nodeCircleMenuUI.on("show", (sender, args) => {
+        var node = family.getNode(args.nodeId)
+        delete args.menu.father
+        delete args.menu.mother
+        delete args.menu.wife
+        delete args.menu.husband
 
-    // Update the node binding to include the new fields
-    // nodeBinding = {
-    //   field_0: "name",
-    //   field_1: "gender",
-    //   field_2: "status",
-    //   field_3: "birthDate",
-    //   field_4: "deathDate",
-    //   field_5: "country",
-    //   field_6: "occupation",
-    //   field_7: "tags",
-    //   // img_0: "imageUrl"
-    // }
-
-    family.nodeCircleMenuUI.on("show", (sender, args) => {
-      var node = family.getNode(args.nodeId)
-      delete args.menu.father
-      delete args.menu.mother
-      delete args.menu.wife
-      delete args.menu.husband
+        args.menu.medicalHistory = {
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-pulse"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4 .5-1h6.7"/></svg>`,
+          text: "Medical History",
+          color: "#1F2937",
+        };
 
         // Add parent options
         if (FamilyTree.isNEU(node.mid)) {
           args.menu.mother = {
-            icon: FamilyTree.icon.mother(24, 24, "#ec4899"),
+            icon: (FamilyTree.icon as any).mother(24, 24, "#ec4899"),
             text: "Add mother",
             color: "#1F2937",
           };
@@ -908,36 +909,36 @@ function Familytree(props: {
 
         if (FamilyTree.isNEU(node.fid)) {
           args.menu.father = {
-            icon: FamilyTree.icon.father(24, 24, "#3b82f6"),
+            icon: (FamilyTree.icon as any).father(24, 24, "#3b82f6"),
             text: "Add father",
             color: "#1F2937",
           };
         }
 
         // Check if node has a partner
-        const hasPartner = node.pids && node.pids.length > 0;
-        const partner = hasPartner ? family.getNode(node.pids[0]) : null;
+        const hasPartner = (node as any).pids && (node as any).pids.length > 0;
+        const partner = hasPartner ? family.getNode((node as any).pids[0]) : null;
 
         // Add children options
         if (hasPartner) {
           args.menu.addSon = {
-            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
+            icon: (FamilyTree.icon as any).son(24, 24, "#3b82f6"),
             text: `Add Son with partner`,
             color: "#1F2937",
           };
           args.menu.addDaughter = {
-            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
+            icon: (FamilyTree.icon as any).daughter(24, 24, "#ec4899"),
             text: `Add Daughter with partner`,
             color: "#1F2937",
           };
         } else {
           args.menu.addSon = {
-            icon: FamilyTree.icon.son(24, 24, "#3b82f6"),
+            icon: (FamilyTree.icon as any).son(24, 24, "#3b82f6"),
             text: "Add Son",
             color: "#1F2937",
           };
           args.menu.addDaughter = {
-            icon: FamilyTree.icon.daughter(24, 24, "#ec4899"),
+            icon: (FamilyTree.icon as any).daughter(24, 24, "#ec4899"),
             text: "Add Daughter",
             color: "#1F2937",
           };
@@ -945,26 +946,26 @@ function Familytree(props: {
 
         // Add partner option if no partner exists
         if (!hasPartner) {
-          if (node.gender === "male") {
+          if ((node as any).gender === "male") {
             args.menu.wife = {
-              icon: FamilyTree.icon.wife(24, 24, "#ec4899"),
+              icon: (FamilyTree.icon as any).wife(24, 24, "#ec4899"),
               text: "Add wife",
               color: "#1F2937",
             };
-          } else if (node.gender === "female") {
+          } else if ((node as any).gender === "female") {
             args.menu.husband = {
-              icon: FamilyTree.icon.husband(24, 24, "#3b82f6"),
+              icon: (FamilyTree.icon as any).husband(24, 24, "#3b82f6"),
               text: "Add husband",
               color: "#1F2937",
             };
           }
         }
-    });
-    
-    family.nodeCircleMenuUI.on("click", async (sender, args) => {
-      const node = family.getNode(args.nodeId)
-      const token = localStorage.getItem("token")
-      if (!token) return
+      });
+      
+      familyAny.nodeCircleMenuUI.on("click", async function(sender, args): Promise<boolean | void> {
+        const node = family.getNode(args.nodeId) as any;
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
         try {
           switch (args.menuItemName) {
@@ -982,18 +983,20 @@ function Familytree(props: {
                 return;
               }
 
-            await deleteFamilyMember(token, node.id)
-            await props.fetchData()
-            break
-          }
-          case "addSon":
-          case "addDaughter": {
-            const gender = args.menuItemName === "addSon" ? "male" : "female"
-            const newMemberData = {
-              name: "Unknown",
-              surname: "Unknown",
-              gender: gender,
+              await deleteFamilyMember(token, node.id as string);
+              await props.fetchData();
+              break;
             }
+            case "addSon":
+            case "addDaughter": {
+              const gender = args.menuItemName === "addSon" ? "male" : "female";
+              const newMemberData = {
+                name: "Unknown",
+                surname: "Unknown",
+                gender: gender,
+                fatherId: undefined as any,
+                motherId: undefined as any
+              };
 
               if (node.gender === "male") {
                 newMemberData.fatherId = node.id;
@@ -1066,19 +1069,20 @@ function Familytree(props: {
             case "husband":
               await handleAddMember(token, node, "husband", props.fetchData);
               break;
-            case "PDFProfile":
-              family.exportPDFProfile({
-                id: args.nodeId,
-              });
+            case "medicalHistory":
+              // Navigate to the medical history page with the member ID
+              window.location.href = `/dashboard/medical-history/${node.id}`;
               break;
             case "editNode":
               family.editUI.show(args.nodeId);
               break;
             default:
+              break;
           }
         } catch (error) {
           console.error("Error handling member addition:", error);
         }
+        return true;
       });
     }
   }, [props.nodeBinding, props.nodes, props.fetchData]);
@@ -1090,14 +1094,6 @@ function Familytree(props: {
         ref={treeContainer}
         className="h-full w-full bg-gray-50 dark:bg-slate-900"
       ></div>
-      
-      {/* Health Conditions Modal */}
-      <HealthConditionsModal
-        isOpen={healthConditionsModal.isOpen}
-        onClose={() => setHealthConditionsModal(prev => ({ ...prev, isOpen: false }))}
-        familyMemberId={healthConditionsModal.familyMemberId}
-        familyMemberName={healthConditionsModal.familyMemberName}
-      />
     </div>
   );
 }
