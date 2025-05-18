@@ -52,7 +52,11 @@ export class FamilyService {
     createFamilyMemberDto: CreateFamilyMemberDto,
   ): Promise<FamilyMember> {
     const userObjectId = new Types.ObjectId(userId.toString());
-    const memberData = { ...createFamilyMemberDto, userId: userObjectId };
+    const memberData = { 
+      ...createFamilyMemberDto, 
+      userId: userObjectId,
+      relationship: createFamilyMemberDto.relationship || 'self'
+    };
     
     // Automatically set status to 'dead' if death date is provided
     if (memberData.deathDate) {

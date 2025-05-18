@@ -35,9 +35,11 @@ export class AuthService {
       await this.familyService.createFamilyMember(
         userID,
         {
-          name: `${user.firstName} ${user.lastName}`,
+          name: user.firstName,
+          surname: user.lastName,
           gender: user.gender,
           status: 'alive',
+          relationship: 'self',
         },
       );
 

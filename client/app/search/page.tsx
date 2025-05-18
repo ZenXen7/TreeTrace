@@ -78,7 +78,7 @@ export default function SearchPage() {
         >
           <button
             onClick={() => router.push("/dashboard/main")}
-            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors"
+            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors cursor-pointer"
           >
             <ChevronLeft className="h-5 w-5" />
             <span className="ml-1">Back to Dashboard</span>

@@ -24,15 +24,11 @@ import { useAuthStore } from "@/store/useAuthStore"
 
 const mainNavItems = [
   { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "./main" },
-  { title: "My Trees", icon: <Trees className="h-5 w-5" />, href: "./treeview", badge: "3" },
-  { title: "Find Connections", icon: <GitMerge className="h-5 w-5" />, href: "./connections" },
-  { title: "Family Members", icon: <Users className="h-5 w-5" />, href: "/members" },
+  { title: "My Tree", icon: <Trees className="h-5 w-5" />, href: "./treeview" },
   { title: "Search Users", icon: <Search className="h-5 w-5" />, href: "/search" },
 ]
 
 const toolsNavItems = [
-  
-  { title: "Health Tracking", icon: <Heart className="h-5 w-5" />, href: "/health" },
   { title: "Settings", icon: <Settings className="h-5 w-5" />, href: "/tools/settings" },
 ]
 
@@ -134,7 +130,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
           {mainNavItems.map((item, index) => (
             <Link key={item.title} href={item.href}>
               <button
-                className="flex items-center justify-between w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group"
+                className="flex items-center justify-between w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group cursor-pointer"
                 style={{
                   opacity: mounted ? 1 : 0,
                   transform: mounted ? "translateY(0)" : "translateY(10px)",
@@ -149,11 +145,6 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
                   </div>
                   <span>{item.title}</span>
                 </div>
-                {item.badge && (
-                  <Badge variant="outline" className="bg-emerald-900/20 text-emerald-400 border-emerald-500/20 text-xs">
-                    {item.badge}
-                  </Badge>
-                )}
               </button>
             </Link>
           ))}
@@ -162,7 +153,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
           {toolsNavItems.map((item, index) => (
             <Link key={item.title} href={item.href}>
               <button
-                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group"
+                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group cursor-pointer"
                 style={{
                   opacity: mounted ? 1 : 0,
                   transform: mounted ? "translateY(0)" : "translateY(10px)",
@@ -197,7 +188,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
             <Link href="/">
               <button 
                 onClick={() => useAuthStore.getState().logout()}
-                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
               >
                 <LogOut className="h-5 w-5" />
                 <span>Log Out</span>
