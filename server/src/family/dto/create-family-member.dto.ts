@@ -42,10 +42,6 @@ export class CreateFamilyMemberDto {
   country?: string;
 
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
-
-  @IsOptional()
   @IsMongoId()
   fatherId?: string; // Foreign key to FamilyMember
 
@@ -57,6 +53,11 @@ export class CreateFamilyMemberDto {
   @IsArray()
   @IsMongoId({ each: true })
   partnerId?: string[]; // Foreign key to FamilyMember
+  
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  childId?: string[]; // Array of child IDs
   
   @IsOptional()
   @IsString()

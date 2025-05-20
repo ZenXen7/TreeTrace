@@ -32,9 +32,6 @@ export class FamilyMember {
   @Prop({ required: false, default: null })
   country: string;
   
-  @Prop({ required: false, default: null })
-  imageUrl: string; 
-  
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
   fatherId: Types.ObjectId;
 
@@ -43,6 +40,9 @@ export class FamilyMember {
 
   @Prop({ type: Types.ObjectId, ref: 'FamilyMember' })
   partnerId: Types.ObjectId[]; // Partner ID
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'FamilyMember' }] })
+  childId: Types.ObjectId[]; // Array of child IDs
 
   @Prop({ required: true })
   relationship: string;
