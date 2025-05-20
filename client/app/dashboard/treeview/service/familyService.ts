@@ -164,6 +164,40 @@ async function handleAddMember(
         country: newMemberData?.country || "",
         occupation: newMemberData?.occupation || ""
       });
+
+      // Correctly extract the childId from the response
+      const childId = child.data?._id || child.id || child._id;
+      if (!childId) {
+        console.error("Failed to get childId from addFamilyMember response", child);
+        return;
+      }
+      const updates = [];
+
+      // Update father's childId if present
+      if (node.gender === "male" || (node.pids && node.pids[0])) {
+        const fatherId = node.gender === "male" ? node.id : node.pids[0];
+        const fatherData = await fetchFamilyMembers(token).then(members => 
+          members.find((m: any) => m._id === fatherId)
+        );
+        const existingChildIds = (fatherData?.childId || []).filter(Boolean);
+        updates.push(updateFamilyMember(token, fatherId, {
+          childId: [...existingChildIds, childId].filter(Boolean)
+        }));
+      }
+
+      // Update mother's childId if present
+      if (node.gender === "female" || (node.pids && node.pids[0])) {
+        const motherId = node.gender === "female" ? node.id : node.pids[0];
+        const motherData = await fetchFamilyMembers(token).then(members => 
+          members.find((m: any) => m._id === motherId)
+        );
+        const existingChildIds = (motherData?.childId || []).filter(Boolean);
+        updates.push(updateFamilyMember(token, motherId, {
+          childId: [...existingChildIds, childId].filter(Boolean)
+        }));
+      }
+
+      await Promise.all(updates);
       await fetchData();
       return;
     }
@@ -239,7 +273,7 @@ async function handleAddMember(
         const partnerId = partner.id || partner["_id"] || partner.data?._id;
         updateCurrentNode.partnerId = [partnerId];
 
-        // Update existing children's parent IDs
+        // Update existing children's parent IDs and childId arrays
         const children = await fetchFamilyMembers(token);
         const nodeChildren = children.filter(
           (child: any) =>
@@ -247,12 +281,23 @@ async function handleAddMember(
             (node.gender === "female" && child.motherId === (node.id || node._id))
         );
 
+        // Get current partner's data to append to existing childId array
+        const partnerData = await fetchFamilyMembers(token).then(members => 
+          members.find((m: any) => m._id === partnerId)
+        );
+        const existingChildIds = partnerData?.childId || [];
+
         for (const child of nodeChildren) {
           const updateData = node.gender === "male" 
             ? { motherId: partnerId }
             : { fatherId: partnerId };
           await updateFamilyMember(token, child._id, updateData);
         }
+
+        // Update partner's childId array with all children
+        await updateFamilyMember(token, partnerId, {
+          childId: [...existingChildIds, ...nodeChildren.map((child: any) => child._id)]
+        });
         break;
       }
 
@@ -319,6 +364,22 @@ async function deleteFamilyMember(token: string, memberId: string) {
       throw new Error("Family member not found");
     }
 
+    // Remove this member's ID from the childId array of both parents
+    if (memberToDelete.fatherId) {
+      const father = allMembers.find((m: any) => m._id === memberToDelete.fatherId);
+      if (father) {
+        const updatedChildIds = (father.childId || []).filter((cid: string) => cid !== memberId);
+        await updateFamilyMember(token, father._id, { childId: updatedChildIds });
+      }
+    }
+    if (memberToDelete.motherId) {
+      const mother = allMembers.find((m: any) => m._id === memberToDelete.motherId);
+      if (mother) {
+        const updatedChildIds = (mother.childId || []).filter((cid: string) => cid !== memberId);
+        await updateFamilyMember(token, mother._id, { childId: updatedChildIds });
+      }
+    }
+
     const children = allMembers.filter(
       (member: any) => member.fatherId === memberId || member.motherId === memberId
     );
@@ -373,20 +434,19 @@ async function getSurnameSimilaritiesCount(token: string, memberId: string) {
         Authorization: `Bearer ${token}`,
       },
     });
-    
+
     if (!response.ok) {
-      return 0;
+      throw new Error("Failed to get surname similarities count");
     }
-    
+
     const result = await response.json();
-    return result.data?.count || 0;
+    return result.data.count;
   } catch (error) {
-    console.error("Error fetching surname similarities count:", error);
-    return 0;
+    console.error("Error in getSurnameSimilaritiesCount:", error);
+    throw error;
   }
 }
 
-// New function to get suggestion count for a family member
 async function getMemberSuggestionCount(token: string, memberId: string) {
   try {
     const response = await fetch(`http://localhost:3001/notifications/member-similarities/${memberId}`, {

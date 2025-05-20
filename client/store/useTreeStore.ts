@@ -27,14 +27,14 @@ interface FamilyMember {
   occupation?: string;
   country?: string;
   tags?: string[];
- status: string;
+  status: string;
   gender?: string;
   medicalConditions?: string[];
   userId: string;
   fatherId?: string;
   motherId?: string;
-  partnerId?: string;
-  children: string[];
+  partnerId?: string[];
+  childId?: string[];
 }
 
 interface FamilyTreeNode extends FamilyMember {
@@ -49,7 +49,6 @@ interface CreateFamilyMemberDto {
   surname?: string;
   birthDate?: Date;
   deathDate?: Date;
-  // relationship: string;
   gender?: string;
   medicalConditions?: string[];
   occupation?: string;
@@ -57,7 +56,8 @@ interface CreateFamilyMemberDto {
   status?: string;
   fatherId?: string;
   motherId?: string;
-  partnerId?: string;
+  partnerId?: string[];
+  childId?: string[];
 }
 
 interface TreeState {
@@ -144,9 +144,9 @@ const useTreeStore = create<TreeState>((set) => ({
           occupation: member.occupation || '',
           fid: member.fatherId || '',
           mid: member.motherId || '',
-          pids: member.partnerId ? [member.partnerId] : [],
-          tags: member.tags || [],
-          imageUrl: member.imageUrl || ''
+          pids: member.partnerId || [],
+          childId: member.childId || [],
+          tags: member.tags || []
         }));
         
         set({ 

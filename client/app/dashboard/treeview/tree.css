@@ -22,3 +22,25 @@
   align-items: center;
   cursor: pointer;
 }
+
+.bft-edit-form.female-edit-form {
+  border: 2px solid rgba(236, 72, 153, 0.5) !important;
+}
+.bft-edit-form.female-edit-form .bft-form-header,
+.bft-edit-form.female-edit-form .bft-edit-form-header {
+  background-color: rgba(236, 72, 153, 0.15) !important;
+  border-bottom: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+.bft-edit-form.female-edit-form .bft-edit-form-title,
+.bft-edit-form.female-edit-form .bft-form-title {
+  color: rgb(236, 72, 153) !important;
+}
+.bft-edit-form.female-edit-form button.bft-form-btn,
+.bft-edit-form.female-edit-form .bft-submit {
+  background-color: rgb(236, 72, 153) !important;
+  border-color: rgb(216, 52, 133) !important;
+}
+.bft-edit-form.female-edit-form button.bft-form-btn:hover,
+.bft-edit-form.female-edit-form .bft-submit:hover {
+  background-color: rgb(216, 52, 133) !important;
+}
