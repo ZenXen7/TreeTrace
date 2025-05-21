@@ -1093,8 +1093,8 @@ export default function MemberSuggestionsPage() {
             ? childrenNames[i] 
             : `Child ${i + 1}`;
           
-          // Default to 50/50 random gender unless specified
-          const childGender = Math.random() > 0.5 ? "male" : "female";
+          // Determine gender from child name
+          const childGender = determineGenderFromName(childName);
           const relation = childGender === "male" ? "son" : "daughter";
           
           // Get current member ID in a clean format
@@ -1414,8 +1414,8 @@ export default function MemberSuggestionsPage() {
                   ? childrenNames[i] 
                   : `Child ${i + 1}`;
                 
-                // Default to 50/50 random gender unless specified
-                const childGender = Math.random() > 0.5 ? "male" : "female";
+                // Determine gender from child name
+                const childGender = determineGenderFromName(childName);
                 const relation = childGender === "male" ? "son" : "daughter";
                 
                 // Create basic child data
@@ -1432,7 +1432,7 @@ export default function MemberSuggestionsPage() {
                   motherId: syntheticNode.gender === "female" ? cleanMemberId : undefined
                 };
                 
-                console.log(`Adding child ${i + 1}/${childrenCount} with relation ${relation}:`, childData);
+
                 
                 try {
                   // Call the handler to add the child
@@ -1455,7 +1455,7 @@ export default function MemberSuggestionsPage() {
                 }
               }
               
-              console.log(`Finished adding ${childrenCount} children`);
+
               
               // Final refresh of data
               await refreshFunction();
@@ -1477,7 +1477,7 @@ export default function MemberSuggestionsPage() {
       
       // Mark all applied suggestions as processed in the database
       if (pendingChanges.sourceSuggestions.length > 0) {
-        console.log("Marking suggestions as processed:", pendingChanges.sourceSuggestions);
+
         
         for (const suggestion of pendingChanges.sourceSuggestions) {
           await markSuggestionAsProcessed(cleanMemberId, suggestion);
@@ -1492,7 +1492,7 @@ export default function MemberSuggestionsPage() {
       
       // Explicitly fetch the latest member data to ensure we have the most up-to-date information
       const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
-      console.log("Refreshed member data:", refreshedMemberData);
+
       
       // Update the member data with the refreshed data
       setMemberData(refreshedMemberData);
@@ -1621,8 +1621,6 @@ export default function MemberSuggestionsPage() {
   // Function to mark a suggestion as processed
   const markSuggestionAsProcessed = async (memberId: string, suggestionText: string) => {
     try {
-      console.log(`Marking suggestion as processed: "${suggestionText}"`);
-      
       // Get token for authorization
       const token = localStorage.getItem("token");
       if (!token) {
@@ -1652,13 +1650,10 @@ export default function MemberSuggestionsPage() {
       }
       
       const result = await response.json();
-      console.log("Suggestion marked as processed:", result);
       
       // If this is a child suggestion and the member has a partner, also mark it as processed for the partner
       if (isChildSuggestion && memberData && memberData.partnerId && memberData.partnerId.length > 0) {
         try {
-          console.log(`This is a child suggestion. Also marking it as processed for partner:`, memberData.partnerId[0]);
-          
           // Extract the child name from the suggestion
           let childName = "";
           const childNameMatch = suggestionText.match(/child "([^"]+)"/i);
@@ -1693,7 +1688,6 @@ export default function MemberSuggestionsPage() {
                             suggestionText: partnerSuggestion
                           })
                         });
-                        console.log(`Marked matching child suggestion as processed for partner: "${partnerSuggestion}"`);
                       }
                     }
                   }
@@ -1712,7 +1706,6 @@ export default function MemberSuggestionsPage() {
                   suggestionText: suggestionText
                 })
               });
-              console.log(`Marked generic child suggestion as processed for partner`);
             }
           }
         } catch (partnerError) {
@@ -1803,6 +1796,39 @@ export default function MemberSuggestionsPage() {
       console.error("Error formatting date:", error);
       return dateString; // Return as is if there's an error
     }
+  };
+
+  // Helper function to determine gender from child name
+  const determineGenderFromName = (name: string): "male" | "female" => {
+    // Check for explicit gender in name
+    if (name.toLowerCase().includes("son") && !name.toLowerCase().includes("daughter")) {
+      return "male";
+    }
+    if (name.toLowerCase().includes("daughter")) {
+      return "female";
+    }
+    
+    // For names with clear gender indicators
+    const maleNamePatterns = ["miko", "kyle son", "mika son"];
+    const femaleNamePatterns = ["mika daughter", "kyla", "kyle daughter"];
+    
+    const lowerName = name.toLowerCase();
+    
+    // Check against known patterns
+    for (const pattern of maleNamePatterns) {
+      if (lowerName.includes(pattern)) {
+        return "male";
+      }
+    }
+    
+    for (const pattern of femaleNamePatterns) {
+      if (lowerName.includes(pattern)) {
+        return "female";
+      }
+    }
+    
+    // Default to random assignment if no patterns match
+    return Math.random() > 0.5 ? "male" : "female";
   };
 
   if (loading) {
