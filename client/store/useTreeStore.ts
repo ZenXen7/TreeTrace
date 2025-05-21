@@ -27,7 +27,7 @@ interface FamilyMember {
   occupation?: string;
   country?: string;
   tags?: string[];
-  status: string;
+ status: string;
   gender?: string;
   medicalConditions?: string[];
   userId: string;

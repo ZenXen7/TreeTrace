@@ -434,11 +434,11 @@ async function getSurnameSimilaritiesCount(token: string, memberId: string) {
         Authorization: `Bearer ${token}`,
       },
     });
-
+    
     if (!response.ok) {
       throw new Error("Failed to get surname similarities count");
     }
-
+    
     const result = await response.json();
     return result.data.count;
   } catch (error) {

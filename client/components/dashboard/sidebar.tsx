@@ -26,6 +26,7 @@ const mainNavItems = [
   { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "./main" },
   { title: "My Tree", icon: <Trees className="h-5 w-5" />, href: "./treeview" },
   { title: "Search Users", icon: <Search className="h-5 w-5" />, href: "/search" },
+  { title: "Health Overview", icon: <Heart className="h-5 w-5" />, href: "./health-overview" },
 ]
 
 const toolsNavItems = [

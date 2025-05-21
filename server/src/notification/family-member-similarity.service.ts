@@ -104,15 +104,11 @@ export class FamilyMemberSimilarityService {
     const firstName1 = member1.name ? member1.name.split(' ')[0] : '';
     const firstName2 = member2.name ? member2.name.split(' ')[0] : '';
     
-    console.log(`Comparing members: "${member1.name}" (${firstName1} ${surname1}) vs "${member2.name}" (${firstName2} ${surname2})`);
-    
     // Check if they have the same last name
     const hasSameSurname = surname1 && surname2 && surname1.toLowerCase() === surname2.toLowerCase();
     
     // Check if they have the same first name
     const hasSameFirstName = firstName1 && firstName2 && firstName1.toLowerCase() === firstName2.toLowerCase();
-    
-    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
     
     // Compare surname
     const surnameSimilarity = this.calculateStringSimilarity(surname1, surname2);
@@ -120,7 +116,6 @@ export class FamilyMemberSimilarityService {
       similarFields.push('surname');
       totalSimilarity += surnameSimilarity;
       fieldCount++;
-      console.log(`Surname similarity: ${surnameSimilarity.toFixed(2)}`);
     }
     
     // Compare first name (extracted from full name)
@@ -129,7 +124,6 @@ export class FamilyMemberSimilarityService {
       similarFields.push('firstName');
       totalSimilarity += firstNameSimilarity;
       fieldCount++;
-      console.log(`First name similarity: ${firstNameSimilarity.toFixed(2)}`);
     }
     
     // Compare full name
@@ -138,7 +132,6 @@ export class FamilyMemberSimilarityService {
       similarFields.push('fullName');
       totalSimilarity += fullNameSimilarity;
       fieldCount++;
-      console.log(`Full name similarity: ${fullNameSimilarity.toFixed(2)}`);
     }
     
     // Compare status (alive, dead, unknown)
@@ -188,8 +181,6 @@ export class FamilyMemberSimilarityService {
     
     // Calculate average similarity score
     const overallSimilarity = fieldCount > 0 ? totalSimilarity / fieldCount : 0;
-    
-    console.log(`Overall similarity: ${overallSimilarity.toFixed(2)}, Similar fields: ${similarFields.join(', ')}`);
     
     return {
       similarity: overallSimilarity,
@@ -629,24 +620,17 @@ export class FamilyMemberSimilarityService {
    */
   public async analyzeSimilaritiesAcrossUsers(currentUserId: Types.ObjectId): Promise<void> {
     try {
-      console.log(`Analyzing cross-user similarities for user ${currentUserId}`);
-      
       // Get all family members for the current user
       const currentUserMembers = await this.familyMemberModel
         .find({ userId: currentUserId })
         .exec() as FamilyMemberWithId[];
-      
-      console.log(`Found ${currentUserMembers.length} family members for current user`);
       
       // Get all family members from other users
       const otherUsersFamilyMembers = await this.familyMemberModel
         .find({ userId: { $ne: currentUserId } })
         .exec() as FamilyMemberWithId[];
       
-      console.log(`Found ${otherUsersFamilyMembers.length} family members from other users`);
-      
       if (currentUserMembers.length === 0 || otherUsersFamilyMembers.length === 0) {
-        console.log('No family members to compare.');
         return;
       }
 
@@ -670,12 +654,6 @@ export class FamilyMemberSimilarityService {
           
           // If similarity is above threshold and we have at least one similar field
           if (similarity > 0.7 && similarFields.length > 0) {
-            console.log(`Found similar members: ${currentMember.name} vs ${otherMember.name} = ${similarity}`);
-            
-            // Generate suggestions
-            const { suggestionsForMember1: suggestionsForCurrentUser, 
-                   suggestionsForMember2: suggestionsForOtherUser } = await this.generateSuggestions(currentMember, otherMember, similarFields);
-            
             const key = `${currentMemberKey}|${otherMember._id.toString()}`;
             if (!foundSimilarities.has(key)) {
               foundSimilarities.set(key, []);
@@ -688,8 +666,8 @@ export class FamilyMemberSimilarityService {
                 otherMember,
                 similarity,
                 similarFields,
-                suggestionsForCurrentUser,
-                suggestionsForOtherUser
+                suggestionsForCurrentUser: [],
+                suggestionsForOtherUser: []
               });
             }
           }
@@ -736,7 +714,7 @@ export class FamilyMemberSimilarityService {
           }
           
           // Add to suggestions map
-          if (similarity.suggestionsForCurrentUser.length > 0 || similarity.suggestionsForOtherUser.length > 0) {
+          if (similarity.similarFields.length > 0) {
             if (!suggestionsByUser.has(userId)) {
               suggestionsByUser.set(userId, []);
             }
@@ -745,10 +723,10 @@ export class FamilyMemberSimilarityService {
             if (suggestionsList) {
               suggestionsList.push({
                 otherMemberId: similarity.otherMember._id.toString(),
-                suggestionsForCurrentUser: similarity.suggestionsForCurrentUser,
-                suggestionsForOtherUser: similarity.suggestionsForOtherUser
+                suggestionsForCurrentUser: [],
+                suggestionsForOtherUser: similarity.similarFields
               });
-              totalSuggestionCount += similarity.suggestionsForCurrentUser.length;
+              totalSuggestionCount += similarity.similarFields.length;
             }
           }
         }
@@ -763,76 +741,29 @@ export class FamilyMemberSimilarityService {
           message += ` There are ${totalSuggestionCount} suggestions for information that could be updated.`;
         }
         
-        console.log(`Creating notification: ${message}`);
-        
-        try {
-          await this.notificationModel.create({
-            userId: currentUserId,
-            message,
-            type: 'cross_user_family_similarity',
-            read: false,
-            metadata: {
-              currentMember: {
-                id: firstSimilarity.currentMember._id,
-                name: firstSimilarity.currentMember.name,
-                surname: this.getSurname(firstSimilarity.currentMember),
-                status: firstSimilarity.currentMember.status,
-                birthDate: firstSimilarity.currentMember.birthDate,
-                deathDate: firstSimilarity.currentMember.deathDate,
-                country: firstSimilarity.currentMember.country
-              },
-              similarFields: firstSimilarity.similarFields,
-              similarity: firstSimilarity.similarity,
-              similarMembersByUser: Object.fromEntries(similarMembersByUser),
-              suggestionsByUser: Object.fromEntries(suggestionsByUser),
-              totalSuggestionCount
+        await this.notificationModel.create({
+          userId: currentUserId,
+          message,
+          type: 'cross_user_family_similarity',
+          read: false,
+          metadata: {
+            currentMember: {
+              id: firstSimilarity.currentMember._id,
+              name: firstSimilarity.currentMember.name,
+              surname: this.getSurname(firstSimilarity.currentMember),
+              status: firstSimilarity.currentMember.status,
+              birthDate: firstSimilarity.currentMember.birthDate,
+              deathDate: firstSimilarity.currentMember.deathDate,
+              country: firstSimilarity.currentMember.country
             },
-            relatedFamilyMembers: [firstSimilarity.currentMember._id]
-          });
-          
-          console.log('Notification created successfully for current user');
-          
-          // Create notifications for other users
-          for (const [userId, similarMembers] of similarMembersByUser.entries()) {
-            const userObjectId = new Types.ObjectId(userId);
-            const suggestions = suggestionsByUser.get(userId) || [];
-            const suggestionsForOtherUser = suggestions.flatMap(s => s.suggestionsForOtherUser);
-            const totalSuggestionsForUser = suggestionsForOtherUser.length;
-            
-            let otherUserMessage = `We found ${similarMembers.length} of your family member(s) similar to "${currentMemberName}" in another user's family tree.`;
-            
-            // Add suggestion count to the message if there are any suggestions
-            if (totalSuggestionsForUser > 0) {
-              otherUserMessage += ` There are ${totalSuggestionsForUser} suggestions for information that could be updated.`;
-            }
-            
-            await this.notificationModel.create({
-              userId: userObjectId,
-              message: otherUserMessage,
-              type: 'cross_user_family_similarity',
-              read: false,
-              metadata: {
-                otherUserMember: {
-                  id: firstSimilarity.currentMember._id,
-                  name: firstSimilarity.currentMember.name,
-                  surname: this.getSurname(firstSimilarity.currentMember),
-                  status: firstSimilarity.currentMember.status,
-                  birthDate: firstSimilarity.currentMember.birthDate,
-                  deathDate: firstSimilarity.currentMember.deathDate,
-                  country: firstSimilarity.currentMember.country
-                },
-                similarMembers,
-                suggestions: suggestionsForOtherUser,
-                totalSuggestionCount: totalSuggestionsForUser
-              },
-              relatedFamilyMembers: similarMembers.map(m => m.memberId)
-            });
-            
-            console.log(`Notification created successfully for other user ${userId}`);
-          }
-        } catch (error) {
-          console.error('Error creating notification:', error);
-        }
+            similarFields: firstSimilarity.similarFields,
+            similarity: firstSimilarity.similarity,
+            similarMembersByUser: Object.fromEntries(similarMembersByUser),
+            suggestionsByUser: Object.fromEntries(suggestionsByUser),
+            totalSuggestionCount
+          },
+          relatedFamilyMembers: [firstSimilarity.currentMember._id]
+        });
       }
       
     } catch (error) {
@@ -951,9 +882,6 @@ export class FamilyMemberSimilarityService {
     suggestionsForMember2: string[];
     suggestionCount: number;
   }> {
-    console.log(`Generating suggestions for "${member1.name}" vs "${member2.name}"`);
-    console.log(`Similar fields: ${similarFields.join(', ')}`);
-    
     const suggestionsForMember1: string[] = [];
     const suggestionsForMember2: string[] = [];
     
@@ -990,9 +918,6 @@ export class FamilyMemberSimilarityService {
       member1.surname.trim().toLowerCase() === member2.surname.trim().toLowerCase();
 
     if (hasSameNameAndSurname) {
-      console.log('MATCH:', member1.name, member1.surname, 'vs', member2.name, member2.surname);
-      console.log('member1 parents:', member1.fatherId, member1.motherId);
-      console.log('member2 parents:', member2.fatherId, member2.motherId);
       await Promise.all([
         this.checkAndSuggestParent(member1, member2, 'father', suggestionsForMember1, suggestionsForMember2),
         this.checkAndSuggestParent(member1, member2, 'mother', suggestionsForMember1, suggestionsForMember2)
@@ -1001,8 +926,6 @@ export class FamilyMemberSimilarityService {
     
     // Check status differences - only if we should generate suggestions
     if (hasSameNameAndSurname && member1.status && member2.status && member1.status !== member2.status) {
-      console.log(`Status difference found: ${member1.status} vs ${member2.status}`);
-      // Only make suggestions for actual status differences between alive/dead, not unknown
       if (member1.status !== 'unknown' && member2.status !== 'unknown') {
         // If member1 is alive but member2 is dead, suggest updating member1's status
         if (member1.status === 'alive' && member2.status === 'dead') {
@@ -1030,13 +953,9 @@ export class FamilyMemberSimilarityService {
       const date1 = new Date(member1.birthDate);
       const date2 = new Date(member2.birthDate);
       
-      console.log(`Birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
-      
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) { // More than 1 day difference
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
-        
-        console.log(`Birth date difference found: ${date1Str} vs ${date2Str}`);
         
         suggestionsForMember1.push(
           `Birth date may be ${date2Str} (recorded by another user) instead of ${date1Str}.`
@@ -1048,14 +967,12 @@ export class FamilyMemberSimilarityService {
     } else if (hasSameNameAndSurname && !member1.birthDate && member2.birthDate) {
       // First member is missing birth date
       const dateStr = new Date(member2.birthDate).toISOString().split('T')[0];
-      console.log(`Member1 missing birth date, suggesting to add: ${dateStr}`);
       suggestionsForMember1.push(
         `Consider adding birth date (${dateStr}). Another user has recorded this birth date.`
       );
     } else if (hasSameNameAndSurname && member1.birthDate && !member2.birthDate) {
       // Second member is missing birth date
       const dateStr = new Date(member1.birthDate).toISOString().split('T')[0];
-      console.log(`Member2 missing birth date, suggesting to add: ${dateStr}`);
       suggestionsForMember2.push(
         `Consider adding birth date (${dateStr}). Another user has recorded this birth date.`
       );
@@ -1066,13 +983,9 @@ export class FamilyMemberSimilarityService {
       const date1 = new Date(member1.deathDate);
       const date2 = new Date(member2.deathDate);
       
-      console.log(`Death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
-      
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) { // More than 1 day difference
         const date1Str = date1.toISOString().split('T')[0];
         const date2Str = date2.toISOString().split('T')[0];
-        
-        console.log(`Death date difference found: ${date1Str} vs ${date2Str}`);
         
         suggestionsForMember1.push(
           `Death date may be ${date2Str} (recorded by another user) instead of ${date1Str}.`
@@ -1084,14 +997,12 @@ export class FamilyMemberSimilarityService {
     } else if (hasSameNameAndSurname && !member1.deathDate && member2.deathDate) {
       // First member is missing death date
       const dateStr = new Date(member2.deathDate).toISOString().split('T')[0];
-      console.log(`Member1 missing death date, suggesting to add: ${dateStr}`);
       suggestionsForMember1.push(
         `Consider adding death date (${dateStr}). Another user has recorded this death date.`
       );
     } else if (hasSameNameAndSurname && member1.deathDate && !member2.deathDate) {
       // Second member is missing death date
       const dateStr = new Date(member1.deathDate).toISOString().split('T')[0];
-      console.log(`Member2 missing death date, suggesting to add: ${dateStr}`);
       suggestionsForMember2.push(
         `Consider adding death date (${dateStr}). Another user has recorded this death date.`
       );
@@ -1099,7 +1010,6 @@ export class FamilyMemberSimilarityService {
     
     // Check for country differences - only if we should generate suggestions
     if (hasSameNameAndSurname && member1.country && member2.country && member1.country !== member2.country) {
-      console.log(`Country difference found: ${member1.country} vs ${member2.country}`);
       suggestionsForMember1.push(
         `Country may be ${member2.country} (recorded by another user) instead of ${member1.country}.`
       );
@@ -1108,19 +1018,15 @@ export class FamilyMemberSimilarityService {
       );
     } else if (hasSameNameAndSurname && !member1.country && member2.country) {
       // First member is missing country
-      console.log(`Member1 missing country, suggesting to add: ${member2.country}`);
       suggestionsForMember1.push(
         `Consider adding country "${member2.country}". Another user has recorded this country.`
       );
     } else if (hasSameNameAndSurname && member1.country && !member2.country) {
       // Second member is missing country
-      console.log(`Member2 missing country, suggesting to add: ${member1.country}`);
       suggestionsForMember2.push(
         `Consider adding country "${member1.country}". Another user has recorded this country.`
       );
     }
-    
-    console.log(`Generated ${suggestionsForMember1.length} suggestions for member1 and ${suggestionsForMember2.length} for member2`);
     
     return {
       suggestionsForMember1,
@@ -1168,7 +1074,6 @@ export class FamilyMemberSimilarityService {
     const parentIdField = parentType === 'father' ? 'fatherId' : 'motherId';
     try {
       if (member1[parentIdField] && !member2[parentIdField]) {
-        console.log(`Suggesting to add ${parentType} for`, member2.name, member2.surname);
         const parentName = await this.getParentNameAsync(member1[parentIdField]);
         const parentDisplayName = parentName || `${parentType === 'father' ? 'Papa' : 'Mama'} ${this.getSurname(member1)}`;
         suggestionsForMember2.push(
