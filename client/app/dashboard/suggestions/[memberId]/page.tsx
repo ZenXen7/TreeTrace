@@ -531,7 +531,7 @@ export default function MemberSuggestionsPage() {
         console.log("Extracted source member ID:", updateData._sourceMemberId);
       }
       
-    } else if (suggestion.includes("Consider adding mother") || suggestion.includes("adding mother")) {
+    } else if (suggestion.includes("adding mother") || suggestion.includes("Consider adding mother")) {
       console.log("Found mother suggestion:", suggestion);
       
       // Ask for confirmation before proceeding with parent addition
@@ -559,14 +559,7 @@ export default function MemberSuggestionsPage() {
         }
       }
       
-      // Also try to extract surname directly if available
-      const motherSurnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
-      if (motherSurnameMatch && motherSurnameMatch[1]) {
-        updateData._motherSurname = motherSurnameMatch[1].trim();
-        console.log("Directly extracted mother surname:", updateData._motherSurname);
-      }
-      
-      // Try different possible formats
+      // Try different possible formats to find source member ID
       let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
@@ -577,6 +570,234 @@ export default function MemberSuggestionsPage() {
         updateData._sourceMemberId = sourceMemberMatch[1].trim();
         console.log("Extracted source member ID:", updateData._sourceMemberId);
       }
+    } else if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+      console.log("Found partner suggestion:", suggestion);
+      
+      // Ask for confirmation before proceeding with partner addition
+      const confirmed = window.confirm(`Do you want to add a partner for this family member? This will create a new partner node in your family tree.`);
+      
+      if (!confirmed) {
+        console.log("User declined to add partner");
+        return;
+      }
+      
+      // Mark this suggestion as special and don't process it like regular field changes
+      updateData._specialAction = "addPartner";
+      
+      // Try to extract partner's name if available
+      const partnerNameMatch = suggestion.match(/adding partner "([^"]+)"/i);
+      if (partnerNameMatch && partnerNameMatch[1]) {
+        updateData._partnerName = partnerNameMatch[1].trim();
+        console.log("Extracted partner name:", updateData._partnerName);
+        
+        // Try to extract surname if the name has a format "FirstName Surname"
+        const nameParts = updateData._partnerName.split(' ');
+        if (nameParts.length > 1) {
+          updateData._partnerSurname = nameParts[nameParts.length - 1];
+          console.log("Extracted partner surname:", updateData._partnerSurname);
+        }
+      }
+      
+      // Try different possible formats to find source member ID
+      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member[^\w]+(\w{24})/i); // Match MongoDB ObjectIds
+      
+      if (sourceMemberMatch && sourceMemberMatch[1]) {
+        updateData._sourceMemberId = sourceMemberMatch[1].trim();
+        console.log("Extracted source member ID:", updateData._sourceMemberId);
+      }
+      
+      // Store the partner suggestion in pending changes
+      setPendingChanges(prevState => {
+        return {
+          changes: { 
+            ...prevState.changes, 
+            "_addPartnerAction": updateData
+          },
+          sourceSuggestions: [...prevState.sourceSuggestions, suggestion]
+        };
+      });
+      
+      // Mark suggestion as applied to update the UI
+      setAppliedSuggestions(current => [...current, suggestion]);
+      toast.success(`Partner will be added when you apply all changes`);
+      return;
+    } else if (suggestion.includes("adding child") || suggestion.includes("adding children") || 
+               suggestion.includes("more children")) {
+      console.log("Found child suggestion:", suggestion);
+      
+      // Ask for confirmation before proceeding with child addition
+      const confirmed = window.confirm(`Do you want to add the suggested children for this family member? This will create new nodes in your family tree.`);
+      
+      if (!confirmed) {
+        console.log("User declined to add children");
+        return;
+      }
+      
+      // Try to extract single child name if available
+      let childrenNames: string[] = [];
+      const childNameMatch = suggestion.match(/adding child "([^"]+)"/i);
+      if (childNameMatch && childNameMatch[1]) {
+        childrenNames = [childNameMatch[1].trim()];
+        console.log("Extracted single child name:", childrenNames);
+      }
+      
+      // Try to extract multiple child names if available
+      const childrenNamesMatch = suggestion.match(/adding children "([^"]+)"/i);
+      if (childrenNamesMatch && childrenNamesMatch[1]) {
+        // Split by ", " pattern if multiple names are in the format "name1", "name2", "name3"
+        const rawNames = childrenNamesMatch[1].split('", "');
+        childrenNames = rawNames.map(name => name.trim().replace(/"/g, ''));
+        console.log("Extracted multiple child names:", childrenNames);
+      }
+      
+      // Extract count if mentioned
+      let childrenCount: number | undefined;
+      const countMatch = suggestion.match(/adding (\d+) more children/i);
+      if (countMatch && countMatch[1]) {
+        childrenCount = parseInt(countMatch[1], 10);
+        console.log("Extracted children count:", childrenCount);
+      }
+      
+      // Try to extract sample names if available in the "including X and Y and others" format
+      const sampleNamesMatch = suggestion.match(/including "([^"]+)" and others/i) || 
+                              suggestion.match(/including "([^"]+)", "([^"]+)" and others/i);
+      if (sampleNamesMatch) {
+        if (sampleNamesMatch[1]) childrenNames.push(sampleNamesMatch[1]);
+        if (sampleNamesMatch[2]) childrenNames.push(sampleNamesMatch[2]);
+        console.log("Extracted sample child names:", childrenNames);
+      }
+      
+      // Try different possible formats to find source member ID
+      let sourceMemberId: string | undefined;
+      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member[^\w]+(\w{24})/i); // Match MongoDB ObjectIds
+      
+      if (sourceMemberMatch && sourceMemberMatch[1]) {
+        sourceMemberId = sourceMemberMatch[1].trim();
+        console.log("Extracted source member ID:", sourceMemberId);
+      }
+      
+      // Extract the clean member ID
+      const cleanMemberId = typeof memberId === 'object' 
+        ? (memberId as any).toString()
+        : String(memberId);
+        
+      // If we have specific child names, create individual pending changes for each child
+      if (childrenNames.length > 0) {
+        // Create separate pending changes for each child
+        for (let i = 0; i < childrenNames.length; i++) {
+          const childName = childrenNames[i];
+          
+          // Store one child per action with a unique key
+          // Use a timestamp and random number to ensure uniqueness even across multiple suggestions
+          const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${i}`;
+          const actionKey = `_addChildAction_${uniqueSuffix}`;
+          
+          // Get current member ID in a clean format
+          const currentMemberId = typeof memberId === 'object' 
+            ? (memberId as any).toString()
+            : String(memberId);
+            
+          // Create the action data with proper parent relationships
+          const actionData: any = {
+            _specialAction: "addChildren",
+            _childrenNames: [childName],
+            _childrenCount: 1,
+            _sourceMemberId: sourceMemberId,
+            targetMemberId: currentMemberId,
+            _parentId: currentMemberId // Explicitly set parent ID to ensure relationship
+          };
+          
+          // Set appropriate parent fields based on gender
+          if (memberData && memberData.gender === "male") {
+            actionData.fatherId = currentMemberId;
+            // Check if there's a partner to set as the other parent
+            if (memberData.partnerId && memberData.partnerId.length > 0) {
+              actionData.motherId = memberData.partnerId[0];
+            }
+          } else if (memberData && memberData.gender === "female") {
+            actionData.motherId = currentMemberId;
+            // Check if there's a partner to set as the other parent
+            if (memberData.partnerId && memberData.partnerId.length > 0) {
+              actionData.fatherId = memberData.partnerId[0];
+            }
+          }
+          
+          setPendingChanges(prevState => {
+            return {
+              changes: { 
+                ...prevState.changes, 
+                [actionKey]: actionData
+              },
+              sourceSuggestions: [...prevState.sourceSuggestions, suggestion]
+            };
+          });
+        }
+        
+        toast.success(`${childrenNames.length} children will be added separately when you apply changes`);
+      } else {
+        // No specific names, use the count only
+        const actualCount = childrenCount || 1;
+        
+        // For unnamed children, create generic placeholders
+        for (let i = 0; i < actualCount; i++) {
+          const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${i}`;
+          const actionKey = `_addChildAction_${uniqueSuffix}`;
+          
+          // Get current member ID in a clean format
+          const currentMemberId = typeof memberId === 'object' 
+            ? (memberId as any).toString()
+            : String(memberId);
+            
+          // Create the action data with proper parent relationships
+          const actionData: any = {
+            _specialAction: "addChildren",
+            _childrenNames: [`Child ${i + 1}`],
+            _childrenCount: 1,
+            _sourceMemberId: sourceMemberId,
+            targetMemberId: currentMemberId,
+            _parentId: currentMemberId // Explicitly set parent ID to ensure relationship
+          };
+            
+          // Set appropriate parent fields based on gender
+          if (memberData && memberData.gender === "male") {
+            actionData.fatherId = currentMemberId;
+            // Check if there's a partner to set as the other parent
+            if (memberData.partnerId && memberData.partnerId.length > 0) {
+              actionData.motherId = memberData.partnerId[0];
+            }
+          } else if (memberData && memberData.gender === "female") {
+            actionData.motherId = currentMemberId;
+            // Check if there's a partner to set as the other parent
+            if (memberData.partnerId && memberData.partnerId.length > 0) {
+              actionData.fatherId = memberData.partnerId[0];
+            }
+          }
+          
+          setPendingChanges(prevState => {
+            return {
+              changes: { 
+                ...prevState.changes, 
+                [actionKey]: actionData
+              },
+              sourceSuggestions: [...prevState.sourceSuggestions, suggestion]
+            };
+          });
+        }
+        
+        toast.success(`${actualCount} children will be added when you apply changes`);
+      }
+      
+      // Mark suggestion as applied to update the UI
+      setAppliedSuggestions(current => [...current, suggestion]);
+      return;
     }
     
     // Only proceed if we have something to update
@@ -744,6 +965,211 @@ export default function MemberSuggestionsPage() {
         toast.error(`Failed to prepare parent addition: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return;
       }
+    } else if (updateData._specialAction === "addPartner") {
+      // Handle partner addition
+      // First ensure we have valid member data
+      if (!memberData) {
+        toast.error("Cannot add partner: Missing member data");
+        return;
+      }
+      
+      // Determine relation based on gender
+      const partnerGender = memberData.gender === 'male' ? 'female' : 'male';
+      const relation = partnerGender === 'male' ? 'husband' : 'wife';
+      
+      // Prepare data for the new partner
+      const partnerData = {
+        name: updateData._partnerName || "Unknown",
+        surname: updateData._partnerSurname || memberData.surname || "Unknown",
+        gender: partnerGender,
+        status: "alive",
+        country: memberData.country || "",
+        occupation: ""
+      };
+      
+      // Create a synthetic node for the member
+      const syntheticNode = {
+        id: memberData._id,
+        _id: memberData._id,
+        name: memberData.name,
+        gender: memberData.gender || "unknown",
+        fid: memberData.fatherId || null,
+        mid: memberData.motherId || null,
+        pids: memberData.partnerId || []
+      };
+      
+      // Create a refresh function for the handleAddMember call
+      const refreshFunction = async () => {
+        try {
+          // Re-fetch the member data
+          const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${memberData._id}`);
+          setMemberData(refreshedMemberData);
+        } catch (refreshError) {
+          console.error("Error refreshing member data:", refreshError);
+        }
+      };
+      
+      // Import the handler function on demand
+      try {
+        setLoading(true);
+        // Dynamically import the service
+        const { handleAddMember } = await import("../../treeview/service/familyService");
+        
+        // Call the handler to add the partner
+        console.log(`Adding ${relation} with data:`, partnerData);
+        const result = await handleAddMember(
+          localStorage.getItem("token") || "", 
+          syntheticNode, 
+          relation, 
+          refreshFunction, 
+          partnerData
+        );
+        
+        console.log(`Partner addition result:`, result);
+        
+        // Mark suggestion as processed in the backend as well
+        if (memberId) {
+          const cleanMemberId = typeof memberId === 'object' 
+            ? (memberId as any).toString()
+            : String(memberId);
+            
+          await markSuggestionAsProcessed(cleanMemberId, suggestion);
+        }
+        
+        toast.success(`Added partner "${partnerData.name}"`);
+        
+        // Set flag in sessionStorage to indicate tree should refresh
+        sessionStorage.setItem('treeNeedsRefresh', 'true');
+      } catch (error) {
+        console.error("Error adding partner:", error);
+        toast.error(`Failed to add partner: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setLoading(false);
+      }
+      
+      return;
+    } else if (updateData._specialAction === "addChildren") {
+      // Handle adding children
+      console.log("Adding children from suggestion:", updateData);
+      
+      // First ensure we have valid member data
+      if (!memberData) {
+        toast.error("Cannot add children: Missing member data");
+        return;
+      }
+      
+      // Create a synthetic node for the member
+      const syntheticNode = {
+        id: memberData._id,
+        _id: memberData._id,
+        name: memberData.name,
+        gender: memberData.gender || "unknown",
+        fid: memberData.fatherId || null,
+        mid: memberData.motherId || null,
+        pids: memberData.partnerId || []
+      };
+      
+      // Create a refresh function for the handleAddMember call
+      const refreshFunction = async () => {
+        try {
+          // Re-fetch the member data
+          const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${memberData._id}`);
+          setMemberData(refreshedMemberData);
+        } catch (refreshError) {
+          console.error("Error refreshing member data:", refreshError);
+        }
+      };
+      
+      try {
+        // Import the handler function on demand
+        const { handleAddMember } = await import("../../treeview/service/familyService");
+        
+        const childrenNames = updateData._childrenNames || [];
+        const childrenCount = updateData._childrenCount || childrenNames.length || 1;
+        
+        // Add each child one by one
+        for (let i = 0; i < childrenCount; i++) {
+          const childName = i < childrenNames.length 
+            ? childrenNames[i] 
+            : `Child ${i + 1}`;
+          
+          // Default to 50/50 random gender unless specified
+          const childGender = Math.random() > 0.5 ? "male" : "female";
+          const relation = childGender === "male" ? "son" : "daughter";
+          
+          // Get current member ID in a clean format
+          const currentMemberId = typeof memberId === 'object' 
+            ? (memberId as any).toString()
+            : String(memberId);
+            
+          // Create basic child data with type declaration to handle dynamic properties
+          const childData: any = {
+            name: childName,
+            surname: memberData.surname || "",
+            gender: childGender,
+            status: "alive",
+            country: memberData.country || "",
+            occupation: "",
+            _parentId: currentMemberId // Explicitly set parent ID to establish relationship
+          };
+          
+          // Check if there's a partner to set as the other parent
+          const hasPartner = syntheticNode.pids && syntheticNode.pids.length > 0;
+          
+          // Set appropriate parent fields based on gender
+          if (syntheticNode.gender === "male") {
+            childData.fatherId = currentMemberId;
+            if (hasPartner) {
+              childData.motherId = syntheticNode.pids[0];
+            }
+          } else if (syntheticNode.gender === "female") {
+            childData.motherId = currentMemberId;
+            if (hasPartner) {
+              childData.fatherId = syntheticNode.pids[0];
+            }
+          }
+          
+          console.log(`Adding child ${i + 1}/${childrenCount} with relation ${relation}:`, childData);
+          
+          try {
+            // Call the handler to add the child
+            await handleAddMember(
+              localStorage.getItem("token") || "", 
+              syntheticNode, 
+              relation, 
+              refreshFunction, 
+              childData
+            );
+            
+            // Since we now handle children individually, we don't need pauses between them
+            // unless it's the legacy bundled format
+            if (i < childrenCount - 1) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          } catch (childError) {
+            console.error(`Error adding child ${i + 1}:`, childError);
+            toast.error(`Failed to add child ${childName}: ${childError instanceof Error ? childError.message : 'Unknown error'}`);
+          }
+        }
+        
+        console.log(`Finished adding ${childrenCount} children`);
+        
+        // Final refresh of data
+        await refreshFunction();
+        
+        // Show success message
+        if (childrenCount === 1) {
+          const childName = childrenNames.length > 0 ? childrenNames[0] : "Child";
+          toast.success(`Added child: ${childName}`);
+        } else {
+          toast.success(`Added ${childrenCount} children`);
+        }
+      } catch (error) {
+        console.error("Error adding children:", error);
+        toast.error(`Failed to add children: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      
+      return;
     }
     
     // Format any dates for display
@@ -864,12 +1290,16 @@ export default function MemberSuggestionsPage() {
         ? (memberId as any).toString()
         : String(memberId);
       
-      // Handle special parent actions separately
+      // Handle special actions separately
       const regularChanges: Record<string, any> = {};
       const specialActions: Array<{action: string, data: any}> = [];
       
       for (const [key, value] of Object.entries(pendingChanges.changes)) {
-        if (key === "_addFatherAction" || key === "_addMotherAction") {
+        if (key === "_addFatherAction" || 
+            key === "_addMotherAction" || 
+            key === "_addChildrenAction" || 
+            key.startsWith("_addChildAction_") || 
+            key === "_addPartnerAction") {
           specialActions.push({action: key, data: value});
         } else {
           regularChanges[key] = value;
@@ -888,34 +1318,25 @@ export default function MemberSuggestionsPage() {
         console.log("Update successful, response:", result);
       }
       
-      // Then handle any parent additions
+      // Then handle special actions (parent additions or child additions)
       if (specialActions.length > 0) {
+        // Import the handler function on demand
+        const { handleAddMember } = await import("../../treeview/service/familyService");
+        
         for (const action of specialActions) {
           try {
-            console.log(`Processing special action: ${action.action}`, action.data);
-            
-            // Import the handler function on demand
-            const { handleAddMember } = await import("../../treeview/service/familyService");
-            
-            // Extract parent data
-            const parentAction = action.data as {
-              _specialAction: string;
-              parentData: any;
-              targetMemberId: string;
-            };
+            console.log(`Processing special action:`, action);
             
             // Create synthetic node representing the target member
             const syntheticNode = {
-              id: parentAction.targetMemberId,
-              _id: parentAction.targetMemberId,
+              id: cleanMemberId,
+              _id: cleanMemberId,
+              name: memberData.name,
               gender: memberData.gender || "unknown",
               fid: memberData.fatherId || null,
               mid: memberData.motherId || null,
               pids: memberData.partnerId || []
             };
-            
-            // Determine relation
-            const relation = parentAction._specialAction === "addFather" ? "father" : "mother";
             
             // Create a refresh function for the handleAddMember call
             const refreshFunction = async () => {
@@ -928,19 +1349,127 @@ export default function MemberSuggestionsPage() {
               }
             };
             
-            // Call the handler to add the parent
-            console.log(`Adding ${relation} with data:`, parentAction.parentData);
-            const result = await handleAddMember(
-              localStorage.getItem("token") || "", 
-              syntheticNode, 
-              relation, 
-              refreshFunction, 
-              parentAction.parentData
-            );
-            
-            console.log(`${relation} addition result:`, result);
+            if (action.data._specialAction === "addFather" || action.data._specialAction === "addMother") {
+              // Handle parent addition
+              // Determine relation
+              const relation = action.data._specialAction === "addFather" ? "father" : "mother";
+              
+              // Call the handler to add the parent
+              console.log(`Adding ${relation} with data:`, action.data.parentData);
+              const result = await handleAddMember(
+                localStorage.getItem("token") || "", 
+                syntheticNode, 
+                relation, 
+                refreshFunction, 
+                action.data.parentData
+              );
+              
+              console.log(`${relation} addition result:`, result);
+            } 
+            else if (action.data._specialAction === "addPartner") {
+              // Handle partner addition
+              // First ensure we have valid member data
+              if (!memberData) {
+                toast.error("Cannot add partner: Missing member data");
+                return;
+              }
+              
+              // Determine relation based on gender
+              const partnerGender = memberData.gender === 'male' ? 'female' : 'male';
+              const relation = partnerGender === 'male' ? 'husband' : 'wife';
+              
+              // Prepare data for the new partner
+              const partnerData = {
+                name: action.data._partnerName || "Unknown",
+                surname: action.data._partnerSurname || memberData.surname || "Unknown",
+                gender: partnerGender,
+                status: "alive",
+                country: memberData.country || "",
+                occupation: ""
+              };
+              
+              // Call the handler to add the partner
+              console.log(`Adding ${relation} with data:`, partnerData);
+              const result = await handleAddMember(
+                localStorage.getItem("token") || "", 
+                syntheticNode, 
+                relation, 
+                refreshFunction, 
+                partnerData
+              );
+              
+              console.log(`Partner addition result:`, result);
+              toast.success(`Added partner "${partnerData.name}"`);
+            }
+            else if (action.data._specialAction === "addChildren") {
+              // Handle adding children
+              console.log("Adding children from suggestion:", action.data);
+              
+              const childrenNames = action.data._childrenNames || [];
+              const childrenCount = action.data._childrenCount || childrenNames.length || 1;
+              
+              // Add each child one by one
+              for (let i = 0; i < childrenCount; i++) {
+                const childName = i < childrenNames.length 
+                  ? childrenNames[i] 
+                  : `Child ${i + 1}`;
+                
+                // Default to 50/50 random gender unless specified
+                const childGender = Math.random() > 0.5 ? "male" : "female";
+                const relation = childGender === "male" ? "son" : "daughter";
+                
+                // Create basic child data
+                const childData = {
+                  name: childName,
+                  surname: memberData.surname || "",
+                  gender: childGender,
+                  status: "alive",
+                  country: memberData.country || "",
+                  occupation: "",
+                  _parentId: cleanMemberId, // Explicitly set parent ID to establish relationship
+                  // Also set proper MongoDB parent fields based on gender
+                  fatherId: syntheticNode.gender === "male" ? cleanMemberId : undefined,
+                  motherId: syntheticNode.gender === "female" ? cleanMemberId : undefined
+                };
+                
+                console.log(`Adding child ${i + 1}/${childrenCount} with relation ${relation}:`, childData);
+                
+                try {
+                  // Call the handler to add the child
+                  await handleAddMember(
+                    localStorage.getItem("token") || "", 
+                    syntheticNode, 
+                    relation, 
+                    refreshFunction, 
+                    childData
+                  );
+                  
+                  // Since we now handle children individually, we don't need pauses between them
+                  // unless it's the legacy bundled format
+                  if (action.action === "_addChildrenAction" && i < childrenCount - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                  }
+                } catch (childError) {
+                  console.error(`Error adding child ${i + 1}:`, childError);
+                  toast.error(`Failed to add child ${childName}: ${childError instanceof Error ? childError.message : 'Unknown error'}`);
+                }
+              }
+              
+              console.log(`Finished adding ${childrenCount} children`);
+              
+              // Final refresh of data
+              await refreshFunction();
+              
+              // Show success message
+              if (childrenCount === 1) {
+                const childName = childrenNames.length > 0 ? childrenNames[0] : "Child";
+                toast.success(`Added child: ${childName}`);
+              } else {
+                toast.success(`Added ${childrenCount} children`);
+              }
+            }
           } catch (actionError) {
-            console.error(`Error processing ${action.action}:`, actionError);
+            console.error(`Error processing action:`, actionError);
             toast.error(`Failed to add family member: ${actionError instanceof Error ? actionError.message : 'Unknown error'}`);
           }
         }
@@ -1100,6 +1629,12 @@ export default function MemberSuggestionsPage() {
         throw new Error("No authentication token found");
       }
       
+      // Check if this is a child suggestion (to also mark it for the partner)
+      const isChildSuggestion = suggestionText.includes("adding child") || 
+                               suggestionText.includes("adding children") ||
+                               suggestionText.match(/child "[^"]+"/i);
+      
+      // Mark as processed for the current member
       const response = await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
         method: "POST",
         headers: {
@@ -1118,6 +1653,74 @@ export default function MemberSuggestionsPage() {
       
       const result = await response.json();
       console.log("Suggestion marked as processed:", result);
+      
+      // If this is a child suggestion and the member has a partner, also mark it as processed for the partner
+      if (isChildSuggestion && memberData && memberData.partnerId && memberData.partnerId.length > 0) {
+        try {
+          console.log(`This is a child suggestion. Also marking it as processed for partner:`, memberData.partnerId[0]);
+          
+          // Extract the child name from the suggestion
+          let childName = "";
+          const childNameMatch = suggestionText.match(/child "([^"]+)"/i);
+          if (childNameMatch && childNameMatch[1]) {
+            childName = childNameMatch[1].trim();
+          }
+          
+          // For each partner, find and mark similar suggestions as processed
+          for (const partnerId of memberData.partnerId) {
+            // If we have a child name, we should find the exact matching suggestion for the partner
+            if (childName) {
+              // Make an API call to get partner's suggestions
+              const partnerSuggestions = await makeApiCall(`http://localhost:3001/notifications/member-similarities/${partnerId}`);
+              
+              if (partnerSuggestions && partnerSuggestions.similarMembers) {
+                // Look for matching child suggestions
+                for (const similar of partnerSuggestions.similarMembers) {
+                  if (similar.suggestions) {
+                    for (const partnerSuggestion of similar.suggestions) {
+                      // Check if this suggestion mentions the same child
+                      if (partnerSuggestion.includes(childName) && 
+                          (partnerSuggestion.includes("adding child") || partnerSuggestion.includes("adding children"))) {
+                        // Mark this suggestion as processed for the partner
+                        await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+                          method: "POST",
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({
+                            memberId: partnerId,
+                            suggestionText: partnerSuggestion
+                          })
+                        });
+                        console.log(`Marked matching child suggestion as processed for partner: "${partnerSuggestion}"`);
+                      }
+                    }
+                  }
+                }
+              }
+            } else {
+              // If we don't have a specific child name, mark the original suggestion as processed for the partner
+              await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  memberId: partnerId,
+                  suggestionText: suggestionText
+                })
+              });
+              console.log(`Marked generic child suggestion as processed for partner`);
+            }
+          }
+        } catch (partnerError) {
+          console.error("Error marking suggestion as processed for partner:", partnerError);
+          // Don't throw this error to avoid breaking the main flow
+        }
+      }
+      
       return true;
     } catch (error) {
       console.error("Error marking suggestion as processed:", error);
@@ -1431,6 +2034,35 @@ export default function MemberSuggestionsPage() {
                               <div className="text-sm text-yellow-200/70">Add Mother</div>
                               <div className="text-yellow-100">
                                 {parentData.name} {parentData.surname}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      else if (field === "_addPartnerAction") {
+                        const partnerData = (value as any);
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">Add Partner</div>
+                              <div className="text-yellow-100">
+                                {partnerData._partnerName} {partnerData._partnerSurname || ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      // Handle both legacy _addChildrenAction and new individual child actions
+                      else if (field === "_addChildrenAction" || field.startsWith("_addChildAction_")) {
+                        const childrenData = (value as any);
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">Add Child</div>
+                              <div className="text-yellow-100">
+                                {childrenData._childrenNames && childrenData._childrenNames.length > 0 
+                                  ? childrenData._childrenNames[0]
+                                  : `Child`}
                               </div>
                             </div>
                           </div>

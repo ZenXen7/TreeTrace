@@ -158,12 +158,37 @@ async function handleAddMember(
     });
     
     if (relation === "son" || relation === "daughter") {
-      const child = await addFamilyMember(token, {
+      // Determine the parent ID based on the node's gender
+      const parentId = node.id || node._id;
+      
+      // Prepare data considering both parents when applicable
+      const childData: any = {
         ...newMemberData,
         status: "alive",
         country: newMemberData?.country || "",
-        occupation: newMemberData?.occupation || ""
-      });
+        occupation: newMemberData?.occupation || "",
+        _parentId: parentId // Extra field for compatibility with different code paths
+      };
+      
+      // Check if the parent has a partner
+      const hasPartner = node.pids && node.pids.length > 0;
+      const partnerId = hasPartner ? node.pids[0] : undefined;
+      
+      // Set appropriate parent fields based on gender
+      if (node.gender === "male") {
+        childData.fatherId = parentId;
+        if (hasPartner) {
+          childData.motherId = partnerId;
+        }
+      } else if (node.gender === "female") {
+        childData.motherId = parentId;
+        if (hasPartner) {
+          childData.fatherId = partnerId;
+        }
+      }
+      
+      // Create the child with proper parent relationships
+      const child = await addFamilyMember(token, childData);
 
       // Correctly extract the childId from the response
       const childId = child.data?._id || child.id || child._id;
