@@ -362,36 +362,36 @@ export class NotificationController {
       similarFields.includes('fullName');
     
     // Log name comparison for debugging
-    console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
-    console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
-    console.log(`Should generate suggestions: ${shouldGenerateSuggestions}`);
+    // console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
+    // console.log(`Same first name: ${hasSameFirstName}, Same surname: ${hasSameSurname}`);
+    // console.log(`Should generate suggestions: ${shouldGenerateSuggestions}`);
 
     // Only generate suggestions if there's a good name match
     if (!shouldGenerateSuggestions) {
-      console.log("Names don't match well enough - no suggestions generated");
+      // console.log("Names don't match well enough - no suggestions generated");
       return suggestions;
     }
     
-    console.log("Names match well enough - generating suggestions");
+    // console.log("Names match well enough - generating suggestions");
     
     // Check for parent relationship suggestions
     suggestions = await this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);
-    console.log(`After parent check, have ${suggestions.length} suggestions`);
+    // console.log(`After parent check, have ${suggestions.length} suggestions`);
     
     // Status differences
     if (currentMember.status && otherMember.status) {
-      console.log(`Checking status: ${currentMember.status} vs ${otherMember.status}`);
+      // console.log(`Checking status: ${currentMember.status} vs ${otherMember.status}`);
       if (currentMember.status !== otherMember.status) {
         if (currentMember.status === 'alive' && otherMember.status === 'dead') {
           suggestions.push(
             `Consider updating status to "dead" for "${currentMember.name}". Another user has recorded this person as dead.`
           );
-          console.log("Added suggestion for updating status to dead");
+          // console.log("Added suggestion for updating status to dead");
         } else if (currentMember.status === 'dead' && otherMember.status === 'alive') {
           suggestions.push(
             `Verify status of "${currentMember.name}". Another user has recorded this person as alive.`
           );
-          console.log("Added suggestion for verifying alive status");
+          // console.log("Added suggestion for verifying alive status");
         }
       } else {
         // Even for matching status, suggest confirming
@@ -399,7 +399,7 @@ export class NotificationController {
           suggestions.push(
             `Confirm dead status for "${currentMember.name}". Another user has also recorded this person as dead.`
           );
-          console.log("Added suggestion for confirming dead status");
+          // console.log("Added suggestion for confirming dead status");
         }
       }
     }
@@ -409,7 +409,7 @@ export class NotificationController {
       const date1 = new Date(currentMember.birthDate);
       const date2 = new Date(otherMember.birthDate);
       
-      console.log(`Comparing birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
+      // console.log(`Comparing birth dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
       
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
         const date1Str = date1.toISOString().split('T')[0];
@@ -418,20 +418,20 @@ export class NotificationController {
         suggestions.push(
           `Consider updating birth date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different birth date.`
         );
-        console.log("Added suggestion for updating birth date");
+        // console.log("Added suggestion for updating birth date");
       } else {
         const date1Str = date1.toISOString().split('T')[0];
         suggestions.push(
           `Confirm birth date ${date1Str} for "${currentMember.name}". Another user has recorded the same birth date.`
         );
-        console.log("Added suggestion for confirming birth date");
+        // console.log("Added suggestion for confirming birth date");
       }
     } else if (!currentMember.birthDate && otherMember.birthDate) {
       const dateStr = new Date(otherMember.birthDate).toISOString().split('T')[0];
       suggestions.push(
         `Consider adding birth date (${dateStr}) for "${currentMember.name}". Another user has recorded this birth date.`
       );
-      console.log("Added suggestion for adding birth date");
+      // console.log("Added suggestion for adding birth date");
     }
     
     // Death date
@@ -439,7 +439,7 @@ export class NotificationController {
       const date1 = new Date(currentMember.deathDate);
       const date2 = new Date(otherMember.deathDate);
       
-      console.log(`Comparing death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
+      // console.log(`Comparing death dates: ${date1.toISOString()} vs ${date2.toISOString()}`);
       
       if (Math.abs(date1.getTime() - date2.getTime()) > 86400000) {
         const date1Str = date1.toISOString().split('T')[0];
@@ -448,44 +448,44 @@ export class NotificationController {
         suggestions.push(
           `Consider updating death date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different death date.`
         );
-        console.log("Added suggestion for updating death date");
+        // console.log("Added suggestion for updating death date");
       } else {
         const date1Str = date1.toISOString().split('T')[0];
         suggestions.push(
           `Confirm death date ${date1Str} for "${currentMember.name}". Another user has recorded the same death date.`
         );
-        console.log("Added suggestion for confirming death date");
+        // console.log("Added suggestion for confirming death date");
       }
     } else if (!currentMember.deathDate && otherMember.deathDate) {
       const dateStr = new Date(otherMember.deathDate).toISOString().split('T')[0];
       suggestions.push(
         `Consider adding death date (${dateStr}) for "${currentMember.name}". Another user has recorded this death date.`
       );
-      console.log("Added suggestion for adding death date");
+      // console.log("Added suggestion for adding death date");
     }
     
     // Country
     if (currentMember.country && otherMember.country) {
-      console.log(`Comparing countries: "${currentMember.country}" vs "${otherMember.country}"`);
+      // console.log(`Comparing countries: "${currentMember.country}" vs "${otherMember.country}"`);
       if (currentMember.country !== otherMember.country) {
         suggestions.push(
           `Consider updating country from "${currentMember.country}" to "${otherMember.country}" for "${currentMember.name}". Another user has recorded a different country.`
         );
-        console.log("Added suggestion for updating country");
+        // console.log("Added suggestion for updating country");
       } else {
         suggestions.push(
           `Confirm country "${currentMember.country}" for "${currentMember.name}". Another user has recorded the same country.`
         );
-        console.log("Added suggestion for confirming country");
+        // console.log("Added suggestion for confirming country");
       }
     } else if (!currentMember.country && otherMember.country) {
       suggestions.push(
         `Consider adding country "${otherMember.country}" for "${currentMember.name}". Another user has recorded this country.`
       );
-      console.log("Added suggestion for adding country");
+      // console.log("Added suggestion for adding country");
     }
     
-    console.log(`Final suggestion count: ${suggestions.length}`);
+    // console.log(`Final suggestion count: ${suggestions.length}`);
     return suggestions;
   }
 
@@ -501,9 +501,9 @@ export class NotificationController {
     // the members have the same name and surname and are likely the same person in different trees
     
     try {
-      console.log(`Checking parent data for ${currentMember.name} (current) vs ${otherMember.name} (other)`);
-      console.log(`Current member parents: fatherId=${currentMember.fatherId}, motherId=${currentMember.motherId}`);
-      console.log(`Other member parents: fatherId=${otherMember.fatherId}, motherId=${otherMember.motherId}`);
+      // console.log(`Checking parent data for ${currentMember.name} (current) vs ${otherMember.name} (other)`);
+      // console.log(`Current member parents: fatherId=${currentMember.fatherId}, motherId=${currentMember.motherId}`);
+      // console.log(`Other member parents: fatherId=${otherMember.fatherId}, motherId=${otherMember.motherId}`);
       
       // Check father information - simpler check: if other member has a father and current doesn't
       if (otherMember.fatherId && !currentMember.fatherId) {
@@ -514,19 +514,19 @@ export class NotificationController {
             newSuggestions.push(
               `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person.`
             );
-            console.log(`Added father suggestion for ${currentMember.name}`);
+            // console.log(`Added father suggestion for ${currentMember.name}`);
           } else {
             newSuggestions.push(
               `Consider adding father information to "${currentMember.name}". Another user has recorded a father for this person.`
             );
-            console.log(`Added generic father suggestion for ${currentMember.name}`);
+            // console.log(`Added generic father suggestion for ${currentMember.name}`);
           }
         } catch (err) {
-          console.error("Error finding father:", err);
+          // console.error("Error finding father:", err);
           newSuggestions.push(
             `Consider adding father information to "${currentMember.name}". Another user has recorded a father for this person.`
           );
-          console.log(`Added generic father suggestion after error for ${currentMember.name}`);
+          // console.log(`Added generic father suggestion after error for ${currentMember.name}`);
         }
       }
       
@@ -539,25 +539,25 @@ export class NotificationController {
             newSuggestions.push(
               `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person.`
             );
-            console.log(`Added mother suggestion for ${currentMember.name}`);
+            // console.log(`Added mother suggestion for ${currentMember.name}`);
           } else {
             newSuggestions.push(
               `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for this person.`
             );
-            console.log(`Added generic mother suggestion for ${currentMember.name}`);
+            // console.log(`Added generic mother suggestion for ${currentMember.name}`);
           }
         } catch (err) {
-          console.error("Error finding mother:", err);
+          // console.error("Error finding mother:", err);
           newSuggestions.push(
             `Consider adding mother information to "${currentMember.name}". Another user has recorded a mother for this person.`
           );
-          console.log(`Added generic mother suggestion after error for ${currentMember.name}`);
+          // console.log(`Added generic mother suggestion after error for ${currentMember.name}`);
         }
       }
       
       return newSuggestions;
     } catch (error) {
-      console.error("Error in addParentRelationshipSuggestions:", error);
+      // console.error("Error in addParentRelationshipSuggestions:", error);
       return newSuggestions;
     }
   }
@@ -576,7 +576,7 @@ export class NotificationController {
   ) {
     try {
       const userId = req.user.id;
-      console.log(`Getting suggestions for member ID ${memberId} and user ID ${userId}`);
+      // console.log(`Getting suggestions for member ID ${memberId} and user ID ${userId}`);
       
       // Find the member and ensure it belongs to the current user
       const member = await this.familyMemberModel.findOne({
@@ -585,30 +585,30 @@ export class NotificationController {
       }).exec() as unknown as FamilyMemberWithId;
       
       if (!member) {
-        console.log(`Member ${memberId} not found or user doesn't have access`);
+        // console.log(`Member ${memberId} not found or user doesn't have access`);
         throw new HttpException(
           'Family member not found or you do not have permission to access it',
           HttpStatus.NOT_FOUND,
         );
       }
       
-      console.log(`Found member: ${member.name}${member.surname ? ' ' + member.surname : ''}`);
-      console.log(`Member details: status=${member.status}, country=${member.country}, birthDate=${member.birthDate}, deathDate=${member.deathDate}`);
-      console.log(`Member parent info: fatherId=${member.fatherId}, motherId=${member.motherId}`);
+      // console.log(`Found member: ${member.name}${member.surname ? ' ' + member.surname : ''}`);
+      // console.log(`Member details: status=${member.status}, country=${member.country}, birthDate=${member.birthDate}, deathDate=${member.deathDate}`);
+      // console.log(`Member parent info: fatherId=${member.fatherId}, motherId=${member.motherId}`);
       
       // Get all family members from other users
       const otherUserMembers = await this.familyMemberModel
         .find({ userId: { $ne: new Types.ObjectId(userId) } })
         .exec() as unknown as FamilyMemberWithId[];
       
-      console.log(`Found ${otherUserMembers.length} members from other users`);
-      console.log('Other users family members:');
-      otherUserMembers.forEach((m, i) => {
-        if (i < 10) { // Limit logging to first 10 members
-          console.log(`  ${i+1}. ${m.name} (User ID: ${m.userId}, status=${m.status}, country=${m.country})`);
-          console.log(`     Parent info: fatherId=${m.fatherId}, motherId=${m.motherId}`);
-        }
-      });
+      // console.log(`Found ${otherUserMembers.length} members from other users`);
+      // console.log('Other users family members:');
+      // otherUserMembers.forEach((m, i) => {
+      //     if (i < 10) { // Limit logging to first 10 members
+      //         console.log(`  ${i+1}. ${m.name} (User ID: ${m.userId}, status=${m.status}, country=${m.country})`);
+      //         console.log(`     Parent info: fatherId=${m.fatherId}, motherId=${m.motherId}`);
+      //     }
+      // });
       
       let similarityCount = 0;
       let suggestionCount = 0;
@@ -623,7 +623,7 @@ export class NotificationController {
       
       // Process each member from other users
       for (const otherMember of otherUserMembers) {
-        console.log(`\nComparing with: ${otherMember.name} (country=${otherMember.country}, status=${otherMember.status})`);
+        // console.log(`\nComparing with: ${otherMember.name} (country=${otherMember.country}, status=${otherMember.status})`);
         
         // Extract first names and surnames for comparison
         const firstName1 = member.name ? member.name.split(' ')[0].toLowerCase().trim() : '';
@@ -631,12 +631,12 @@ export class NotificationController {
         const surname1 = this.extractSurnameFromName(member.name).toLowerCase().trim();
         const surname2 = this.extractSurnameFromName(otherMember.name).toLowerCase().trim();
         
-        console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
-        console.log(`Same first name: ${firstName1 === firstName2}, Same surname: ${surname1 === surname2}`);
+        // console.log(`Name comparison: "${firstName1} ${surname1}" vs "${firstName2} ${surname2}"`);
+        // console.log(`Same first name: ${firstName1 === firstName2}, Same surname: ${surname1 === surname2}`);
         
         // Check for exact name match
         const exactNameMatch = firstName1 === firstName2 && surname1 === surname2 && surname1 !== '' && surname2 !== '';
-        console.log(`Exact name match: ${exactNameMatch}`);
+        // console.log(`Exact name match: ${exactNameMatch}`);
         
         // Continue with similarity calculation regardless of exact name match
         const { similarity, similarFields } = this.familyMemberSimilarityService.calculateMemberSimilarity(
@@ -644,20 +644,20 @@ export class NotificationController {
           otherMember
         );
         
-        console.log(`Similarity score: ${similarity.toFixed(2)}, similar fields: ${similarFields.join(', ')}`);
+        // console.log(`Similarity score: ${similarity.toFixed(2)}, similar fields: ${similarFields.join(', ')}`);
         
         // Generate suggestions if either we have high similarity OR exact name match
         if ((similarity > 0.6 && similarFields.length > 0) || exactNameMatch) {
           similarityCount++;
-          console.log(`Found similar member: ${otherMember.name} (similarity: ${similarity.toFixed(2)})`);
-          console.log(`Similar fields: ${similarFields.join(', ')}`);
+          // console.log(`Found similar member: ${otherMember.name} (similarity: ${similarity.toFixed(2)})`);
+          // console.log(`Similar fields: ${similarFields.join(', ')}`);
           
           // Generate suggestions based on differences
-          console.log(`Generating suggestions for ${member.name} vs ${otherMember.name}...`);
+          // console.log(`Generating suggestions for ${member.name} vs ${otherMember.name}...`);
           const suggestions = await this.generateSuggestions(member, otherMember, similarFields);
           
-          console.log(`Generated ${suggestions.length} suggestions:`);
-          suggestions.forEach((s, i) => console.log(`  ${i+1}. ${s}`));
+          // console.log(`Generated ${suggestions.length} suggestions:`);
+          // suggestions.forEach((s, i) => console.log(`  ${i+1}. ${s}`));
           
           suggestionCount += suggestions.length;
           
@@ -674,11 +674,11 @@ export class NotificationController {
             });
           }
         } else {
-          console.log(`Not similar enough or no similar fields - skipping suggestions`);
+          // console.log(`Not similar enough or no similar fields - skipping suggestions`);
         }
       }
       
-      console.log(`Total: ${similarityCount} similar members, ${suggestionCount} suggestions`);
+      // console.log(`Total: ${similarityCount} similar members, ${suggestionCount} suggestions`);
       
       // Always return a valid structure even if no suggestions or similar members are found
       const responseData = { 
@@ -688,7 +688,7 @@ export class NotificationController {
         hasMore: false // Since we're not limiting, there are never more items
       };
       
-      console.log("Response data:", JSON.stringify(responseData, null, 2));
+      // console.log("Response data:", JSON.stringify(responseData, null, 2));
       
       return {
         statusCode: HttpStatus.OK,
@@ -696,7 +696,7 @@ export class NotificationController {
         data: responseData
       };
     } catch (error) {
-      console.error("Error in getMemberSimilaritiesCount:", error);
+      // console.error("Error in getMemberSimilaritiesCount:", error);
       throw new HttpException(
         error.message || 'Error retrieving member similarities count',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -723,7 +723,7 @@ export class NotificationController {
         );
       }
       
-      console.log(`Marking suggestion as processed for member ${memberId}: "${suggestionText}"`);
+      // console.log(`Marking suggestion as processed for member ${memberId}: "${suggestionText}"`);
       
       const result = await this.notificationService.markSuggestionAsProcessed(
         userId,
@@ -737,7 +737,7 @@ export class NotificationController {
         data: result,
       };
     } catch (error) {
-      console.error("Error marking suggestion as processed:", error);
+      // console.error("Error marking suggestion as processed:", error);
       throw new HttpException(
         error.message || 'Error marking suggestion as processed',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -763,7 +763,7 @@ export class NotificationController {
         );
       }
       
-      console.log(`Getting processed suggestions for member ${memberId} and user ${userId}`);
+      // console.log(`Getting processed suggestions for member ${memberId} and user ${userId}`);
       
       const processedSuggestions = await this.notificationService.getProcessedSuggestions(
         userId,
@@ -776,7 +776,7 @@ export class NotificationController {
         data: processedSuggestions,
       };
     } catch (error) {
-      console.error("Error retrieving processed suggestions:", error);
+      // console.error("Error retrieving processed suggestions:", error);
       throw new HttpException(
         error.message || 'Error retrieving processed suggestions',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

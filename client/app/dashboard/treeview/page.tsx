@@ -10,6 +10,8 @@ import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import AnimatedNodes from "@/components/animated-nodes"
 import "./tree.css" // Import FamilyTreeJS styling fixes
+import Link from "next/link"
+
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
     const femaleAvatar =
@@ -51,12 +53,10 @@ function Familytree(props: {
 
       const img_0 ="https://preview.redd.it/some-random-black-dude-i-found-v0-7b7ipzz5af0c1.jpg?auto=webp&s=50dde31529bf146611d82a09c0e0e7cf3948a2d3"
 
-      // Updated text positioning for a cleaner card with fewer fields
       FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="25" y="60">{val}</text>` // First name
       FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="25" y="85">{val}</text>` // Surname
       FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="25" y="110">Birth: {val}</text>` // Birth date
       
-      // Clear all other fields that we don't want to display
       FamilyTree.templates.tommy.field_2 = ``;
       FamilyTree.templates.tommy.field_3 = ``;
       FamilyTree.templates.tommy.field_5 = ``;
@@ -1531,82 +1531,87 @@ export default function TreeViewPage() {
           className="rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 overflow-hidden mb-8"
         >
           {/* Tree Header */}
-          <div className="bg-gray-900/50 p-4 border-b border-gray-800/50">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Interactive Family Tree</h2>
-              <div className="flex gap-2">
-                <button 
-                  className={`px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 text-white text-sm rounded-lg transition-colors ${
-                    (activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all') 
-                      ? 'opacity-50 cursor-not-allowed' 
-                      : ''
-                  }`}
-                  onClick={() => {
-                    if (activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') {
-                      setActiveFilters({
-                        gender: 'all',
-                        country: 'all',
-                        status: 'all'
-                      });
-                      setLoading(true);
-                    }
-                  }}
-                  disabled={activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all'}
-                >
-                  Reset Filters
-                </button>
-                <button 
-                  className="px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
-                  onClick={handleShareTree}
-                >
-                  <Share2 className="h-4 w-4" />
-                  Share Tree
-                </button>
-              </div>
+          <div className="bg-gray-900/50 p-4 border-b border-gray-800/50 flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="flex-1 flex flex-col md:flex-row md:items-center">
+              <h2 className="text-xl font-semibold text-white mr-4">Interactive Family Tree</h2>
             </div>
-            
-            {/* Filter controls - More prominent and aligned with mockup */}
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center">
-                <Filter className="h-4 w-4 text-gray-400 mr-2" />
-                <select 
-                  className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.gender !== 'all' ? 'border-teal-500' : ''}`}
-                  value={activeFilters.gender}
-                  onChange={(e) => handleFilterChange('gender', e.target.value)}
-                >
-                  <option value="all">All Genders</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-
-              <select 
-                className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.country !== 'all' ? 'border-teal-500' : ''}`}
-                value={activeFilters.country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
+            <div className="flex gap-2 md:ml-auto mt-4 md:mt-0">
+              <button 
+                className={`px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 text-white text-sm rounded-lg transition-colors ${
+                  (activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all') 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : ''
+                }`}
+                onClick={() => {
+                  if (activeFilters.gender !== 'all' || activeFilters.country !== 'all' || activeFilters.status !== 'all') {
+                    setActiveFilters({
+                      gender: 'all',
+                      country: 'all',
+                      status: 'all'
+                    });
+                    setLoading(true);
+                  }
+                }}
+                disabled={activeFilters.gender === 'all' && activeFilters.country === 'all' && activeFilters.status === 'all'}
               >
-                <option value="all">All Countries</option>
-                <option value="us">United States</option>
-                <option value="ph">Philippines</option>
-                <option value="ca">Canada</option>
-                <option value="uk">United Kingdom</option>
-                <option value="au">Australia</option>
-                <option value="jp">Japan</option>
-                <option value="sg">Singapore</option>
-                <option value="hk">Hong Kong</option>
-              </select>
-
-              <select 
-                className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.status !== 'all' ? 'border-teal-500' : ''}`}
-                value={activeFilters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
+                Reset Filters
+              </button>
+              <button 
+                className="px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                onClick={handleShareTree}
               >
-                <option value="all">All Statuses</option>
-                <option value="alive">Alive</option>
-                <option value="dead">Dead</option>
-                <option value="unknown">Unknown</option>
+                <Share2 className="h-4 w-4" />
+                Share Tree
+              </button>
+              <Link href="/dashboard/health-overview">
+                <button className="px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white text-sm rounded-lg transition-colors flex items-center gap-2">
+                  Health Overview
+                </button>
+              </Link>
+            </div>
+          </div>
+          
+          {/* Filter controls - More prominent and aligned with mockup */}
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center">
+              <Filter className="h-4 w-4 text-gray-400 mr-2" />
+              <select 
+                className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.gender !== 'all' ? 'border-teal-500' : ''}`}
+                value={activeFilters.gender}
+                onChange={(e) => handleFilterChange('gender', e.target.value)}
+              >
+                <option value="all">All Genders</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
               </select>
             </div>
+
+            <select 
+              className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.country !== 'all' ? 'border-teal-500' : ''}`}
+              value={activeFilters.country}
+              onChange={(e) => handleFilterChange('country', e.target.value)}
+            >
+              <option value="all">All Countries</option>
+              <option value="us">United States</option>
+              <option value="ph">Philippines</option>
+              <option value="ca">Canada</option>
+              <option value="uk">United Kingdom</option>
+              <option value="au">Australia</option>
+              <option value="jp">Japan</option>
+              <option value="sg">Singapore</option>
+              <option value="hk">Hong Kong</option>
+            </select>
+
+            <select 
+              className={`bg-gray-800/50 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-700/50 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-colors ${activeFilters.status !== 'all' ? 'border-teal-500' : ''}`}
+              value={activeFilters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="alive">Alive</option>
+              <option value="dead">Dead</option>
+              <option value="unknown">Unknown</option>
+            </select>
           </div>
           
           {/* Active filters display - More compact and similar to mockup */}

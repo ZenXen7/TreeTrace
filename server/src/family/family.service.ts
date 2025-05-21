@@ -85,11 +85,8 @@ export class FamilyService {
       query[key] = filters[key];
     });
     
-    console.log('Database query with filters:', JSON.stringify(query));
-    
     // Fetch all family members matching the query
     const results = await this.familyMemberModel.find(query).exec();
-    console.log(`Found ${results.length} members matching filters`);
     
     return results;
   }
@@ -104,11 +101,8 @@ export class FamilyService {
         .find({ userId: userObjectId })
         .exec();
       
-      console.log(`Found ${results.length} family members for user ${userId}`);
-      
       return results;
     } catch (error) {
-      console.error('Error in findAllByUserId:', error);
       throw new Error(`Error fetching family members for user ${userId}`);
     }
   }
@@ -188,7 +182,7 @@ export class FamilyService {
     try {
       await this.familyMemberSimilarityService.checkForSimilarFamilyMembers(id, userId);
     } catch (error) {
-      console.error('Error checking for similar family members:', error);
+      // console.error('Error checking for similar family members:', error);
     }
   }
 
@@ -237,10 +231,7 @@ export class FamilyService {
         })
         .exec();
 
-      console.log(`Found ${familyMembers.length} family members for user ${userId}`);
-
       if (!familyMembers || familyMembers.length === 0) {
-        console.log(`No family members found for user ${userId}`);
         return [];
       }
 
@@ -252,10 +243,7 @@ export class FamilyService {
       if (rootMembers.length === 0 && familyMembers.length > 0) {
         // If no roots found but family members exist, use the first member as root
         rootMembers.push(familyMembers[0]);
-        console.log(`No root members found. Using first member as root: ${familyMembers[0].name}`);
       }
-
-      console.log(`Building tree with ${rootMembers.length} root members`);
 
       // Create tree nodes for each root member
       const treeNodes = await Promise.all(
@@ -266,7 +254,6 @@ export class FamilyService {
 
       return treeNodes;
     } catch (error) {
-      console.error('Error in getPublicFamilyTree:', error);
       throw new Error('Failed to retrieve public family tree');
     }
   }
