@@ -19,19 +19,17 @@ TreeTrace allows you to:
 
 ## Tech Stack
 
-The project uses a robust, modern stack for scalability, security, and ease of development.
-
 ### Backend
 
-- ![NestJS](https://nestjs.com/img/logo-small.svg) **NestJS** (Node.js framework)
-- ![MongoDB](https://webassets.mongodb.com/_com_assets/cms/mongodb_logo1-76twgcu2dm.png) **MongoDB** (NoSQL database)
-- ![TypeScript](https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png) **TypeScript** (type safety)
+- <img src="https://nestjs.com/img/logo-small.svg" alt="NestJS" width="32"/> **NestJS** (Node.js framework)
+- <img src="https://webassets.mongodb.com/_com_assets/cms/mongodb_logo1-76twgcu2dm.png" alt="MongoDB" width="64"/> **MongoDB** (NoSQL database)
+- <img src="https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png" alt="TypeScript" width="32"/> **TypeScript** (type safety)
 - **Mongoose** (MongoDB ODM)
 - **JWT** (JSON Web Token for authentication)
 
 ### Frontend
 
-- ![React](https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg) **React** (or Next.js, depending on your setup)
+- <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" alt="React" width="32"/> **React** (or Next.js, depending on your setup)
 - **TypeScript**
 - **Modern UI libraries** (e.g., Material-UI, Chakra UI, or Ant Design)
 
