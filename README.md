@@ -4,7 +4,7 @@ TreeTrace is a web-based application designed to help users build, compare, and 
 
 ## Documentation
 
-[Link Text](https://drive.google.com/drive/folders/1HHesYEW1SWfEYB-dUbtknCh0Ut1Vei1j?usp=sharing)
+[Documentations](https://drive.google.com/drive/folders/1HHesYEW1SWfEYB-dUbtknCh0Ut1Vei1j?usp=sharing)
 
 ## Features
 
