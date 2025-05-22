@@ -46,7 +46,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
     fatherId: initialData?.fatherId || '',
     motherId: initialData?.motherId || '',
     occupation: initialData?.occupation || '',
-    country: initialData?.country || '',
+    country: initialData?.country || 'ph',
     status: initialData?.status || 'alive',
     imageUrl: initialData?.imageUrl || '',
     isPublic: initialData?.isPublic || false,
@@ -61,6 +61,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
             ...formData,
             birthDate: formData.birthDate ? new Date(formData.birthDate) : undefined,
             deathDate: formData.deathDate ? new Date(formData.deathDate) : undefined,
+            status: formData.deathDate ? "dead" : formData.status,
           });
 
       toast.success('Family member created successfully');
@@ -75,7 +76,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
         fatherId: '',
         motherId: '',
         occupation: '',
-        country: '',
+        country: 'ph',
         status: 'alive',
         imageUrl: '',
         isPublic: false,
@@ -85,6 +86,15 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeathDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const deathDate = e.target.value;
+    setFormData({ 
+      ...formData, 
+      deathDate, 
+      status: deathDate ? "dead" : formData.status 
+    });
   };
 
   return (
@@ -151,7 +161,7 @@ export default function FamilyMemberForm({ onSuccess, initialData }: FamilyMembe
           id="deathDate"
           type="date"
           value={formData.deathDate}
-          onChange={(e) => setFormData({ ...formData, deathDate: e.target.value })}
+          onChange={handleDeathDateChange}
         />
       </div>
 

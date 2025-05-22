@@ -426,6 +426,34 @@ async function deleteFamilyMember(token: string, memberId: string) {
     if (partner) {
       const updatedPartnerIds = partner.partnerId.filter((pid: string) => pid !== memberId);
       await updateFamilyMember(token, partner._id, { partnerId: updatedPartnerIds });
+
+      // Unmark any partnership suggestions between these members
+      try {
+        // Find suggestions related to partner relationships
+        const partnershipPatterns = [
+          `adding partner "${memberToDelete.name}"`,
+          `partner "${memberToDelete.name}"`,
+          `Consider adding partner "${memberToDelete.name}"`,
+          `adding partner "${partner.name}"`,
+          `partner "${partner.name}"`,
+          `Consider adding partner "${partner.name}"`
+        ];
+
+        // Remove processed suggestions that match these patterns
+        await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            memberIds: [memberId, partner._id],
+            patterns: partnershipPatterns
+          })
+        });
+      } catch (err) {
+        console.warn("Could not unmark partnership suggestions:", err);
+      }
     }
 
     const response = await fetch(`${API_URL}/${memberId}`, {
@@ -474,6 +502,38 @@ async function getSurnameSimilaritiesCount(token: string, memberId: string) {
 
 async function getMemberSuggestionCount(token: string, memberId: string) {
   try {
+    // First fetch member data to filter suggestions properly
+    const memberResponse = await fetch(`http://localhost:3001/family-members/${memberId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!memberResponse.ok) {
+      return 0;
+    }
+
+    const memberResult = await memberResponse.json();
+    const memberData = memberResult.data || memberResult;
+
+    // Get processed suggestions
+    const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${memberId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    let processedSuggestions: string[] = [];
+    if (processedResponse.ok) {
+      const processedResult = await processedResponse.json();
+      processedSuggestions = processedResult.data || [];
+    }
+
+    // Get all suggestions for this member
     const response = await fetch(`http://localhost:3001/notifications/member-similarities/${memberId}`, {
       method: "GET",
       headers: {
@@ -487,8 +547,117 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     }
     
     const result = await response.json();
-    // Return the suggestion count instead of similarity count
-    return result.data?.suggestionCount || 0;
+    const suggestionsData = result.data;
+
+    if (!suggestionsData || !suggestionsData.similarMembers) {
+      return 0;
+    }
+
+    // Fetch partner information if needed to filter partner suggestions
+    let partnerInfo: {name: string, id: string}[] = [];
+    if (memberData.partnerId && memberData.partnerId.length > 0) {
+      const partnerPromises = memberData.partnerId.map(async (partnerId: string) => {
+        const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (partnerResponse.ok) {
+          const partnerData = await partnerResponse.json();
+          const partner = partnerData.data || partnerData;
+          return {
+            id: partnerId,
+            name: partner.name || "Unknown Partner"
+          };
+        }
+        return { id: partnerId, name: "Unknown Partner" };
+      });
+      
+      partnerInfo = await Promise.all(partnerPromises);
+    }
+
+    // Calculate total valid suggestions using the exact same logic as the suggestions page
+    let validSuggestionCount = 0;
+    
+    // Apply the same filtering logic as in the suggestions page header
+    for (const similar of suggestionsData.similarMembers) {
+      if (!similar.suggestions) continue;
+      
+      // Filter suggestions using exactly the same logic as the suggestions page
+      const validSuggestions = similar.suggestions.filter((suggestion: string) => {
+        // Skip suggestions that have already been explicitly applied
+        if (processedSuggestions.includes(suggestion)) {
+          return false;
+        }
+
+        // Filter out partner suggestions if they already have the suggested partner
+        if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+          const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+          if (partnerNameMatch && partnerNameMatch[1] && memberData) {
+            const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+            
+            if (memberData.partnerId && memberData.partnerId.length > 0) {
+              if (partnerInfo.some(partner => 
+                partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+                return false;
+              }
+            }
+          }
+        }
+
+        // Skip birth date confirmations if birth date is already set to that value
+        if (suggestion.includes("Confirm birth date") && memberData.birthDate) {
+          const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+          if (dateMatch && dateMatch[1]) {
+            const suggestedDate = dateMatch[1].trim();
+            const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
+            if (suggestedDate === currentDate) {
+              return false;
+            }
+          }
+        }
+
+        // Skip death date confirmations if death date is already set to that value
+        if (suggestion.includes("Confirm death date") && memberData.deathDate) {
+          const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+          if (dateMatch && dateMatch[1]) {
+            const suggestedDate = dateMatch[1].trim();
+            const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
+            if (suggestedDate === currentDate) {
+              return false;
+            }
+          }
+        }
+
+        // Skip dead status confirmations if status is already dead
+        if ((suggestion.includes("Confirm dead status") || 
+            suggestion.includes("Consider updating status to \"dead\"")) && 
+            memberData.status === "dead") {
+          return false;
+        }
+
+        // Skip country confirmations if country is already that value
+        if (suggestion.includes("Confirm country") && memberData.country) {
+          const countryMatch = suggestion.match(/country "([^"]+)"/i);
+          if (countryMatch && countryMatch[1]) {
+            const suggestedCountry = countryMatch[1].trim().toLowerCase();
+            if (memberData.country.toLowerCase() === suggestedCountry) {
+              return false;
+            }
+          }
+        }
+
+        // If we get here, this is a valid suggestion
+        return true;
+      });
+
+      validSuggestionCount += validSuggestions.length;
+    }
+
+    return validSuggestionCount;
   } catch (error) {
     console.error("Error fetching member suggestion count:", error);
     return 0;
