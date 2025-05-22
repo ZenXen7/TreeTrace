@@ -1,6 +1,8 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import AIChatSidebar from '@/components/AIChatSidebar';
+import AIChatToggle from '@/components/AIChatToggle';
 
 interface Member {
   _id: string;
@@ -38,6 +40,37 @@ export default function HealthOverviewPage() {
   const [selectedCondition, setSelectedCondition] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'generation'>('generation');
   const [sortAsc, setSortAsc] = useState(true);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [allFamilyData, setAllFamilyData] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchAllData() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      // 1. Fetch all family members
+      const res = await fetch('http://localhost:3001/family-members', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const familyMembers = (await res.json()).data || [];
+      // 2. For each member, fetch their medical history
+      const allData = await Promise.all(
+        familyMembers.map(async (member: any) => {
+          let medicalHistory = null;
+          try {
+            const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (medRes.ok) {
+              medicalHistory = (await medRes.json()).data;
+            }
+          } catch {}
+          return { ...member, medicalHistory };
+        })
+      );
+      setAllFamilyData(allData);
+    }
+    fetchAllData();
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -135,114 +168,126 @@ export default function HealthOverviewPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-black text-white font-sans relative">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none z-0" />
-      <div className="relative z-10 container mx-auto px-4 py-12 max-w-6xl">
-        {/* Back Button */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <Link href="/dashboard/treeview" className="inline-flex items-center text-teal-400 hover:text-teal-200 transition-colors">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-            Back to Tree View
-          </Link>
-          <div className="flex items-center gap-2">
-            <label htmlFor="conditionFilter" className="text-gray-300 text-sm">Filter by Condition:</label>
-            <select
-              id="conditionFilter"
-              className="bg-gray-800 text-white rounded px-3 py-1"
-              value={selectedCondition}
-              onChange={e => setSelectedCondition(e.target.value)}
-            >
-              <option value="">All</option>
-              {conditions.map(cond => (
-                <option key={cond} value={cond}>{cond.replace(/([A-Z])/g, ' $1')}</option>
-              ))}
-            </select>
-            <button
-              className="ml-4 px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700"
-              onClick={() => exportToCSV(filteredMembers, conditions)}
-            >
-              Export CSV
-            </button>
-          </div>
-        </div>
-        <div className="mb-4 text-gray-300 text-base max-w-2xl">
-          This overview helps you visualize which family members have specific health conditions, making it easier to spot hereditary patterns and health risks across generations.
-        </div>
-        <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-800/50 bg-gray-900/70">
-          <table className="min-w-full text-white text-base">
-            <thead className="sticky top-0 bg-gray-900/80 z-20 select-none">
-              <tr>
-                <th
-                  className="border-b border-gray-800 px-6 py-4 text-left font-semibold cursor-pointer hover:text-teal-400"
-                  onClick={() => {
-                    setSortBy('name');
-                    setSortAsc(sortBy !== 'name' ? true : !sortAsc);
-                  }}
-                  aria-sort={sortBy === 'name' ? (sortAsc ? 'ascending' : 'descending') : undefined}
-                >
-                  Member {sortBy === 'name' ? (sortAsc ? '▲' : '▼') : ''}
-                </th>
-                <th className="border-b border-gray-800 px-6 py-4 text-left font-semibold">Parents</th>
-                <th
-                  className="border-b border-gray-800 px-6 py-4 text-left font-semibold cursor-pointer hover:text-teal-400"
-                  onClick={() => {
-                    setSortBy('generation');
-                    setSortAsc(sortBy !== 'generation' ? true : !sortAsc);
-                  }}
-                  aria-sort={sortBy === 'generation' ? (sortAsc ? 'ascending' : 'descending') : undefined}
-                >
-                  Generation {sortBy === 'generation' ? (sortAsc ? '▲' : '▼') : ''}
-                </th>
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-black text-white font-sans relative">
+        {/* Subtle grid background */}
+        <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none z-0" />
+        <div className="relative z-10 container mx-auto px-4 py-12 max-w-6xl">
+          {/* Back Button */}
+          <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <Link href="/dashboard/treeview" className="inline-flex items-center text-teal-400 hover:text-teal-200 transition-colors">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+              Back to Tree View
+            </Link>
+            <div className="flex items-center gap-2">
+              <label htmlFor="conditionFilter" className="text-gray-300 text-sm">Filter by Condition:</label>
+              <select
+                id="conditionFilter"
+                className="bg-gray-800 text-white rounded px-3 py-1"
+                value={selectedCondition}
+                onChange={e => setSelectedCondition(e.target.value)}
+              >
+                <option value="">All</option>
                 {conditions.map(cond => (
-                  <th key={cond} className="border-b border-gray-800 px-6 py-4 text-left font-semibold">{cond.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</th>
+                  <option key={cond} value={cond}>{cond.replace(/([A-Z])/g, ' $1')}</option>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMembers.length === 0 ? (
+              </select>
+              <button
+                className="ml-4 px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700"
+                onClick={() => exportToCSV(filteredMembers, conditions)}
+              >
+                Export CSV
+              </button>
+            </div>
+          </div>
+          <div className="mb-4 text-gray-300 text-base max-w-2xl">
+            This overview helps you visualize which family members have specific health conditions, making it easier to spot hereditary patterns and health risks across generations.
+          </div>
+          <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-800/50 bg-gray-900/70">
+            <table className="min-w-full text-white text-base">
+              <thead className="sticky top-0 bg-gray-900/80 z-20 select-none">
                 <tr>
-                  <td colSpan={2 + conditions.length} className="text-center py-8 text-gray-400">No members found with the selected condition.</td>
-                </tr>
-              ) : filteredMembers.map(member => (
-                <tr key={member._id} className="hover:bg-gray-800/60 transition-colors">
-                  <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap">
-                    <span
-                      className="underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-400 rounded px-1"
-                      tabIndex={0}
-                      title={`Birthdate: ${member.birthDate || 'N/A'}\nStatus: ${member.status || 'N/A'}`}
-                    >
-                      {member.name} {member.surname}
-                    </span>
-                  </td>
-                  <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap text-gray-300">
-                    {(() => {
-                      const father = members.find(m => m._id === member.fatherId);
-                      const mother = members.find(m => m._id === member.motherId);
-                      const fatherName = father ? `${father.name} ${father.surname || ''}`.trim() : '';
-                      const motherName = mother ? `${mother.name} ${mother.surname || ''}`.trim() : '';
-                      if (fatherName && motherName) return `${fatherName} / ${motherName}`;
-                      if (fatherName) return fatherName;
-                      if (motherName) return motherName;
-                      return 'Unknown';
-                    })()}
-                  </td>
-                  <td className="border-b border-gray-800 px-6 py-3">{member.generation}</td>
+                  <th
+                    className="border-b border-gray-800 px-6 py-4 text-left font-semibold cursor-pointer hover:text-teal-400"
+                    onClick={() => {
+                      setSortBy('name');
+                      setSortAsc(sortBy !== 'name' ? true : !sortAsc);
+                    }}
+                    aria-sort={sortBy === 'name' ? (sortAsc ? 'ascending' : 'descending') : undefined}
+                  >
+                    Member {sortBy === 'name' ? (sortAsc ? '▲' : '▼') : ''}
+                  </th>
+                  <th className="border-b border-gray-800 px-6 py-4 text-left font-semibold">Parents</th>
+                  <th
+                    className="border-b border-gray-800 px-6 py-4 text-left font-semibold cursor-pointer hover:text-teal-400"
+                    onClick={() => {
+                      setSortBy('generation');
+                      setSortAsc(sortBy !== 'generation' ? true : !sortAsc);
+                    }}
+                    aria-sort={sortBy === 'generation' ? (sortAsc ? 'ascending' : 'descending') : undefined}
+                  >
+                    Generation {sortBy === 'generation' ? (sortAsc ? '▲' : '▼') : ''}
+                  </th>
                   {conditions.map(cond => (
-                    <td key={cond} className="border-b border-gray-800 px-6 py-3 text-center align-middle">
-                      <div className="flex justify-center items-center h-full w-full min-h-[24px] min-w-[24px]">
-                        {member.medicalConditions.includes(cond) ? (
-                          <span className="text-teal-400 text-2xl leading-none">✔️</span>
-                        ) : null}
-                      </div>
-                    </td>
+                    <th key={cond} className="border-b border-gray-800 px-6 py-4 text-left font-semibold">{cond.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredMembers.length === 0 ? (
+                  <tr>
+                    <td colSpan={2 + conditions.length} className="text-center py-8 text-gray-400">No members found with the selected condition.</td>
+                  </tr>
+                ) : filteredMembers.map(member => (
+                  <tr key={member._id} className="hover:bg-gray-800/60 transition-colors">
+                    <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap">
+                      <span
+                        className="underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-400 rounded px-1"
+                        tabIndex={0}
+                        title={`Birthdate: ${member.birthDate || 'N/A'}\nStatus: ${member.status || 'N/A'}`}
+                      >
+                        {member.name} {member.surname}
+                      </span>
+                    </td>
+                    <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap text-gray-300">
+                      {(() => {
+                        const father = members.find(m => m._id === member.fatherId);
+                        const mother = members.find(m => m._id === member.motherId);
+                        const fatherName = father ? `${father.name} ${father.surname || ''}`.trim() : '';
+                        const motherName = mother ? `${mother.name} ${mother.surname || ''}`.trim() : '';
+                        if (fatherName && motherName) return `${fatherName} / ${motherName}`;
+                        if (fatherName) return fatherName;
+                        if (motherName) return motherName;
+                        return 'Unknown';
+                      })()}
+                    </td>
+                    <td className="border-b border-gray-800 px-6 py-3">{member.generation}</td>
+                    {conditions.map(cond => (
+                      <td key={cond} className="border-b border-gray-800 px-6 py-3 text-center align-middle">
+                        <div className="flex justify-center items-center h-full w-full min-h-[24px] min-w-[24px]">
+                          {member.medicalConditions.includes(cond) ? (
+                            <span className="text-teal-400 text-2xl leading-none">✔️</span>
+                          ) : null}
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
+      <AIChatSidebar
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        allFamilyData={allFamilyData}
+        title="Health Medical Expert"
+      />
+      <AIChatToggle
+        onClick={() => setIsAIChatOpen(!isAIChatOpen)}
+        isOpen={isAIChatOpen}
+      />
+    </>
   );
 } 

@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation"
 import AnimatedNodes from "@/components/animated-nodes"
 import "./tree.css" // Import FamilyTreeJS styling fixes
 import Link from "next/link"
+import AIChatSidebar from '@/components/AIChatSidebar';
+import AIChatToggle from '@/components/AIChatToggle';
 
 const maleAvatar =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4="
@@ -1119,7 +1121,37 @@ export default function TreeViewPage() {
     youngestMember: null as any,
   })
   const { generatePublicLink } = useTreeStore()
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [allFamilyData, setAllFamilyData] = useState<any[]>([]);
 
+  useEffect(() => {
+    async function fetchAllData() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      // 1. Fetch all family members
+      const res = await fetch('http://localhost:3001/family-members', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const familyMembers = (await res.json()).data || [];
+      // 2. For each member, fetch their medical history
+      const allData = await Promise.all(
+        familyMembers.map(async (member: any) => {
+          let medicalHistory = null;
+          try {
+            const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (medRes.ok) {
+              medicalHistory = (await medRes.json()).data;
+            }
+          } catch {}
+          return { ...member, medicalHistory };
+        })
+      );
+      setAllFamilyData(allData);
+    }
+    fetchAllData();
+  }, []);
 
   // Define a handler function for filter changes
   const handleFilterChange = (name: string, value: string) => {
@@ -1929,6 +1961,16 @@ export default function TreeViewPage() {
         </motion.div>
 
       </div>
+      <AIChatSidebar
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        allFamilyData={allFamilyData}
+        title="Family Health Analysis"
+      />
+      <AIChatToggle
+        onClick={() => setIsAIChatOpen(!isAIChatOpen)}
+        isOpen={isAIChatOpen}
+      />
     </motion.div>
   );
 }

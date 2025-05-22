@@ -741,29 +741,29 @@ export class FamilyMemberSimilarityService {
           message += ` There are ${totalSuggestionCount} suggestions for information that could be updated.`;
         }
         
-        await this.notificationModel.create({
-          userId: currentUserId,
-          message,
-          type: 'cross_user_family_similarity',
-          read: false,
-          metadata: {
-            currentMember: {
-              id: firstSimilarity.currentMember._id,
-              name: firstSimilarity.currentMember.name,
-              surname: this.getSurname(firstSimilarity.currentMember),
-              status: firstSimilarity.currentMember.status,
-              birthDate: firstSimilarity.currentMember.birthDate,
-              deathDate: firstSimilarity.currentMember.deathDate,
-              country: firstSimilarity.currentMember.country
+          await this.notificationModel.create({
+            userId: currentUserId,
+            message,
+            type: 'cross_user_family_similarity',
+            read: false,
+            metadata: {
+              currentMember: {
+                id: firstSimilarity.currentMember._id,
+                name: firstSimilarity.currentMember.name,
+                surname: this.getSurname(firstSimilarity.currentMember),
+                status: firstSimilarity.currentMember.status,
+                birthDate: firstSimilarity.currentMember.birthDate,
+                deathDate: firstSimilarity.currentMember.deathDate,
+                country: firstSimilarity.currentMember.country
+              },
+              similarFields: firstSimilarity.similarFields,
+              similarity: firstSimilarity.similarity,
+              similarMembersByUser: Object.fromEntries(similarMembersByUser),
+              suggestionsByUser: Object.fromEntries(suggestionsByUser),
+              totalSuggestionCount
             },
-            similarFields: firstSimilarity.similarFields,
-            similarity: firstSimilarity.similarity,
-            similarMembersByUser: Object.fromEntries(similarMembersByUser),
-            suggestionsByUser: Object.fromEntries(suggestionsByUser),
-            totalSuggestionCount
-          },
-          relatedFamilyMembers: [firstSimilarity.currentMember._id]
-        });
+            relatedFamilyMembers: [firstSimilarity.currentMember._id]
+          });
       }
       
     } catch (error) {
