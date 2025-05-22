@@ -34,6 +34,7 @@ interface MemberData {
   fatherId?: string;
   motherId?: string;
   partnerId?: string[];
+  childId?: string[];
 }
 
 // Helper function for making consistent API calls
@@ -98,20 +99,54 @@ async function makeApiCall(url: string, options: RequestInit = {}) {
   }
 }
 
+// Helper function to fetch gender from source member
+const fetchGenderFromSourceMember = async (sourceMemberId: string): Promise<string | undefined> => {
+  if (!sourceMemberId) return undefined;
+  
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return undefined;
+    
+    const sourceResponse = await fetch(`http://localhost:3001/family-members/${sourceMemberId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }
+    });
+    
+    if (sourceResponse.ok) {
+      const sourceData = await sourceResponse.json();
+      const sourceMember = sourceData.data || sourceData;
+      if (sourceMember && sourceMember.gender) {
+        return sourceMember.gender;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch source member for gender:", err);
+  }
+  
+  return undefined;
+};
+
 export default function MemberSuggestionsPage() {
   const router = useRouter();
   const params = useParams();
   const memberId = params.memberId as string;
 
-  const [loading, setLoading] = useState(true);
-  const [memberData, setMemberData] = useState<MemberData | null>(null);
-  const [suggestionsData, setSuggestionsData] = useState<SuggestionData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Store partner information to help filter suggestions
-  const [partnerInfo, setPartnerInfo] = useState<{name: string, id: string}[]>([]);
-  
-  // New state for pending changes
+  // State for the component
+  const [memberData, setMemberData] = useState<any>(null);
+  const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>([]);
+  const [suggestionsData, setSuggestionsData] = useState<{
+    count: number;
+    suggestionCount: number;
+    similarMembers: any[];
+    hasMore: boolean;
+  }>({
+    count: 0,
+    suggestionCount: 0,
+    similarMembers: [],
+    hasMore: false
+  });
   const [pendingChanges, setPendingChanges] = useState<{
     changes: Record<string, any>;
     sourceSuggestions: string[];
@@ -119,18 +154,19 @@ export default function MemberSuggestionsPage() {
     changes: {},
     sourceSuggestions: []
   });
-  
-  // Track which suggestions have been applied
-  const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>([]);
-  
-  // Flag to indicate if there are pending changes
-  const hasPendingChanges = Object.keys(pendingChanges.changes).length > 0;
-  
-  // Store previous values to detect changes
-  const prevMemberDataRef = useRef<MemberData | null>(null);
+  const [partnerInfo, setPartnerInfo] = useState<{name: string, id: string}[]>([]);
+  const [childInfo, setChildInfo] = useState<{name: string, id: string}[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Track which fields have been updated
   const [updatedFields, setUpdatedFields] = useState<Record<string, boolean>>({});
+  
+  // Store previous values to detect changes
+  const prevMemberDataRef = useRef<MemberData | null>(null);
+
+  // Flag to indicate if there are pending changes
+  const hasPendingChanges = Object.keys(pendingChanges.changes).length > 0;
 
   useEffect(() => {
     async function fetchData() {
@@ -205,9 +241,29 @@ export default function MemberSuggestionsPage() {
               return { id: partnerId, name: "Unknown Partner" };
             });
             
-            const fetchedPartnerInfo = await Promise.all(partnerPromises);
-            setPartnerInfo(fetchedPartnerInfo);
-            console.log("Fetched partner info:", fetchedPartnerInfo);
+            const partnerInfo = await Promise.all(partnerPromises);
+            console.log("Got partner info:", partnerInfo);
+            setPartnerInfo(partnerInfo);
+            
+            // Fetch child information
+            let childrenInfo: { name: string; id: string }[] = [];
+            if (actualMemberData.childId && actualMemberData.childId.length > 0) {
+              console.log("Member has children, fetching details");
+              
+              const childPromises = actualMemberData.childId.map(async (childId: string) => {
+                const childResponse = await makeApiCall(`http://localhost:3001/family-members/${childId}`);
+                return {
+                  id: childId,
+                  name: childResponse?.name || "Unknown Child"
+                };
+              });
+              
+              childrenInfo = await Promise.all(childPromises);
+              console.log("Got child info:", childrenInfo);
+              setChildInfo(childrenInfo);
+            } else {
+              setChildInfo([]);
+            }
           } catch (err) {
             console.warn("Error fetching partner information:", err);
           }
@@ -728,49 +784,22 @@ export default function MemberSuggestionsPage() {
                suggestion.includes("more children")) {
       console.log("Found child suggestion:", suggestion);
       
+      // Extract child name from the suggestion
+      let childName = "";
+      const childNameMatch = suggestion.match(/child "([^"]+)"/i);
+      if (childNameMatch && childNameMatch[1]) {
+        childName = childNameMatch[1].trim();
+      }
+      
       // Ask for confirmation before proceeding with child addition
-      const confirmed = window.confirm(`Do you want to add the suggested children for this family member? This will create new nodes in your family tree.`);
+      const confirmed = window.confirm(`Do you want to add child "${childName}" to this family member? This will create a new node in your family tree.`);
       
       if (!confirmed) {
-        console.log("User declined to add children");
+        console.log("User declined to add child");
         return;
       }
-      
-      // Try to extract single child name if available
-      let childrenNames: string[] = [];
-      const childNameMatch = suggestion.match(/adding child "([^"]+)"/i);
-      if (childNameMatch && childNameMatch[1]) {
-        childrenNames = [childNameMatch[1].trim()];
-        console.log("Extracted single child name:", childrenNames);
-      }
-      
-      // Try to extract multiple child names if available
-      const childrenNamesMatch = suggestion.match(/adding children "([^"]+)"/i);
-      if (childrenNamesMatch && childrenNamesMatch[1]) {
-        // Split by ", " pattern if multiple names are in the format "name1", "name2", "name3"
-        const rawNames = childrenNamesMatch[1].split('", "');
-        childrenNames = rawNames.map(name => name.trim().replace(/"/g, ''));
-        console.log("Extracted multiple child names:", childrenNames);
-      }
-      
-      // Extract count if mentioned
-      let childrenCount: number | undefined;
-      const countMatch = suggestion.match(/adding (\d+) more children/i);
-      if (countMatch && countMatch[1]) {
-        childrenCount = parseInt(countMatch[1], 10);
-        console.log("Extracted children count:", childrenCount);
-      }
-      
-      // Try to extract sample names if available in the "including X and Y and others" format
-      const sampleNamesMatch = suggestion.match(/including "([^"]+)" and others/i) || 
-                              suggestion.match(/including "([^"]+)", "([^"]+)" and others/i);
-      if (sampleNamesMatch) {
-        if (sampleNamesMatch[1]) childrenNames.push(sampleNamesMatch[1]);
-        if (sampleNamesMatch[2]) childrenNames.push(sampleNamesMatch[2]);
-        console.log("Extracted sample child names:", childrenNames);
-      }
-      
-      // Try different possible formats to find source member ID
+
+      // Try to extract source member ID
       let sourceMemberId: string | undefined;
       let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
@@ -787,114 +816,83 @@ export default function MemberSuggestionsPage() {
       const cleanMemberId = typeof memberId === 'object' 
         ? (memberId as any).toString()
         : String(memberId);
-        
-      // If we have specific child names, create individual pending changes for each child
-      if (childrenNames.length > 0) {
-        // Create separate pending changes for each child
-        for (let i = 0; i < childrenNames.length; i++) {
-          const childName = childrenNames[i];
-          
-          // Store one child per action with a unique key
-          // Use a timestamp and random number to ensure uniqueness even across multiple suggestions
-          const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${i}`;
-          const actionKey = `_addChildAction_${uniqueSuffix}`;
-          
-          // Get current member ID in a clean format
-          const currentMemberId = typeof memberId === 'object' 
-            ? (memberId as any).toString()
-            : String(memberId);
-            
-          // Create the action data with proper parent relationships
-          const actionData: any = {
-            _specialAction: "addChildren",
-            _childrenNames: [childName],
-            _childrenCount: 1,
-            _sourceMemberId: sourceMemberId,
-            targetMemberId: currentMemberId,
-            _parentId: currentMemberId // Explicitly set parent ID to ensure relationship
-          };
-          
-          // Set appropriate parent fields based on gender
-          if (memberData && memberData.gender === "male") {
-            actionData.fatherId = currentMemberId;
-            // Check if there's a partner to set as the other parent
-            if (memberData.partnerId && memberData.partnerId.length > 0) {
-              actionData.motherId = memberData.partnerId[0];
-            }
-          } else if (memberData && memberData.gender === "female") {
-            actionData.motherId = currentMemberId;
-            // Check if there's a partner to set as the other parent
-            if (memberData.partnerId && memberData.partnerId.length > 0) {
-              actionData.fatherId = memberData.partnerId[0];
-            }
-          }
-          
-          setPendingChanges(prevState => {
-            return {
-              changes: { 
-                ...prevState.changes, 
-                [actionKey]: actionData
-              },
-              sourceSuggestions: [...prevState.sourceSuggestions, suggestion]
-            };
-          });
-        }
-        
-        toast.success(`${childrenNames.length} children will be added separately when you apply changes`);
-      } else {
-        // No specific names, use the count only
-        const actualCount = childrenCount || 1;
-        
-        // For unnamed children, create generic placeholders
-        for (let i = 0; i < actualCount; i++) {
-          const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${i}`;
-          const actionKey = `_addChildAction_${uniqueSuffix}`;
-          
-          // Get current member ID in a clean format
-          const currentMemberId = typeof memberId === 'object' 
-            ? (memberId as any).toString()
-            : String(memberId);
-            
-          // Create the action data with proper parent relationships
-          const actionData: any = {
-            _specialAction: "addChildren",
-            _childrenNames: [`Child ${i + 1}`],
-            _childrenCount: 1,
-            _sourceMemberId: sourceMemberId,
-            targetMemberId: currentMemberId,
-            _parentId: currentMemberId // Explicitly set parent ID to ensure relationship
-          };
-            
-          // Set appropriate parent fields based on gender
-          if (memberData && memberData.gender === "male") {
-            actionData.fatherId = currentMemberId;
-            // Check if there's a partner to set as the other parent
-            if (memberData.partnerId && memberData.partnerId.length > 0) {
-              actionData.motherId = memberData.partnerId[0];
-            }
-          } else if (memberData && memberData.gender === "female") {
-            actionData.motherId = currentMemberId;
-            // Check if there's a partner to set as the other parent
-            if (memberData.partnerId && memberData.partnerId.length > 0) {
-              actionData.fatherId = memberData.partnerId[0];
-            }
-          }
-          
-          setPendingChanges(prevState => {
-            return {
-              changes: { 
-                ...prevState.changes, 
-                [actionKey]: actionData
-              },
-              sourceSuggestions: [...prevState.sourceSuggestions, suggestion]
-            };
-          });
-        }
-        
-        toast.success(`${actualCount} children will be added when you apply changes`);
+      
+      // Determine gender from suggestion content without any defaults
+      let childGender: string = "";
+      
+      // First check explicit gender keywords in the suggestion
+      if (suggestion.toLowerCase().includes("daughter") || suggestion.toLowerCase().includes("female")) {
+        childGender = "female";
+        console.log("Child gender set to female based on suggestion content");
+      } else if (suggestion.toLowerCase().includes("son") || suggestion.toLowerCase().includes("male")) {
+        childGender = "male";
+        console.log("Child gender set to male based on suggestion content");
       }
       
-      // Mark suggestion as applied to update the UI
+      // If no gender in suggestion text, try to fetch from source member data
+      if (!childGender && sourceMemberId) {
+        try {
+          const sourceGender = await fetchGenderFromSourceMember(sourceMemberId);
+          if (sourceGender) {
+            childGender = sourceGender;
+            console.log("Using source member gender:", childGender);
+          }
+        } catch (err) {
+          console.warn("Could not fetch source member for gender:", err);
+        }
+      }
+      
+      // If still no gender, we need to inform the user
+      if (!childGender) {
+        console.error("Could not determine gender for child");
+        toast.error("Could not determine gender for this child suggestion. Please try again.");
+        return;
+      }
+      
+      // Store one child action with a unique key
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const actionKey = `_addChildAction_${uniqueSuffix}`;
+      
+      // Create the action data with proper parent relationships
+      const actionData: any = {
+        _specialAction: "addChildren",
+        _childrenNames: [childName],
+        _childrenCount: 1,
+        _sourceMemberId: sourceMemberId,
+        gender: childGender, // Set gender directly here
+        targetMemberId: cleanMemberId,
+        _parentId: cleanMemberId, // Explicitly set parent ID to ensure relationship
+        _sourceSuggestion: suggestion // Store the original suggestion to properly mark only this one as processed
+      };
+      
+      // Set appropriate parent fields based on gender
+      if (memberData && memberData.gender === "male") {
+        actionData.fatherId = cleanMemberId;
+        // Check if there's a partner to set as the other parent
+        if (memberData.partnerId && memberData.partnerId.length > 0) {
+          actionData.motherId = memberData.partnerId[0];
+        }
+      } else if (memberData && memberData.gender === "female") {
+        actionData.motherId = cleanMemberId;
+        // Check if there's a partner to set as the other parent
+        if (memberData.partnerId && memberData.partnerId.length > 0) {
+          actionData.fatherId = memberData.partnerId[0];
+        }
+      }
+      
+      setPendingChanges(prevState => {
+        return {
+          changes: { 
+            ...prevState.changes, 
+            [actionKey]: actionData
+          },
+          sourceSuggestions: [...prevState.sourceSuggestions, suggestion]
+        };
+      });
+      
+      toast.success(`Child "${childName}" will be added when you apply changes`);
+      
+      // Mark suggestion as applied to update the UI for THIS member only
       setAppliedSuggestions(current => [...current, suggestion]);
       return;
     }
@@ -1192,9 +1190,16 @@ export default function MemberSuggestionsPage() {
             ? childrenNames[i] 
             : `Child ${i + 1}`;
           
-          // Determine gender from child name
-          const childGender = determineGenderFromName(childName);
-          const relation = childGender === "male" ? "son" : "daughter";
+          // Get gender directly from action data without any defaults
+          const childGender = updateData.gender;
+          if (!childGender) {
+            console.error("Missing gender in child action data:", updateData);
+            toast.error("Gender information is missing for child. Cannot proceed.");
+            continue; // Skip this child but continue with others
+          }
+          
+          console.log(`Using gender from action data: ${childGender}`);
+          const relation = childGender.toLowerCase() === "male" ? "son" : "daughter";
           
           // Get current member ID in a clean format
           const currentMemberId = typeof memberId === 'object' 
@@ -1242,6 +1247,12 @@ export default function MemberSuggestionsPage() {
               refreshFunction, 
               childData
             );
+            
+            // Mark only this specific child suggestion as processed
+            // Instead of all child suggestions
+            if (updateData._sourceSuggestion) {
+              await markSuggestionAsProcessed(currentMemberId, updateData._sourceSuggestion);
+            }
             
             // Since we now handle children individually, we don't need pauses between them
             // unless it's the legacy bundled format
@@ -1516,9 +1527,17 @@ export default function MemberSuggestionsPage() {
                   ? childrenNames[i] 
                   : `Child ${i + 1}`;
                 
-                // Determine gender from child name
-                const childGender = determineGenderFromName(childName);
-                const relation = childGender === "male" ? "son" : "daughter";
+                // Get gender directly from action data without any defaults
+                const childGender = action.data.gender;
+                if (!childGender) {
+                  console.error("Missing gender in child action data:", action.data);
+                  toast.error("Gender information is missing for child. Cannot proceed.");
+                  continue; // Skip this child but continue with others
+                }
+                
+                console.log(`Using gender from action data: ${childGender}`);
+                // Ensure relation matches the actual gender value exactly
+                const relation = childGender.toLowerCase() === "male" ? "son" : "daughter";
                 
                 // Create basic child data
                 const childData = {
@@ -1544,9 +1563,13 @@ export default function MemberSuggestionsPage() {
                     childData
                   );
                   
-                  // Since we now handle children individually, we don't need pauses between them
-                  // unless it's the legacy bundled format
-                  if (action.action === "_addChildrenAction" && i < childrenCount - 1) {
+                  // Mark only this specific child suggestion as processed if available
+                  if (action.data._sourceSuggestion) {
+                    await markSuggestionAsProcessed(cleanMemberId, action.data._sourceSuggestion as string);
+                  }
+                  
+                  // Wait a bit between adding children to avoid race conditions
+                  if (i < childrenCount - 1) {
                     await new Promise(resolve => setTimeout(resolve, 300));
                   }
                 } catch (childError) {
@@ -1730,7 +1753,17 @@ export default function MemberSuggestionsPage() {
                                suggestionText.includes("adding children") ||
                                suggestionText.match(/child "[^"]+"/i);
       
-      // Mark as processed for the current member
+      // Extract the specific child name if this is a child suggestion
+      let childName = "";
+      if (isChildSuggestion) {
+        const childNameMatch = suggestionText.match(/child "([^"]+)"/i);
+        if (childNameMatch && childNameMatch[1]) {
+          childName = childNameMatch[1].trim();
+        }
+      }
+      
+      // Only mark this specific child suggestion as processed
+      // This way other child suggestions will still appear
       const response = await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
         method: "POST",
         headers: {
@@ -1750,60 +1783,38 @@ export default function MemberSuggestionsPage() {
       const result = await response.json();
       
       // If this is a child suggestion and the member has a partner, also mark it as processed for the partner
-      if (isChildSuggestion && memberData && memberData.partnerId && memberData.partnerId.length > 0) {
+      // BUT ONLY for this specific child, not all children
+      if (isChildSuggestion && memberData && memberData.partnerId && memberData.partnerId.length > 0 && childName) {
         try {
-          // Extract the child name from the suggestion
-          let childName = "";
-          const childNameMatch = suggestionText.match(/child "([^"]+)"/i);
-          if (childNameMatch && childNameMatch[1]) {
-            childName = childNameMatch[1].trim();
-          }
-          
           // For each partner, find and mark similar suggestions as processed
           for (const partnerId of memberData.partnerId) {
-            // If we have a child name, we should find the exact matching suggestion for the partner
-            if (childName) {
-              // Make an API call to get partner's suggestions
-              const partnerSuggestions = await makeApiCall(`http://localhost:3001/notifications/member-similarities/${partnerId}`);
-              
-              if (partnerSuggestions && partnerSuggestions.similarMembers) {
-                // Look for matching child suggestions
-                for (const similar of partnerSuggestions.similarMembers) {
-                  if (similar.suggestions) {
-                    for (const partnerSuggestion of similar.suggestions) {
-                      // Check if this suggestion mentions the same child
-                      if (partnerSuggestion.includes(childName) && 
-                          (partnerSuggestion.includes("adding child") || partnerSuggestion.includes("adding children"))) {
-                        // Mark this suggestion as processed for the partner
-                        await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
-                          method: "POST",
-                          headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json"
-                          },
-                          body: JSON.stringify({
-                            memberId: partnerId,
-                            suggestionText: partnerSuggestion
-                          })
-                        });
-                      }
+            // Make an API call to get partner's suggestions
+            const partnerSuggestions = await makeApiCall(`http://localhost:3001/notifications/member-similarities/${partnerId}`);
+            
+            if (partnerSuggestions && partnerSuggestions.similarMembers) {
+              // Look for matching child suggestions
+              for (const similar of partnerSuggestions.similarMembers) {
+                if (similar.suggestions) {
+                  for (const partnerSuggestion of similar.suggestions) {
+                    // Check if this suggestion mentions the same child
+                    if (partnerSuggestion.includes(childName) && 
+                        (partnerSuggestion.includes("adding child") || partnerSuggestion.includes("adding children"))) {
+                      // Mark this suggestion as processed for the partner
+                      await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                          "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                          memberId: partnerId,
+                          suggestionText: partnerSuggestion
+                        })
+                      });
                     }
                   }
                 }
               }
-            } else {
-              // If we don't have a specific child name, mark the original suggestion as processed for the partner
-              await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                  memberId: partnerId,
-                  suggestionText: suggestionText
-                })
-              });
             }
           }
         } catch (partnerError) {
@@ -1861,15 +1872,58 @@ export default function MemberSuggestionsPage() {
             }
           }
         }
+        
+        // Filter out child suggestions if the child is already connected to this member
+        if (suggestion.includes("adding child") || suggestion.includes("more children")) {
+          // Check if this is a specific child suggestion
+          const childNameMatch = suggestion.match(/child "([^"]+)"/i);
+          if (childNameMatch && childNameMatch[1] && memberData) {
+            const suggestedChildName = childNameMatch[1].trim().toLowerCase();
+            
+            // Check if member has childId property and has children
+            if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+              // If we have childInfo with names, use it to check
+              if (childInfo && childInfo.length > 0) {
+                if (childInfo.some((child: {name: string, id: string}) => 
+                  child.name.toLowerCase().includes(suggestedChildName) ||
+                  suggestedChildName.includes(child.name.toLowerCase()))) {
+                  console.log(`Filtering out child suggestion for "${suggestedChildName}" as it matches existing child`);
+                  return false;
+                }
+              } else {
+                // If we don't have childInfo, be conservative and filter out all child suggestions
+                // Since we know the member has children but we don't have their details
+                console.log(`Filtering out child suggestion for "${suggestedChildName}" as member has children`);
+                return false;
+              }
+            }
+          }
+        }
+        
+        // Filter out parent suggestions if parent is already connected
+        if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
+          const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
+          if (parentNameMatch && parentNameMatch[2] && memberData) {
+            const parentType = parentNameMatch[1].toLowerCase();
+            const suggestedParentName = parentNameMatch[2].trim().toLowerCase();
+            
+            // If member already has this parent type, filter out the suggestion
+            if ((parentType === 'father' && memberData.fatherId) || 
+                (parentType === 'mother' && memberData.motherId)) {
+              console.log(`Filtering out ${parentType} suggestion for "${suggestedParentName}" as ${parentType} already exists`);
+              return false;
+            }
+          }
+        }
 
         // Skip birth date confirmations if birth date is already set to that value
         if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
           const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
           if (dateMatch && dateMatch[1]) {
             const suggestedDate = dateMatch[1].trim();
-            // Check if member already has this birth date
             const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
             if (suggestedDate === currentDate) {
+              console.log(`Filtering out birth date suggestion for "${suggestedDate}" as it matches current value`);
               return false;
             }
           }
@@ -1880,17 +1934,19 @@ export default function MemberSuggestionsPage() {
           const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
           if (dateMatch && dateMatch[1]) {
             const suggestedDate = dateMatch[1].trim();
-            // Check if member already has this death date
             const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
             if (suggestedDate === currentDate) {
+              console.log(`Filtering out death date suggestion for "${suggestedDate}" as it matches current value`);
               return false;
             }
           }
         }
 
         // Skip dead status confirmations if status is already dead
-        if ((suggestion.includes("Confirm dead status") || suggestion.includes("Consider updating status to \"dead\"")) && 
+        if ((suggestion.includes("Confirm dead status") || 
+            suggestion.includes("Consider updating status to \"dead\"")) && 
             memberData?.status === "dead") {
+          console.log(`Filtering out dead status suggestion as member is already marked dead`);
           return false;
         }
 
@@ -1900,12 +1956,13 @@ export default function MemberSuggestionsPage() {
           if (countryMatch && countryMatch[1]) {
             const suggestedCountry = countryMatch[1].trim().toLowerCase();
             if (memberData.country.toLowerCase() === suggestedCountry) {
+              console.log(`Filtering out country suggestion for "${suggestedCountry}" as it matches current value`);
               return false;
             }
           }
         }
-
-        // Otherwise include the suggestion
+        
+        // If we get here, this is a valid suggestion
         return true;
       }
     );
@@ -1968,38 +2025,7 @@ export default function MemberSuggestionsPage() {
     }
   };
 
-  // Helper function to determine gender from child name
-  const determineGenderFromName = (name: string): "male" | "female" => {
-    // Check for explicit gender in name
-    if (name.toLowerCase().includes("son") && !name.toLowerCase().includes("daughter")) {
-      return "male";
-    }
-    if (name.toLowerCase().includes("daughter")) {
-      return "female";
-    }
-    
-    // For names with clear gender indicators
-    const maleNamePatterns = ["miko", "kyle son", "mika son"];
-    const femaleNamePatterns = ["mika daughter", "kyla", "kyle daughter"];
-    
-    const lowerName = name.toLowerCase();
-    
-    // Check against known patterns
-    for (const pattern of maleNamePatterns) {
-      if (lowerName.includes(pattern)) {
-        return "male";
-      }
-    }
-    
-    for (const pattern of femaleNamePatterns) {
-      if (lowerName.includes(pattern)) {
-        return "female";
-      }
-    }
-    
-    // Default to random assignment if no patterns match
-    return Math.random() > 0.5 ? "male" : "female";
-  };
+    // No need for determineGenderFromName - we now get gender directly from suggestion or source data
 
   if (loading) {
     return (
@@ -2318,7 +2344,7 @@ export default function MemberSuggestionsPage() {
                       // Count all suggestions that haven't been applied and wouldn't be filtered
                       displayCount = suggestionsData.similarMembers.reduce((count, member) => {
                         // Apply the same filtering logic as SuggestionCard
-                        const validSuggestions = member.suggestions.filter(suggestion => {
+                        const validSuggestions = member.suggestions.filter((suggestion: string) => {
                           // Skip applied suggestions
                           if (appliedSuggestions.includes(suggestion)) return false;
                           
@@ -2337,7 +2363,40 @@ export default function MemberSuggestionsPage() {
                             }
                           }
                           
-                          // Skip other already-set values using same logic as SuggestionCard
+                          // Filter out child suggestions if the child is already connected to this member
+                          if (suggestion.includes("adding child") || suggestion.includes("more children")) {
+                            const childNameMatch = suggestion.match(/child "([^"]+)"/i);
+                            if (childNameMatch && childNameMatch[1] && memberData) {
+                              const suggestedChildName = childNameMatch[1].trim().toLowerCase();
+                              
+                              if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+                                if (childInfo && childInfo.length > 0) {
+                                  if (childInfo.some((child: {name: string, id: string}) => 
+                                    child.name.toLowerCase().includes(suggestedChildName) ||
+                                    suggestedChildName.includes(child.name.toLowerCase()))) {
+                                    return false;
+                                  }
+                                } else {
+                                  // No child info but member has children, be conservative
+                                  return false;
+                                }
+                              }
+                            }
+                          }
+                          
+                          // Filter out parent suggestions if parent is already connected
+                          if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
+                            const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
+                            if (parentNameMatch && parentNameMatch[2] && memberData) {
+                              const parentType = parentNameMatch[1].toLowerCase();
+                              if ((parentType === 'father' && memberData.fatherId) || 
+                                  (parentType === 'mother' && memberData.motherId)) {
+                                return false;
+                              }
+                            }
+                          }
+                          
+                          // Skip birth date confirmations if birth date is already set to that value
                           if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
                             const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
                             if (dateMatch && dateMatch[1]) {
@@ -2408,7 +2467,7 @@ export default function MemberSuggestionsPage() {
                     // Modified condition to check if we have similarMembers with actual suggestions after filtering
                     const hasSimilarMembers = suggestionsData.similarMembers.some(similar => 
                       similar.suggestions && similar.suggestions.filter(
-                        suggestion => !appliedSuggestions.includes(suggestion)
+                        (suggestion: string) => !appliedSuggestions.includes(suggestion)
                       ).length > 0
                     );
                     
@@ -2422,7 +2481,7 @@ export default function MemberSuggestionsPage() {
                     
                     // Count suggestions that haven't been applied yet
                     const availableSuggestions = suggestionsData.similarMembers.flatMap(similar => 
-                      similar.suggestions.filter(suggestion => !appliedSuggestions.includes(suggestion))
+                      similar.suggestions.filter((suggestion: string) => !appliedSuggestions.includes(suggestion))
                     );
                     
                     if (availableSuggestions.length === 0) {
