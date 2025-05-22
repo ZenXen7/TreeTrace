@@ -357,8 +357,8 @@ function Familytree(props: {
             ],
             [
               { type: 'select', options: [
+                {value: 'ph', text: 'Philippines'},
                   {value: 'us', text: 'United States'},
-                  {value: 'ph', text: 'Philippines'},
                   {value: 'ca', text: 'Canada'},
                   {value: 'uk', text: 'United Kingdom'},
                   {value: 'au', text: 'Australia'},
@@ -1234,18 +1234,112 @@ export default function TreeViewPage() {
               
               // Apply the same filtering logic as the suggestions page
               if (suggestionsData && suggestionsData.data && suggestionsData.data.similarMembers) {
-                // Filter out any suggestions that were already processed
-                const filteredSimilarMembers = suggestionsData.data.similarMembers.map((similar: any) => ({
-                  ...similar,
-                  suggestions: similar.suggestions.filter(
-                    (suggestion: string) => !processedSuggestions.includes(suggestion)
-                  )
-                })).filter((similar: any) => similar.suggestions.length > 0);
+                // Fetch partner information if needed to filter partner suggestions
+                let partnerInfo: {name: string, id: string}[] = [];
+                if (member.partnerId && member.partnerId.length > 0) {
+                  const partnerPromises = member.partnerId.map(async (partnerId: string) => {
+                    const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                      }
+                    });
+                    
+                    if (partnerResponse.ok) {
+                      const partnerData = await partnerResponse.json();
+                      const partner = partnerData.data || partnerData;
+                      return {
+                        id: partnerId,
+                        name: partner.name || "Unknown Partner"
+                      };
+                    }
+                    return { id: partnerId, name: "Unknown Partner" };
+                  });
+                  
+                  partnerInfo = await Promise.all(partnerPromises);
+                }
                 
-                // Count suggestions using the exact same logic as suggestions page
-                filteredSuggestionCount = filteredSimilarMembers.reduce(
-                  (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 0
-                );
+                // Apply the exact same filtering logic as in getMemberSuggestionCount and the suggestions page
+                let validSuggestionCount = 0;
+                
+                for (const similar of suggestionsData.data.similarMembers) {
+                  if (!similar.suggestions) continue;
+                  
+                  // Filter suggestions using exactly the same logic as the suggestions page
+                  const validSuggestions = similar.suggestions.filter((suggestion: string) => {
+                    // Skip suggestions that have already been explicitly applied
+                    if (processedSuggestions.includes(suggestion)) {
+                      return false;
+                    }
+                    
+                    // Filter out partner suggestions if they already have the suggested partner
+                    if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+                      const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+                      if (partnerNameMatch && partnerNameMatch[1]) {
+                        const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+                        
+                        if (member.partnerId && member.partnerId.length > 0) {
+                          if (partnerInfo.some(partner => 
+                            partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                            suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+                            return false;
+                          }
+                        }
+                      }
+                    }
+                    
+                    // Skip birth date confirmations if birth date is already set to that value
+                    if (suggestion.includes("Confirm birth date") && member.birthDate) {
+                      const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+                      if (dateMatch && dateMatch[1]) {
+                        const suggestedDate = dateMatch[1].trim();
+                        const currentDate = new Date(member.birthDate).toISOString().split('T')[0];
+                        if (suggestedDate === currentDate) {
+                          return false;
+                        }
+                      }
+                    }
+                    
+                    // Skip death date confirmations if death date is already set to that value
+                    if (suggestion.includes("Confirm death date") && member.deathDate) {
+                      const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+                      if (dateMatch && dateMatch[1]) {
+                        const suggestedDate = dateMatch[1].trim();
+                        const currentDate = new Date(member.deathDate).toISOString().split('T')[0];
+                        if (suggestedDate === currentDate) {
+                          return false;
+                        }
+                      }
+                    }
+                    
+                    // Skip dead status confirmations if status is already dead
+                    if ((suggestion.includes("Confirm dead status") || 
+                        suggestion.includes("Consider updating status to \"dead\"")) && 
+                        member.status === "dead") {
+                      return false;
+                    }
+                    
+                    // Skip country confirmations if country is already that value
+                    if (suggestion.includes("Confirm country") && member.country) {
+                      const countryMatch = suggestion.match(/country "([^"]+)"/i);
+                      if (countryMatch && countryMatch[1]) {
+                        const suggestedCountry = countryMatch[1].trim().toLowerCase();
+                        if (member.country.toLowerCase() === suggestedCountry) {
+                          return false;
+                        }
+                      }
+                    }
+                    
+                    // If we get here, this is a valid suggestion
+                    return true;
+                  });
+                  
+                  validSuggestionCount += validSuggestions.length;
+                }
+                
+                // Use the filtered count that exactly matches the suggestions page logic
+                filteredSuggestionCount = validSuggestionCount;
+                console.log(`Member ${member.name}: Found ${filteredSuggestionCount} valid suggestions after filtering`);
               }
             }
           } catch (err) {
@@ -1592,8 +1686,8 @@ export default function TreeViewPage() {
               onChange={(e) => handleFilterChange('country', e.target.value)}
             >
               <option value="all">All Countries</option>
-              <option value="us">United States</option>
               <option value="ph">Philippines</option>
+              <option value="us">United States</option>
               <option value="ca">Canada</option>
               <option value="uk">United Kingdom</option>
               <option value="au">Australia</option>

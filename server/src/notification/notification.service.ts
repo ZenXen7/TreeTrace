@@ -146,4 +146,49 @@ export class NotificationService {
 
     return processedSuggestions.map(ps => ps.suggestionText);
   }
+
+  /**
+   * Unmark suggestions that match any of the provided patterns for any of the specified members
+   * @param userId User ID
+   * @param memberIds Array of member IDs
+   * @param patterns Array of text patterns to match against suggestion texts
+   * @returns Result of the deletion operation
+   */
+  async unmarkSuggestions(
+    userId: string,
+    memberIds: string[],
+    patterns: string[],
+  ): Promise<any> {
+    const userObjectId = new Types.ObjectId(userId);
+    const memberObjectIds = memberIds.map(id => new Types.ObjectId(id));
+
+    // Create a filter that matches any pattern for any of the specified members
+    const orConditions: Array<{
+      userId: Types.ObjectId;
+      memberId: Types.ObjectId;
+      suggestionText: { $regex: string; $options: string };
+    }> = [];
+
+    // For each member, add conditions for each pattern
+    for (const memberId of memberObjectIds) {
+      for (const pattern of patterns) {
+        orConditions.push({
+          userId: userObjectId,
+          memberId: memberId,
+          suggestionText: { $regex: pattern, $options: 'i' } // Case-insensitive partial match
+        });
+      }
+    }
+    
+    // Delete all matching records
+    const result = await this.processedSuggestionModel.deleteMany({
+      $or: orConditions
+    }).exec();
+
+    return {
+      deletedCount: result.deletedCount,
+      memberIds: memberIds,
+      patterns: patterns
+    };
+  }
 }

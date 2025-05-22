@@ -811,4 +811,43 @@ export class NotificationController {
       );
     }
   }
+
+  /**
+   * Unmark suggestions as processed based on pattern matching
+   * Used when relationships are deleted and suggestions should reappear
+   */
+  @Post('unmark-suggestions')
+  async unmarkSuggestions(
+    @Request() req,
+    @Body() body: { memberIds: string[]; patterns: string[] },
+  ) {
+    try {
+      const userId = req.user.id;
+      const { memberIds, patterns } = body;
+      
+      if (!memberIds || !memberIds.length || !patterns || !patterns.length) {
+        throw new HttpException(
+          'Member IDs and patterns are required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      
+      const result = await this.notificationService.unmarkSuggestions(
+        userId,
+        memberIds,
+        patterns,
+      );
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Suggestions unmarked successfully',
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error unmarking suggestions',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

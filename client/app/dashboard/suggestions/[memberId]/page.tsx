@@ -108,6 +108,9 @@ export default function MemberSuggestionsPage() {
   const [suggestionsData, setSuggestionsData] = useState<SuggestionData | null>(null);
   const [error, setError] = useState<string | null>(null);
   
+  // Store partner information to help filter suggestions
+  const [partnerInfo, setPartnerInfo] = useState<{name: string, id: string}[]>([]);
+  
   // New state for pending changes
   const [pendingChanges, setPendingChanges] = useState<{
     changes: Record<string, any>;
@@ -179,6 +182,36 @@ export default function MemberSuggestionsPage() {
         
         setMemberData(actualMemberData);
         console.log("Set member data:", actualMemberData);
+        
+        // Fetch partner information if the member has partners
+        if (actualMemberData.partnerId && actualMemberData.partnerId.length > 0) {
+          try {
+            const partnerPromises = actualMemberData.partnerId.map(async (partnerId: string) => {
+              const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json"
+                }
+              });
+              
+              if (partnerResponse.ok) {
+                const partnerData = await partnerResponse.json();
+                const partner = partnerData.data || partnerData;
+                return {
+                  id: partnerId,
+                  name: partner.name || "Unknown Partner"
+                };
+              }
+              return { id: partnerId, name: "Unknown Partner" };
+            });
+            
+            const fetchedPartnerInfo = await Promise.all(partnerPromises);
+            setPartnerInfo(fetchedPartnerInfo);
+            console.log("Fetched partner info:", fetchedPartnerInfo);
+          } catch (err) {
+            console.warn("Error fetching partner information:", err);
+          }
+        }
         
         // Step 2: Get processed suggestions
         let processedSuggestions = [];
@@ -369,6 +402,7 @@ export default function MemberSuggestionsPage() {
       let deathDateMatch = suggestion.match(/Death date may be ([^(]+) \(recorded by another user\) instead of/i);
       if (deathDateMatch && deathDateMatch[1]) {
         updateData.deathDate = deathDateMatch[1].trim();
+        updateData.status = "dead"; // Set status to dead when death date is provided
         console.log("Extracted death date from 'may be' format:", updateData.deathDate);
       }
       // Handle "Consider updating death date from X to Y" pattern
@@ -376,6 +410,7 @@ export default function MemberSuggestionsPage() {
         const updateMatch = suggestion.match(/Consider updating death date from [^ ]+ to ([^ ]+)/i);
         if (updateMatch && updateMatch[1]) {
           updateData.deathDate = updateMatch[1].trim();
+          updateData.status = "dead"; // Set status to dead when death date is provided
           console.log("Extracted death date from 'updating from/to' format:", updateData.deathDate);
         }
       }
@@ -384,6 +419,7 @@ export default function MemberSuggestionsPage() {
         const addMatch = suggestion.match(/Consider adding death date \(([^)]+)\)/i);
         if (addMatch && addMatch[1]) {
           updateData.deathDate = addMatch[1].trim();
+          updateData.status = "dead"; // Set status to dead when death date is provided
           console.log("Extracted death date from 'adding' format:", updateData.deathDate);
         }
       }
@@ -392,6 +428,7 @@ export default function MemberSuggestionsPage() {
         const confirmMatch = suggestion.match(/Confirm death date ([^ ]+)/i);
         if (confirmMatch && confirmMatch[1]) {
           updateData.deathDate = confirmMatch[1].trim();
+          updateData.status = "dead"; // Set status to dead when death date is provided
           console.log("Extracted death date from 'confirm' format:", updateData.deathDate);
         }
       }
@@ -400,6 +437,7 @@ export default function MemberSuggestionsPage() {
         const match = suggestion.match(/(\d{4}-\d{2}-\d{2})/);
         if (match) {
           updateData.deathDate = match[0];
+          updateData.status = "dead"; // Set status to dead when death date is provided
           console.log("Extracted death date from generic pattern:", updateData.deathDate);
         }
       }
@@ -463,6 +501,67 @@ export default function MemberSuggestionsPage() {
           }
         } else {
           console.log("Country regex didn't match the suggestion");
+        }
+      }
+    } else if (suggestion.includes("occupation")) {
+      console.log("Found occupation suggestion:", suggestion);
+      
+      // Handle "Occupation may be X (recorded by another user) instead of Y" pattern
+      let occupationMatch = suggestion.match(/Occupation may be "([^"]+)" \(recorded by another user\) instead of/i);
+      if (occupationMatch && occupationMatch[1]) {
+        updateData.occupation = occupationMatch[1].trim();
+        console.log("Extracted occupation from 'may be' format:", updateData.occupation);
+      } 
+      // Handle "Consider updating occupation to X" pattern
+      else if (suggestion.includes("Consider updating occupation to")) {
+        const updateMatch = suggestion.match(/Consider updating occupation to "([^"]+)"/i);
+        if (updateMatch && updateMatch[1]) {
+          updateData.occupation = updateMatch[1].trim();
+          console.log("Extracted occupation from 'updating to' format:", updateData.occupation);
+        }
+      }
+      // Handle "Consider updating occupation from X to Y" pattern
+      else if (suggestion.includes("Consider updating occupation from")) {
+        const updateFromMatch = suggestion.match(/Consider updating occupation from "([^"]+)" to "([^"]+)"/i);
+        if (updateFromMatch && updateFromMatch[2]) {
+          updateData.occupation = updateFromMatch[2].trim();
+          console.log("Extracted occupation from 'updating from/to' format:", updateData.occupation);
+        }
+      }
+      // Handle "Consider adding occupation X" pattern
+      else if (suggestion.includes("Consider adding occupation")) {
+        const addMatch = suggestion.match(/Consider adding occupation "([^"]+)"/i);
+        if (addMatch && addMatch[1]) {
+          updateData.occupation = addMatch[1].trim();
+          console.log("Extracted occupation from 'adding' format:", updateData.occupation);
+        }
+      }
+      // Handle "Confirm occupation X" pattern
+      else if (suggestion.includes("Confirm occupation")) {
+        const confirmMatch = suggestion.match(/Confirm occupation "([^"]+)"/i);
+        if (confirmMatch && confirmMatch[1]) {
+          updateData.occupation = confirmMatch[1].trim();
+          console.log("Extracted occupation from 'confirm' format:", updateData.occupation);
+        }
+      }
+      // Try other patterns
+      else {
+        const occupationRegex = /occupation "([^"]+)"|"([^"]+)" occupation|occupation from "([^"]+)"|occupation to "([^"]+)"|adding occupation "([^"]+)"/i;
+        const match = suggestion.match(occupationRegex);
+        
+        console.log("Occupation regex match:", match);
+        
+        if (match) {
+          // Find the first non-undefined group which contains the occupation
+          const occupation = match[1] || match[2] || match[3] || match[4] || match[5];
+          if (occupation) {
+            updateData.occupation = occupation;
+            console.log("Extracted occupation:", updateData.occupation);
+          } else {
+            console.log("No occupation value found in match groups");
+          }
+        } else {
+          console.log("Occupation regex didn't match the suggestion");
         }
       }
     } else if (suggestion.includes("dead") || suggestion.includes("deceased")) {
@@ -983,7 +1082,7 @@ export default function MemberSuggestionsPage() {
         surname: updateData._partnerSurname || memberData.surname || "Unknown",
         gender: partnerGender,
         status: "alive",
-        country: memberData.country || "",
+        country: memberData.country || "ph",
         occupation: ""
       };
       
@@ -1102,15 +1201,18 @@ export default function MemberSuggestionsPage() {
             ? (memberId as any).toString()
             : String(memberId);
             
-          // Create basic child data with type declaration to handle dynamic properties
-          const childData: any = {
+          // Create basic child data
+          const childData = {
             name: childName,
             surname: memberData.surname || "",
             gender: childGender,
             status: "alive",
-            country: memberData.country || "",
+            country: memberData.country || "ph",
             occupation: "",
-            _parentId: currentMemberId // Explicitly set parent ID to establish relationship
+            _parentId: currentMemberId, // Explicitly set parent ID to establish relationship
+            // Also set proper MongoDB parent fields based on gender
+            fatherId: syntheticNode.gender === "male" ? currentMemberId : undefined,
+            motherId: syntheticNode.gender === "female" ? currentMemberId : undefined
           };
           
           // Check if there's a partner to set as the other parent
@@ -1384,7 +1486,7 @@ export default function MemberSuggestionsPage() {
                 surname: action.data._partnerSurname || memberData.surname || "Unknown",
                 gender: partnerGender,
                 status: "alive",
-                country: memberData.country || "",
+                country: memberData.country || "ph",
                 occupation: ""
               };
               
@@ -1424,15 +1526,13 @@ export default function MemberSuggestionsPage() {
                   surname: memberData.surname || "",
                   gender: childGender,
                   status: "alive",
-                  country: memberData.country || "",
+                  country: memberData.country || "ph",
                   occupation: "",
                   _parentId: cleanMemberId, // Explicitly set parent ID to establish relationship
                   // Also set proper MongoDB parent fields based on gender
                   fatherId: syntheticNode.gender === "male" ? cleanMemberId : undefined,
                   motherId: syntheticNode.gender === "female" ? cleanMemberId : undefined
                 };
-                
-
                 
                 try {
                   // Call the handler to add the child
@@ -1454,8 +1554,6 @@ export default function MemberSuggestionsPage() {
                   toast.error(`Failed to add child ${childName}: ${childError instanceof Error ? childError.message : 'Unknown error'}`);
                 }
               }
-              
-
               
               // Final refresh of data
               await refreshFunction();
@@ -1735,16 +1833,88 @@ export default function MemberSuggestionsPage() {
       return null;
     }
     
-    // Filter out any suggestions that have already been applied
+    // Filter out any suggestions that have already been applied or that match current member data
     const filteredSuggestions = similarMember.suggestions.filter(
-      (suggestion: string) => !appliedSuggestions.includes(suggestion)
+      (suggestion: string) => {
+        // Skip suggestions that have already been explicitly applied
+        if (appliedSuggestions.includes(suggestion)) {
+          return false;
+        }
+
+        // Filter out partner suggestions if they already have the suggested partner
+        if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+          // Extract partner name from suggestion
+          const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+          if (partnerNameMatch && partnerNameMatch[1] && memberData) {
+            // Check if member already has this partner
+            const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+            
+            // Check against existing partners
+            if (memberData.partnerId && memberData.partnerId.length > 0) {
+              // Check if any of the known partners match the suggested name
+              if (partnerInfo.some(partner => 
+                partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+                console.log(`Filtering out partner suggestion for "${suggestedPartnerName}" as it matches existing partner`);
+                return false;
+              }
+            }
+          }
+        }
+
+        // Skip birth date confirmations if birth date is already set to that value
+        if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
+          const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+          if (dateMatch && dateMatch[1]) {
+            const suggestedDate = dateMatch[1].trim();
+            // Check if member already has this birth date
+            const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
+            if (suggestedDate === currentDate) {
+              return false;
+            }
+          }
+        }
+
+        // Skip death date confirmations if death date is already set to that value
+        if (suggestion.includes("Confirm death date") && memberData?.deathDate) {
+          const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+          if (dateMatch && dateMatch[1]) {
+            const suggestedDate = dateMatch[1].trim();
+            // Check if member already has this death date
+            const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
+            if (suggestedDate === currentDate) {
+              return false;
+            }
+          }
+        }
+
+        // Skip dead status confirmations if status is already dead
+        if ((suggestion.includes("Confirm dead status") || suggestion.includes("Consider updating status to \"dead\"")) && 
+            memberData?.status === "dead") {
+          return false;
+        }
+
+        // Skip country confirmations if country is already that value
+        if (suggestion.includes("Confirm country") && memberData?.country) {
+          const countryMatch = suggestion.match(/country "([^"]+)"/i);
+          if (countryMatch && countryMatch[1]) {
+            const suggestedCountry = countryMatch[1].trim().toLowerCase();
+            if (memberData.country.toLowerCase() === suggestedCountry) {
+              return false;
+            }
+          }
+        }
+
+        // Otherwise include the suggestion
+        return true;
+      }
     );
     
     console.log("Filtered suggestions count:", filteredSuggestions.length);
     
-    // Don't render if all suggestions have been applied
+    // Don't render if all suggestions have been filtered out
     if (filteredSuggestions.length === 0) {
-      console.log("Skipping card - all suggestions applied");
+      console.log("Skipping card - all suggestions filtered out");
       return null;
     }
     
@@ -2145,18 +2315,69 @@ export default function MemberSuggestionsPage() {
                     // Calculate suggestion count directly from the current data
                     let displayCount = 0;
                     if (suggestionsData && suggestionsData.similarMembers) {
-                      // Count all suggestions that haven't been applied
-                      displayCount = suggestionsData.similarMembers.reduce(
-                        (count, member) => count + member.suggestions.filter(
-                          suggestion => !appliedSuggestions.includes(suggestion)
-                        ).length,
-                        0
-                      );
+                      // Count all suggestions that haven't been applied and wouldn't be filtered
+                      displayCount = suggestionsData.similarMembers.reduce((count, member) => {
+                        // Apply the same filtering logic as SuggestionCard
+                        const validSuggestions = member.suggestions.filter(suggestion => {
+                          // Skip applied suggestions
+                          if (appliedSuggestions.includes(suggestion)) return false;
+                          
+                          // Filter out partner suggestions if needed
+                          if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+                            const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+                            if (partnerNameMatch && partnerNameMatch[1] && memberData) {
+                              const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+                              if (memberData.partnerId && memberData.partnerId.length > 0) {
+                                if (partnerInfo.some(p => 
+                                  p.name.toLowerCase().includes(suggestedPartnerName) ||
+                                  suggestedPartnerName.includes(p.name.toLowerCase()))) {
+                                  return false;
+                                }
+                              }
+                            }
+                          }
+                          
+                          // Skip other already-set values using same logic as SuggestionCard
+                          if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
+                            const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+                            if (dateMatch && dateMatch[1]) {
+                              const suggestedDate = dateMatch[1].trim();
+                              const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
+                              if (suggestedDate === currentDate) return false;
+                            }
+                          }
+
+                          if (suggestion.includes("Confirm death date") && memberData?.deathDate) {
+                            const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+                            if (dateMatch && dateMatch[1]) {
+                              const suggestedDate = dateMatch[1].trim();
+                              const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
+                              if (suggestedDate === currentDate) return false;
+                            }
+                          }
+
+                          if ((suggestion.includes("Confirm dead status") || 
+                              suggestion.includes("Consider updating status to \"dead\"")) && 
+                              memberData?.status === "dead") {
+                            return false;
+                          }
+
+                          if (suggestion.includes("Confirm country") && memberData?.country) {
+                            const countryMatch = suggestion.match(/country "([^"]+)"/i);
+                            if (countryMatch && countryMatch[1]) {
+                              const suggestedCountry = countryMatch[1].trim().toLowerCase();
+                              if (memberData.country.toLowerCase() === suggestedCountry) return false;
+                            }
+                          }
+                          
+                          return true;
+                        });
+                        
+                        return count + validSuggestions.length;
+                      }, 0);
                     }
                     
                     console.log("Calculated suggestion count:", displayCount);
-                    console.log("Applied suggestions:", appliedSuggestions);
-                    console.log("Suggestion data:", suggestionsData);
                     
                     return (
                       <span className="bg-orange-500 text-white rounded-full min-w-10 h-10 flex items-center justify-center text-base font-bold px-3 border-2 border-white shadow-lg">

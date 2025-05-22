@@ -135,7 +135,22 @@ export class FamilyService {
       if (!updatedFamilyMember) {
         throw new NotFoundException(`Family member with ID ${id} not found`);
       }
-
+      // If fatherId is being updated, add this member as a child to the father
+      if (updateFamilyMemberDto.fatherId) {
+        await this.familyMemberModel.findByIdAndUpdate(
+          updateFamilyMemberDto.fatherId,
+          { $addToSet: { childId: updatedFamilyMember._id } },
+          { new: true }
+        ).session(session);
+      }
+      // If motherId is being updated, add this member as a child to the mother
+      if (updateFamilyMemberDto.motherId) {
+        await this.familyMemberModel.findByIdAndUpdate(
+          updateFamilyMemberDto.motherId,
+          { $addToSet: { childId: updatedFamilyMember._id } },
+          { new: true }
+        ).session(session);
+      }
       // If partnerId is being updated, update the partners' partnerId as well
       if (updateFamilyMemberDto.partnerId && updateFamilyMemberDto.partnerId.length > 0) {
         for (const partnerId of updateFamilyMemberDto.partnerId) {
