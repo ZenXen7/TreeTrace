@@ -158,6 +158,19 @@ async function handleAddMember(
     });
     
     if (relation === "son" || relation === "daughter") {
+      // ENHANCED DEBUGGING: Verify consistency between relation and gender
+      console.log("GENDER DEBUG - Adding child with relation:", relation);
+      console.log("GENDER DEBUG - Gender from newMemberData:", newMemberData?.gender);
+      
+      // Validate relation and gender consistency
+      const expectedGender = relation === "son" ? "male" : "female";
+      if (newMemberData?.gender && newMemberData.gender !== expectedGender) {
+        console.warn(`GENDER MISMATCH DETECTED: Relation is "${relation}" but gender is "${newMemberData.gender}"`);
+        // Force correction to ensure consistency
+        console.log(`GENDER DEBUG - Correcting gender to match relation: ${expectedGender}`);
+        newMemberData.gender = expectedGender;
+      }
+      
       // Determine the parent ID based on the node's gender
       const parentId = node.id || node._id;
       
@@ -174,6 +187,15 @@ async function handleAddMember(
       const hasPartner = node.pids && node.pids.length > 0;
       const partnerId = hasPartner ? node.pids[0] : undefined;
       
+      // IMPORTANT: Ensure gender is explicitly set from newMemberData
+      // This follows the same pattern used for parent gender handling
+      if (!childData.gender) {
+        childData.gender = relation === "son" ? "male" : "female";
+        console.log("No explicit gender in newMemberData, using relation:", childData.gender);
+      } else {
+        console.log("Using explicit gender from newMemberData:", childData.gender);
+      }
+      
       // Set appropriate parent fields based on gender
       if (node.gender === "male") {
         childData.fatherId = parentId;
@@ -188,6 +210,7 @@ async function handleAddMember(
       }
       
       // Create the child with proper parent relationships
+      console.log("Creating child with data:", childData);
       const child = await addFamilyMember(token, childData);
 
       // Correctly extract the childId from the response
@@ -395,13 +418,60 @@ async function deleteFamilyMember(token: string, memberId: string) {
       if (father) {
         const updatedChildIds = (father.childId || []).filter((cid: string) => cid !== memberId);
         await updateFamilyMember(token, father._id, { childId: updatedChildIds });
+        
+        // Unmark any child suggestions so the child can be suggested again
+        try {
+          const childPatterns = [
+            `adding child "${memberToDelete.name}"`,
+            `child "${memberToDelete.name}"`,
+            `Consider adding child "${memberToDelete.name}"`
+          ];
+          
+          await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberIds: [father._id],
+              patterns: childPatterns
+            })
+          });
+        } catch (err) {
+          console.warn("Could not unmark child suggestions for father:", err);
+        }
       }
     }
+    
     if (memberToDelete.motherId) {
       const mother = allMembers.find((m: any) => m._id === memberToDelete.motherId);
       if (mother) {
         const updatedChildIds = (mother.childId || []).filter((cid: string) => cid !== memberId);
         await updateFamilyMember(token, mother._id, { childId: updatedChildIds });
+        
+        // Unmark any child suggestions so the child can be suggested again
+        try {
+          const childPatterns = [
+            `adding child "${memberToDelete.name}"`,
+            `child "${memberToDelete.name}"`,
+            `Consider adding child "${memberToDelete.name}"`
+          ];
+          
+          await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberIds: [mother._id],
+              patterns: childPatterns
+            })
+          });
+        } catch (err) {
+          console.warn("Could not unmark child suggestions for mother:", err);
+        }
       }
     }
 
@@ -517,8 +587,11 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
 
     const memberResult = await memberResponse.json();
     const memberData = memberResult.data || memberResult;
+    
+    // Debug log for member being processed
+    console.log(`Processing suggestions for member ${memberData.name} (ID: ${memberId})`);
 
-    // Get processed suggestions
+    // Fetch any applied suggestions
     const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${memberId}`, {
       method: "GET",
       headers: {
@@ -527,10 +600,10 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
       },
     });
 
-    let processedSuggestions: string[] = [];
+    let appliedSuggestions: string[] = [];
     if (processedResponse.ok) {
       const processedResult = await processedResponse.json();
-      processedSuggestions = processedResult.data || [];
+      appliedSuggestions = processedResult.data || [];
     }
 
     // Get all suggestions for this member
@@ -552,112 +625,175 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     if (!suggestionsData || !suggestionsData.similarMembers) {
       return 0;
     }
-
-    // Fetch partner information if needed to filter partner suggestions
+    
+    // Fetch partner information to filter partner suggestions
     let partnerInfo: {name: string, id: string}[] = [];
     if (memberData.partnerId && memberData.partnerId.length > 0) {
-      const partnerPromises = memberData.partnerId.map(async (partnerId: string) => {
-        const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+      try {
+        const partnerPromises = memberData.partnerId.map(async (partnerId: string) => {
+          const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          
+          if (!partnerResponse.ok) {
+            return { id: partnerId, name: "Unknown Partner" };
           }
-        });
-        
-        if (partnerResponse.ok) {
-          const partnerData = await partnerResponse.json();
-          const partner = partnerData.data || partnerData;
+          
+          const partnerResult = await partnerResponse.json();
+          const partnerData = partnerResult.data || partnerResult;
+          
           return {
             id: partnerId,
-            name: partner.name || "Unknown Partner"
+            name: partnerData.name || "Unknown Partner"
           };
-        }
-        return { id: partnerId, name: "Unknown Partner" };
-      });
-      
-      partnerInfo = await Promise.all(partnerPromises);
+        });
+        
+        partnerInfo = await Promise.all(partnerPromises);
+      } catch (error) {
+        console.error("Error fetching partner information:", error);
+      }
     }
-
-    // Calculate total valid suggestions using the exact same logic as the suggestions page
-    let validSuggestionCount = 0;
     
-    // Apply the same filtering logic as in the suggestions page header
-    for (const similar of suggestionsData.similarMembers) {
-      if (!similar.suggestions) continue;
-      
-      // Filter suggestions using exactly the same logic as the suggestions page
-      const validSuggestions = similar.suggestions.filter((suggestion: string) => {
-        // Skip suggestions that have already been explicitly applied
-        if (processedSuggestions.includes(suggestion)) {
-          return false;
-        }
-
-        // Filter out partner suggestions if they already have the suggested partner
-        if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
-          const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
-          if (partnerNameMatch && partnerNameMatch[1] && memberData) {
-            const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
-            
-            if (memberData.partnerId && memberData.partnerId.length > 0) {
-              if (partnerInfo.some(partner => 
-                partner.name.toLowerCase().includes(suggestedPartnerName) ||
-                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+    // Fetch child information to filter child suggestions
+    let childInfo: {name: string, id: string}[] = [];
+    if (memberData.childId && memberData.childId.length > 0) {
+      try {
+        const childPromises = memberData.childId.map(async (childId: string) => {
+          const childResponse = await fetch(`http://localhost:3001/family-members/${childId}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          
+          if (!childResponse.ok) {
+            return { id: childId, name: "Unknown Child" };
+          }
+          
+          const childResult = await childResponse.json();
+          const childData = childResult.data || childResult;
+          
+          return {
+            id: childId,
+            name: childData.name || "Unknown Child"
+          };
+        });
+        
+        childInfo = await Promise.all(childPromises);
+      } catch (error) {
+        console.error("Error fetching child information:", error);
+      }
+    }
+    
+    // Count suggestions using EXACTLY the same logic as the suggestions page
+    // This matches the code in client/app/dashboard/suggestions/[memberId]/page.tsx
+    let displayCount = 0;
+    
+    if (suggestionsData && suggestionsData.similarMembers) {
+      displayCount = suggestionsData.similarMembers.reduce((count: number, member: any) => {
+        const validSuggestions = member.suggestions.filter((suggestion: string) => {
+          // Skip applied suggestions
+          if (appliedSuggestions.includes(suggestion)) return false;
+          
+          // Filter out partner suggestions if needed
+          if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+            const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+            if (partnerNameMatch && partnerNameMatch[1] && memberData) {
+              const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+              if (memberData.partnerId && memberData.partnerId.length > 0) {
+                if (partnerInfo.some(p => 
+                  p.name.toLowerCase().includes(suggestedPartnerName) ||
+                  suggestedPartnerName.includes(p.name.toLowerCase()))) {
+                  return false;
+                }
+              }
+            }
+          }
+          
+          // Filter out child suggestions if the child is already connected to this member
+          if (suggestion.includes("adding child") || suggestion.includes("more children")) {
+            const childNameMatch = suggestion.match(/child "([^"]+)"/i);
+            if (childNameMatch && childNameMatch[1] && memberData) {
+              const suggestedChildName = childNameMatch[1].trim().toLowerCase();
+              
+              if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+                if (childInfo && childInfo.length > 0) {
+                  if (childInfo.some((child: {name: string, id: string}) => 
+                    child.name.toLowerCase().includes(suggestedChildName) ||
+                    suggestedChildName.includes(child.name.toLowerCase()))) {
+                    return false;
+                  }
+                } else {
+                  // No child info but member has children, be conservative
+                  return false;
+                }
+              }
+            }
+          }
+          
+          // Filter out parent suggestions if parent is already connected
+          if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
+            const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
+            if (parentNameMatch && parentNameMatch[2] && memberData) {
+              const parentType = parentNameMatch[1].toLowerCase();
+              if ((parentType === 'father' && memberData.fatherId) || 
+                  (parentType === 'mother' && memberData.motherId)) {
                 return false;
               }
             }
           }
-        }
-
-        // Skip birth date confirmations if birth date is already set to that value
-        if (suggestion.includes("Confirm birth date") && memberData.birthDate) {
-          const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
-          if (dateMatch && dateMatch[1]) {
-            const suggestedDate = dateMatch[1].trim();
-            const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
-            if (suggestedDate === currentDate) {
-              return false;
+          
+          // Skip birth date confirmations if birth date is already set to that value
+          if (suggestion.includes("Confirm birth date") && memberData.birthDate) {
+            const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+            if (dateMatch && dateMatch[1]) {
+              const suggestedDate = dateMatch[1].trim();
+              const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
+              if (suggestedDate === currentDate) return false;
             }
           }
-        }
-
-        // Skip death date confirmations if death date is already set to that value
-        if (suggestion.includes("Confirm death date") && memberData.deathDate) {
-          const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
-          if (dateMatch && dateMatch[1]) {
-            const suggestedDate = dateMatch[1].trim();
-            const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
-            if (suggestedDate === currentDate) {
-              return false;
+          
+          // Skip death date confirmations if death date is already set to that value
+          if (suggestion.includes("Confirm death date") && memberData.deathDate) {
+            const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+            if (dateMatch && dateMatch[1]) {
+              const suggestedDate = dateMatch[1].trim();
+              const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
+              if (suggestedDate === currentDate) return false;
             }
           }
-        }
-
-        // Skip dead status confirmations if status is already dead
-        if ((suggestion.includes("Confirm dead status") || 
-            suggestion.includes("Consider updating status to \"dead\"")) && 
-            memberData.status === "dead") {
-          return false;
-        }
-
-        // Skip country confirmations if country is already that value
-        if (suggestion.includes("Confirm country") && memberData.country) {
-          const countryMatch = suggestion.match(/country "([^"]+)"/i);
-          if (countryMatch && countryMatch[1]) {
-            const suggestedCountry = countryMatch[1].trim().toLowerCase();
-            if (memberData.country.toLowerCase() === suggestedCountry) {
-              return false;
+          
+          // Skip dead status confirmations if status is already dead
+          if ((suggestion.includes("Confirm dead status") || 
+              suggestion.includes("Consider updating status to \"dead\"")) && 
+              memberData.status === "dead") {
+            return false;
+          }
+          
+          // Skip country confirmations if country is already that value
+          if (suggestion.includes("Confirm country") && memberData.country) {
+            const countryMatch = suggestion.match(/country "([^"]+)"/i);
+            if (countryMatch && countryMatch[1]) {
+              const suggestedCountry = countryMatch[1].trim().toLowerCase();
+              if (memberData.country.toLowerCase() === suggestedCountry) return false;
             }
           }
-        }
-
-        // If we get here, this is a valid suggestion
-        return true;
-      });
-
-      validSuggestionCount += validSuggestions.length;
+          
+          // If we get here, this is a valid suggestion
+          return true;
+        });
+        
+        return count + validSuggestions.length;
+      }, 0);
     }
-
-    return validSuggestionCount;
+    
+    console.log(`After filtering, found ${displayCount} valid suggestions for ${memberData.name}`);
+    return displayCount;
   } catch (error) {
     console.error("Error fetching member suggestion count:", error);
     return 0;

@@ -454,10 +454,16 @@ export class NotificationController {
       const currentChildIds = currentMember.childId || [];
       const otherChildIds = otherMember.childId || [];
       
-      if (currentChildIds.length < otherChildIds.length) {
+      // Create a map of current children by ID for faster lookups
+      const currentChildIdMap = new Set(currentChildIds.map(id => id.toString()));
+      
+      // Track potentially missing children (in other but not in current)
+      const potentiallyMissingChildren = otherChildIds.filter(childId => 
+        !currentChildIdMap.has(childId.toString())
+      );
+      
+      if (potentiallyMissingChildren.length > 0) {
         try {
-          const missingChildrenCount = otherChildIds.length - currentChildIds.length;
-          
           interface ChildDetail {
             id: Types.ObjectId;
             name: string;
@@ -465,12 +471,22 @@ export class NotificationController {
           }
           
           let childrenDetails: ChildDetail[] = [];
-          for (const childId of otherChildIds) {
+          for (const childId of potentiallyMissingChildren) {
             try {
               const child = await this.familyMemberModel.findById(childId).exec();
               if (child) {
+                // Skip if the child's name is the same as the current member (suggesting self as own child)
                 const isSameName = child.name.toLowerCase().trim() === currentMember.name.toLowerCase().trim();
-                if (!isSameName) {
+                if (isSameName) continue;
+                
+                // Check if this child already has the current member as a parent
+                const hasFatherRelationship = child.fatherId && 
+                  child.fatherId.toString() === currentMember._id.toString();
+                const hasMotherRelationship = child.motherId && 
+                  child.motherId.toString() === currentMember._id.toString();
+                
+                // Only suggest this child if it doesn't already have the current member as a parent
+                if (!hasFatherRelationship && !hasMotherRelationship) {
                   childrenDetails.push({
                     id: childId,
                     name: child.name,
@@ -491,12 +507,12 @@ export class NotificationController {
                 `Consider adding child "${child.name}" to "${currentMember.name}". Another user has recorded this child for this person.`
               );
             }
-          } else if (missingChildrenCount > 0) {
-            suggestions.push(
-              `Consider adding ${missingChildrenCount} more children to "${currentMember.name}". Another user has recorded more children for this person.`
-            );
+          } else if (potentiallyMissingChildren.length > 0 && childrenDetails.length === 0) {
+            // If we had potentially missing children but none made it through the filtering,
+            // don't add any generic suggestions as all children are already connected
           }
         } catch (err) {
+          // Only add a generic suggestion if we couldn't process specific children
           suggestions.push(
             `Consider adding more children to "${currentMember.name}". Another user has recorded more children for this person.`
           );
@@ -516,15 +532,26 @@ export class NotificationController {
     const newSuggestions = [...suggestions]; // Create a new array to hold suggestions
     
     try {
+      // Father relationship check
       if (otherMember.fatherId && !currentMember.fatherId) {
         try {
           const father = await this.familyMemberModel.findById(otherMember.fatherId).exec();
           if (father) {
+            // Skip if the father's name is the same as the current member (suggesting self as own father)
             const isSameName = father.name.toLowerCase().trim() === currentMember.name.toLowerCase().trim();
+            
             if (!isSameName) {
-              newSuggestions.push(
-                `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person.`
-              );
+              // Check if the father already has this member as a child
+              const fatherHasMemberAsChild = father.childId && 
+                Array.isArray(father.childId) && 
+                father.childId.some(childId => childId.toString() === currentMember._id.toString());
+              
+              // Only suggest if it's not already connected from the other direction
+              if (!fatherHasMemberAsChild) {
+                newSuggestions.push(
+                  `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person.`
+                );
+              }
             }
           } else {
             newSuggestions.push(
@@ -538,15 +565,26 @@ export class NotificationController {
         }
       }
       
+      // Mother relationship check
       if (otherMember.motherId && !currentMember.motherId) {
         try {
           const mother = await this.familyMemberModel.findById(otherMember.motherId).exec();
           if (mother) {
+            // Skip if the mother's name is the same as the current member
             const isSameName = mother.name.toLowerCase().trim() === currentMember.name.toLowerCase().trim();
+            
             if (!isSameName) {
-              newSuggestions.push(
-                `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person.`
-              );
+              // Check if the mother already has this member as a child
+              const motherHasMemberAsChild = mother.childId && 
+                Array.isArray(mother.childId) && 
+                mother.childId.some(childId => childId.toString() === currentMember._id.toString());
+              
+              // Only suggest if it's not already connected from the other direction
+              if (!motherHasMemberAsChild) {
+                newSuggestions.push(
+                  `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person.`
+                );
+              }
             }
           } else {
             newSuggestions.push(
