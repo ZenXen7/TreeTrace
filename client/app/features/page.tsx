@@ -9,63 +9,82 @@ import AnimatedNodes from '@/components/animated-nodes'
 
 const features = [
   {
-    title: 'User Registration & Profile Management',
+    title: 'Family Tree Builder',
     description: [
-      'Create an account with email and username',
-      'Secure login/logout with access to a personal dashboard',
-      'Update profile details and delete account if needed'
-    ],
-    icon: '👤',
-    colorClass: 'bg-blue-500/10'
-  },
-  {
-    title: 'Family Tree Creation & Visualization',
-    description: [
-      'Add family members with key details (names, relationships, dates)',
-      'Edit/delete nodes and modify the tree in real-time',
-      'Choose from three visual views: Tabular, Line-Based, and Traditional Tree View'
+      'Create and visualize your family tree with an intuitive drag-and-drop interface',
+      'Add, edit, and connect relatives easily',
+      'View your tree in a beautiful, interactive layout'
     ],
     icon: '🧬',
-    colorClass: 'bg-purple-500/10'
-  },
-  {
-    title: 'Smart Filtering & Search',
-    description: [
-      'Filter family trees by generation, surname, date range, or branch',
-      'Quickly locate specific people or sections with search functionality'
-    ],
-    icon: '🔍',
     colorClass: 'bg-green-500/10'
   },
   {
-    title: 'Real-Time Collaboration',
+    title: 'Health Overview & Tracking',
     description: [
-      'Invite family members with custom access levels (view-only, editor)',
-      'Edit family trees simultaneously with real-time syncing',
-      'Receive live notifications for edits, invites, and updates'
+      'See a summary of health conditions across your family',
+      'Filter and sort by condition or generation',
+      'Export health data as CSV or generate custom PDF reports'
     ],
-    icon: '👥',
-    colorClass: 'bg-yellow-500/10'
-  },
-  {
-    title: 'Family Tree Matching & Merging',
-    description: [
-      'Get notified when matches are found with other public trees',
-      'Review, cross-reference, and merge family trees with common ancestors'
-    ],
-    icon: '🔗',
+    icon: '❤️',
     colorClass: 'bg-red-500/10'
   },
   {
-    title: 'Hereditary Health Tracking',
+    title: 'Medical History Forms',
     description: [
-      'Input health conditions for each family member',
-      'View health data across generations with color-coded indicators',
-      'Get visual reports showing possible hereditary risks and trends'
+      'Record and update each family member\'s medical history',
+      'Track conditions, allergies, medications, and more',
+      'Easily update information as your family grows'
     ],
-    icon: '❤️',
-    colorClass: 'bg-pink-500/10'
-  }
+    icon: '📋',
+    colorClass: 'bg-amber-500/10'
+  },
+  {
+    title: 'AI Health Assistant',
+    description: [
+      'Get instant health insights and risk analysis',
+      'Ask questions about your family\'s health data',
+      'Receive professional, AI-powered answers'
+    ],
+    icon: '✨',
+    colorClass: 'bg-blue-500/10'
+  },
+  {
+    title: 'Suggestions & Similar Trees',
+    description: [
+      'Discover new relatives and connections with smart suggestions',
+      'Orange circle highlights similar family members or trees from the TreeTrace community',
+      'Easily review and add suggested members to your tree'
+    ],
+    icon: '🟠',
+    colorClass: 'bg-orange-500/10'
+  },
+  {
+    title: 'Report Generation',
+    description: [
+      'Export your health overview or custom AI-generated reports as CSV or PDF',
+      'Share and keep records of your family\'s health history'
+    ],
+    icon: '📄',
+    colorClass: 'bg-purple-500/10'
+  },
+  {
+    title: 'User Guide',
+    description: [
+      'Step-by-step instructions and tips to help you get started',
+      'Find answers to common questions and learn about all features'
+    ],
+    icon: '📖',
+    colorClass: 'bg-teal-500/10'
+  },
+  {
+    title: 'Privacy & Security',
+    description: [
+      'Your data is encrypted and private',
+      'Manage privacy settings and control who can see your information'
+    ],
+    icon: '🛡️',
+    colorClass: 'bg-indigo-500/10'
+  },
 ]
 
 export default function FeaturesPage() {

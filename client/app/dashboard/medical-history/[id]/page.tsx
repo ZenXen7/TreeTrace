@@ -248,7 +248,7 @@ export default function MedicalHistoryPage(props: { params: any }) {
             className="flex items-center gap-2 text-gray-400 hover:text-teal-400 transition-colors duration-200 cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Back to Family Tree</span>
+            <span>Back</span>
           </button>
         </motion.div>
         

@@ -11,8 +11,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Login",
-  description: "Login to your account",
+  title: "Signup",
+  description: "Signup to your account",
 };
 
 export default function SignupLayout({

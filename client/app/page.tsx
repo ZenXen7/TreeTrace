@@ -3,11 +3,11 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ChevronRight, Shield, Heart, Database, Lock } from "lucide-react"
+import { ChevronRight, Shield, Heart, Database, Lock, Sparkles, HelpCircle } from "lucide-react"
 import Link from "next/link"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dna, Trees, Network, FileSearch, ShieldCheck } from "lucide-react"
+import { Dna, Trees, Network, FileSearch } from "lucide-react"
 import AnimatedNodes from "@/components/animated-nodes"
 
 export default function Home() {
@@ -91,7 +91,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            Build, explore, and preserve your family heritage with TreeTrace's intuitive family tree builder.
+            Build, explore, and preserve your family heritage with TreeTrace. Create your interactive family tree, track hereditary health, get AI-powered insights, and discover new connections with our smart suggestions and health tools.
           </motion.p>
 
           <motion.div
@@ -396,41 +396,57 @@ const carouselFeatures = [
   {
     title: "Family Tree Builder",
     description:
-      "Create beautiful, interactive family trees with our intuitive drag-and-drop interface. Add important dates with ease.",
+      "Create beautiful, interactive family trees with our intuitive drag-and-drop interface. Add, edit, and connect relatives easily.",
     icon: <Trees className="w-6 h-6" />,
     colorClass: "bg-gradient-to-br from-green-500/20 to-green-600/20 text-green-400",
   },
   {
-    title: "DNA Matching",
+    title: "Health Overview & Tracking",
     description:
-      "Connect with relatives through our advanced DNA matching system. Find common ancestors and expand your family network.",
-    icon: <Dna className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-400",
-  },
-  {
-    title: "Health Tracking",
-    description: "Monitor hereditary health patterns and share important medical history with family members securely.",
+      "Visualize health conditions across generations. Filter, sort, and export your family's health data. Spot hereditary patterns at a glance.",
     icon: <Heart className="w-6 h-6" />,
     colorClass: "bg-gradient-to-br from-red-500/20 to-red-600/20 text-red-400",
   },
   {
-    title: "Smart Search",
+    title: "Medical History Forms",
     description:
-      "Find ancestors quickly with our intelligent search system that understands name variations and historical contexts.",
+      "Easily record and update each family member's medical history, including conditions, allergies, medications, and more.",
     icon: <FileSearch className="w-6 h-6" />,
     colorClass: "bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400",
   },
   {
-    title: "Network Analysis",
-    description: "Visualize and analyze complex family relationships with our advanced network visualization tools.",
+    title: "AI Health Assistant",
+    description:
+      "Get instant health insights, risk analysis, and answers to your questions with our built-in AI assistant.",
+    icon: <Sparkles className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-400",
+  },
+  {
+    title: "Suggestions & Similar Trees",
+    description:
+      "Discover new relatives and connections! Our orange circle highlights similar family members or trees from the TreeTrace community for you to review and add.",
     icon: <Network className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-orange-500/20 to-orange-600/20 text-orange-400",
+  },
+  {
+    title: "Report Generation",
+    description:
+      "Export your health overview or custom AI-generated reports as CSV or PDF for sharing and record-keeping.",
+    icon: <Database className="w-6 h-6" />,
     colorClass: "bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-400",
   },
   {
-    title: "Privacy Control",
+    title: "User Guide",
     description:
-      "Maintain complete control over your family data with granular privacy settings and encrypted storage.",
-    icon: <ShieldCheck className="w-6 h-6" />,
+      "Step-by-step instructions and tips to help you get started and make the most of TreeTrace.",
+    icon: <HelpCircle className="w-6 h-6" />,
+    colorClass: "bg-gradient-to-br from-teal-500/20 to-teal-600/20 text-teal-400",
+  },
+  {
+    title: "Privacy & Security",
+    description:
+      "Your data is encrypted, private, and always under your control. Manage privacy settings and enjoy peace of mind.",
+    icon: <Shield className="w-6 h-6" />,
     colorClass: "bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 text-indigo-400",
   },
 ]
