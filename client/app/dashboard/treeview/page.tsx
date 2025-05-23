@@ -1965,7 +1965,7 @@ export default function TreeViewPage() {
         isOpen={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
         allFamilyData={allFamilyData}
-        title="Family Health Analysis"
+        title="Family Tree Analysis"
       />
       <AIChatToggle
         onClick={() => setIsAIChatOpen(!isAIChatOpen)}
