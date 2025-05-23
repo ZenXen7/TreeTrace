@@ -31,6 +31,7 @@ const mainNavItems = [
 
 const toolsNavItems = [
   { title: "Settings", icon: <Settings className="h-5 w-5" />, href: "/tools/settings" },
+  { title: "User Guide", icon: <HelpCircle className="h-5 w-5" />, href: "/tools/user-guide" },
 ]
 
 interface SidebarProps {
