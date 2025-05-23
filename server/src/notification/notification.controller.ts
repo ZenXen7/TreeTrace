@@ -485,14 +485,14 @@ export class NotificationController {
                 const hasMotherRelationship = child.motherId && 
                   child.motherId.toString() === currentMember._id.toString();
                 
-                // Only suggest this child if it doesn't already have the current member as a parent
-                if (!hasFatherRelationship && !hasMotherRelationship) {
-                  childrenDetails.push({
-                    id: childId,
-                    name: child.name,
-                    gender: child.gender || 'unknown'
-                  });
-                }
+                // If the child is already connected as either father or mother, skip it
+                if (hasFatherRelationship || hasMotherRelationship) continue;
+                
+                childrenDetails.push({
+                  id: childId,
+                  name: child.name,
+                  gender: child.gender || 'unknown'
+                });
               }
             } catch (err) {
               // Skip this child if there's an error
@@ -503,8 +503,12 @@ export class NotificationController {
           if (childrenDetails.length > 0) {
             // Create a separate suggestion for each child instead of bundling them
             for (const child of childrenDetails) {
+              // Determine relation based on gender
+              const relation = child.gender && child.gender.toLowerCase() === 'male' ? 'son' : 'daughter';
+              
+              // Include the relation in the suggestion to ensure proper gender handling
               suggestions.push(
-                `Consider adding child "${child.name}" to "${currentMember.name}". Another user has recorded this child for this person.`
+                `Consider adding ${relation} "${child.name}" to "${currentMember.name}". Another user has recorded this ${relation} for this person.`
               );
             }
           } else if (potentiallyMissingChildren.length > 0 && childrenDetails.length === 0) {
@@ -671,10 +675,9 @@ export class NotificationController {
     @Request() req,
     @Param('memberId') memberId: string,
   ) {
+    const userId = req.user.id;
+    
     try {
-      const userId = req.user.id;
-      console.log(`Getting suggestions for member ID ${memberId} and user ID ${userId}`);
-      
       // Find the member and ensure it belongs to the current user
       const member = await this.familyMemberModel.findOne({
         _id: memberId,
@@ -682,27 +685,23 @@ export class NotificationController {
       }).exec() as unknown as FamilyMemberWithId;
       
       if (!member) {
-        console.log(`Member ${memberId} not found or user doesn't have access`);
         throw new HttpException(
           'Family member not found or you do not have permission to access it',
           HttpStatus.NOT_FOUND,
         );
       }
       
-      console.log(`Found member: ${member.name}`);
-      
       // Get all family members from other users
       const otherUserMembers = await this.familyMemberModel
         .find({ userId: { $ne: new Types.ObjectId(userId) } })
         .exec() as unknown as FamilyMemberWithId[];
-      
-      console.log(`Found ${otherUserMembers.length} members from other users`);
       
       let similarityCount = 0;
       let suggestionCount = 0;
       const similarMembers: Array<{
         memberId: string;
         name: string;
+        surname: string;
         similarity: number;
         similarFields: string[];
         userId: string;
@@ -711,7 +710,6 @@ export class NotificationController {
       
       // Get member's normalized full name
       const memberFullName = this.normalizeNameForComparison(member.name);
-      console.log(`Current member normalized name: "${memberFullName}"`);
       
       // Process each member from other users
       for (const otherMember of otherUserMembers) {
@@ -722,7 +720,6 @@ export class NotificationController {
         const exactNameMatch = memberFullName === otherFullName && memberFullName !== '';
         
         if (exactNameMatch) {
-          console.log(`Found exact match: "${member.name}" matches "${otherMember.name}"`);
           similarityCount++;
           
           // Get similar fields for backward compatibility
@@ -733,7 +730,6 @@ export class NotificationController {
           
           // Generate suggestions based on differences
           const suggestions = await this.generateSuggestions(member, otherMember, similarFields);
-          console.log(`Generated ${suggestions.length} suggestions for match between "${member.name}" and "${otherMember.name}"`);
           
           suggestionCount += suggestions.length;
           
@@ -743,6 +739,7 @@ export class NotificationController {
             similarMembers.push({
               memberId: otherMember._id.toString(),
               name: otherMember.name,
+              surname: otherMember.surname || this.extractSurnameFromName(otherMember.name),
               similarity: 1.0, // We only use exact matches now, so similarity is always 1.0
               similarFields,
               userId: otherMember.userId.toString(),
@@ -760,15 +757,12 @@ export class NotificationController {
         hasMore: false
       };
       
-      console.log(`Total: ${similarityCount} similar members found, ${suggestionCount} total suggestions`);
-      
       return {
         statusCode: HttpStatus.OK,
         message: 'Member similarities count retrieved successfully',
         data: responseData
       };
     } catch (error) {
-      console.error("Error in getMemberSimilaritiesCount:", error);
       throw new HttpException(
         error.message || 'Error retrieving member similarities count',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

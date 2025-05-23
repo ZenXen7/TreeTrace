@@ -67,7 +67,16 @@ async function fetchFilteredFamilyMembers(token: string, filters: {
 
 async function addFamilyMember(token: string, memberData: any) {
   try {
-    console.log("Sending member data:", memberData);
+    // Ensure gender is properly normalized for consistency
+    if (memberData.gender) {
+      const normalizedGender = memberData.gender.toLowerCase();
+      memberData.gender = normalizedGender === "male" ? "male" : "female";
+      console.log(`GENDER DEBUG - Normalized gender for member creation: ${memberData.gender}`);
+    } else {
+      console.warn("No gender specified for member creation. This might cause issues.");
+    }
+    
+    console.log("Sending member data to server:", JSON.stringify(memberData));
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -142,41 +151,31 @@ async function handleAddMember(
   newMemberData?: any
 ) {
   try {
-    // Log only necessary node properties instead of the entire node object
-    // to avoid circular reference issues
+    // Log only necessary node properties
     console.log("handleAddMember called with:", { 
       relation, 
       nodeInfo: {
         id: node.id || node._id,
         name: node.name,
         gender: node.gender,
-        fid: node.fid,
-        mid: node.mid,
-        hasPartner: node.pids && node.pids.length > 0
       },
-      newMemberData: newMemberData || null 
+      newMemberDataGender: newMemberData?.gender || null
     });
     
     if (relation === "son" || relation === "daughter") {
-      // ENHANCED DEBUGGING: Verify consistency between relation and gender
-      console.log("GENDER DEBUG - Adding child with relation:", relation);
-      console.log("GENDER DEBUG - Gender from newMemberData:", newMemberData?.gender);
+      // Set gender based on relation (same approach as with father/mother)
+      // This ensures consistency between relation and gender
+      const gender = relation === "son" ? "male" : "female";
       
-      // Validate relation and gender consistency
-      const expectedGender = relation === "son" ? "male" : "female";
-      if (newMemberData?.gender && newMemberData.gender !== expectedGender) {
-        console.warn(`GENDER MISMATCH DETECTED: Relation is "${relation}" but gender is "${newMemberData.gender}"`);
-        // Force correction to ensure consistency
-        console.log(`GENDER DEBUG - Correcting gender to match relation: ${expectedGender}`);
-        newMemberData.gender = expectedGender;
-      }
+      console.log(`Setting gender to ${gender} based on relation ${relation}`);
       
-      // Determine the parent ID based on the node's gender
+      // Determine the parent ID
       const parentId = node.id || node._id;
       
-      // Prepare data considering both parents when applicable
+      // Prepare data with gender determined by relation
       const childData: any = {
         ...newMemberData,
+        gender: gender, // Always set gender based on relation
         status: "alive",
         country: newMemberData?.country || "",
         occupation: newMemberData?.occupation || "",
@@ -187,16 +186,7 @@ async function handleAddMember(
       const hasPartner = node.pids && node.pids.length > 0;
       const partnerId = hasPartner ? node.pids[0] : undefined;
       
-      // IMPORTANT: Ensure gender is explicitly set from newMemberData
-      // This follows the same pattern used for parent gender handling
-      if (!childData.gender) {
-        childData.gender = relation === "son" ? "male" : "female";
-        console.log("No explicit gender in newMemberData, using relation:", childData.gender);
-      } else {
-        console.log("Using explicit gender from newMemberData:", childData.gender);
-      }
-      
-      // Set appropriate parent fields based on gender
+      // Set appropriate parent fields based on parent's gender
       if (node.gender === "male") {
         childData.fatherId = parentId;
         if (hasPartner) {
@@ -210,7 +200,17 @@ async function handleAddMember(
       }
       
       // Create the child with proper parent relationships
-      console.log("Creating child with data:", childData);
+      console.log("FINAL CREATION - Creating child with data:", childData);
+
+      // FINAL CRITICAL GENDER CHECK - ensure daughter relation has female gender and son relation has male gender
+      if (relation === "daughter" && childData.gender !== "female") {
+        console.warn("CRITICAL GENDER OVERRIDE: Relation is 'daughter' but gender is not female. Forcing gender to female.");
+        childData.gender = "female";
+      } else if (relation === "son" && childData.gender !== "male") {
+        console.warn("CRITICAL GENDER OVERRIDE: Relation is 'son' but gender is not male. Forcing gender to male.");
+        childData.gender = "male";
+      }
+      
       const child = await addFamilyMember(token, childData);
 
       // Correctly extract the childId from the response
@@ -705,10 +705,12 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
             const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
             if (partnerNameMatch && partnerNameMatch[1] && memberData) {
               const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
-              if (memberData.partnerId && memberData.partnerId.length > 0) {
-                if (partnerInfo.some(p => 
-                  p.name.toLowerCase().includes(suggestedPartnerName) ||
-                  suggestedPartnerName.includes(p.name.toLowerCase()))) {
+              
+              // Check against existing partners using partnerInfo, not partnerId
+              if (memberData.partnerId && memberData.partnerId.length > 0 && partnerInfo.length > 0) {
+                if (partnerInfo.some(partner => 
+                  partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                  suggestedPartnerName.includes(partner.name.toLowerCase()))) {
                   return false;
                 }
               }
@@ -716,8 +718,9 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
           }
           
           // Filter out child suggestions if the child is already connected to this member
-          if (suggestion.includes("adding child") || suggestion.includes("more children")) {
-            const childNameMatch = suggestion.match(/child "([^"]+)"/i);
+          if (suggestion.includes("adding child") || suggestion.includes("more children") ||
+              suggestion.includes("adding son") || suggestion.includes("adding daughter")) {
+            const childNameMatch = suggestion.match(/(?:child|son|daughter) "([^"]+)"/i);
             if (childNameMatch && childNameMatch[1] && memberData) {
               const suggestedChildName = childNameMatch[1].trim().toLowerCase();
               
