@@ -473,14 +473,14 @@ function Familytree(props: {
       
       // Enhance the redraw event handler to ensure proper IDs are used
       familyAny.on("redraw", function(sender: any) {
-        console.log("Tree redrawn, checking for nodes with suggestions");
+        // Removed performance-impacting log
         
         try {
           // Get all nodes without parameters as per Balkan's API
           const nodes = (family as any).get();
           
           if (!nodes || !Array.isArray(nodes)) {
-            console.warn("No nodes found or invalid nodes data");
+            // Removed performance-impacting log
             return;
           }
           
@@ -491,7 +491,7 @@ function Familytree(props: {
             (node.tags && node.tags.includes("suggestion"))
           );
           
-          console.log(`Found ${nodesWithSuggestions.length} nodes with suggestions`);
+          // Removed performance-impacting log
           
           // Process each node with suggestions to add our custom badge
           setTimeout(() => {
@@ -500,20 +500,20 @@ function Familytree(props: {
                 // Find the node's DOM element
                 const nodeElement = document.querySelector(`[data-n-id="${node.id}"]`);
                 if (!nodeElement) {
-                  console.warn(`DOM element for node ${node.id} not found`);
+                  // Removed performance-impacting log
                   return;
                 }
                 
                 // Check if we already added a suggestion badge to this node
                 const existingBadge = nodeElement.querySelector('.custom-suggestion-badge');
                 if (existingBadge) {
-                  console.log(`Badge already exists for node ${node.id}`);
+                  // Removed performance-impacting log
                   return;
                 }
                 
                 // Make sure we have a valid ID - not a template string
                 const nodeId = String(node.id);
-                console.log(`Creating badge for node ${nodeId} (type: ${typeof nodeId})`);
+                // Removed performance-impacting log
                 
                 // Create a larger, more prominent badge as a link
                 const badgeLink = document.createElement('a');
@@ -562,7 +562,7 @@ function Familytree(props: {
                 
                 // Only add the badge if there are actually suggestions to show
                 if (actualCount <= 0) {
-                  console.log(`No suggestions for node ${nodeId}, skipping badge`);
+                  // Removed performance-impacting log
                   return; // Skip adding badge for nodes with 0 suggestions
                 }
                 
@@ -578,7 +578,7 @@ function Familytree(props: {
                 (nodeElement as HTMLElement).style.position = 'relative';
                 nodeElement.appendChild(badgeLink);
                 
-                console.log(`Added suggestion badge link for node ${nodeId}, redirecting to: ${badgeLink.href}`);
+                // Removed performance-impacting log
               } catch (error) {
                 console.error(`Error adding badge to node ${node.id}:`, error);
               }
@@ -591,13 +591,13 @@ function Familytree(props: {
 
       // Add event listener for tree render completion
       familyAny.on("render", function() {
-        console.log("Tree rendered, attaching badge click handlers");
+        // Removed performance-impacting log
         
         // Use setTimeout to ensure all elements are fully rendered
         setTimeout(() => {
           // Get all suggestion badges by class
           const badges = document.querySelectorAll('.suggestion-badge-svg');
-          console.log(`Found ${badges.length} suggestion badges`);
+          // Removed performance-impacting log
           
           badges.forEach(badge => {
             // Find the parent node element that contains this badge
@@ -608,7 +608,7 @@ function Familytree(props: {
             const nodeId = nodeElement.getAttribute('data-n-id');
             if (!nodeId) return;
             
-            console.log("Found badge for node:", nodeId);
+            // Removed performance-impacting log
             
             // Remove previous event listeners by cloning the element
             const newBadge = badge.cloneNode(true);
@@ -623,8 +623,6 @@ function Familytree(props: {
             newBadge.addEventListener('click', (e) => {
               e.stopPropagation();
               e.preventDefault();
-              console.log("Badge clicked, navigating to suggestion for ID:", nodeId);
-              
               // Navigate directly to the suggestions page with the real ID
               window.location.href = `/dashboard/suggestions/${nodeId}`;
             });
