@@ -18,6 +18,7 @@ interface Member {
   generation: number;
   medicalConditions: string[];
   bloodType?: string;
+  partnerId?: string | string[];
 }
 
 function exportToCSV(members: Member[], conditions: string[]) {
@@ -123,6 +124,7 @@ export default function HealthOverviewPage() {
             generation: 1, // Placeholder, will be calculated below
             medicalConditions,
             bloodType,
+            partnerId: member.partnerId,
           };
         });
         let membersWithConditions: Member[] = await Promise.all(memberPromises);
@@ -318,6 +320,7 @@ export default function HealthOverviewPage() {
                     Member {sortBy === 'name' ? (sortAsc ? '▲' : '▼') : ''}
                   </th>
                   <th className="border-b border-gray-800 px-6 py-4 text-left font-semibold">Parents</th>
+                  <th className="border-b border-gray-800 px-6 py-4 text-left font-semibold">Partner</th>
                   <th
                     className="border-b border-gray-800 px-6 py-4 text-left font-semibold cursor-pointer hover:text-teal-400"
                     onClick={() => {
@@ -342,13 +345,14 @@ export default function HealthOverviewPage() {
                 ) : filteredMembers.map(member => (
                   <tr key={member._id} className="hover:bg-gray-800/60 transition-colors">
                     <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap">
-                      <span
+                      <Link
+                        href={`/dashboard/medical-history/${member._id}`}
                         className="underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-400 rounded px-1"
                         tabIndex={0}
                         title={`Birthdate: ${member.birthDate || 'N/A'}\nStatus: ${member.status || 'N/A'}`}
                       >
                         {member.name} {member.surname}
-                      </span>
+                      </Link>
                     </td>
                     <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap text-gray-300">
                       {(() => {
@@ -360,6 +364,17 @@ export default function HealthOverviewPage() {
                         if (fatherName) return fatherName;
                         if (motherName) return motherName;
                         return 'Unknown';
+                      })()}
+                    </td>
+                    <td className="border-b border-gray-800 px-6 py-3 whitespace-nowrap text-gray-300">
+                      {(() => {
+                        const partnerIds = Array.isArray(member.partnerId) ? member.partnerId : member.partnerId ? [member.partnerId] : [];
+                        if (!partnerIds.length) return 'No partner';
+                        const partnerNames = partnerIds.map(pid => {
+                          const partner = members.find(m => m._id === pid);
+                          return partner ? `${partner.name} ${partner.surname || ''}`.trim() : '';
+                        }).filter(Boolean);
+                        return partnerNames.length ? partnerNames.join(' / ') : 'No partner';
                       })()}
                     </td>
                     <td className="border-b border-gray-800 px-6 py-3">{member.generation}</td>
