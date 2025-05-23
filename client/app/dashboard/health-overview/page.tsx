@@ -3,6 +3,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AIChatSidebar from '@/components/AIChatSidebar';
 import AIChatToggle from '@/components/AIChatToggle';
+import { AIService } from '@/services/ai.service';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface Member {
   _id: string;
@@ -14,13 +17,15 @@ interface Member {
   status?: string;
   generation: number;
   medicalConditions: string[];
+  bloodType?: string;
 }
 
 function exportToCSV(members: Member[], conditions: string[]) {
-  const header = ['Name', 'Generation', ...conditions];
+  const header = ['Name', 'Generation', 'Blood Type', ...conditions];
   const rows = members.map(m => [
     `${m.name} ${m.surname || ''}`.trim(),
     m.generation,
+    m.bloodType || '',
     ...conditions.map(cond => m.medicalConditions.includes(cond) ? 'Yes' : '')
   ]);
   const csvContent = [header, ...rows].map(r => r.join(',')).join('\n');
@@ -42,6 +47,11 @@ export default function HealthOverviewPage() {
   const [sortAsc, setSortAsc] = useState(true);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [allFamilyData, setAllFamilyData] = useState<any[]>([]);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportPrompt, setReportPrompt] = useState('');
+  const [reportDraft, setReportDraft] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchAllData() {
@@ -85,6 +95,7 @@ export default function HealthOverviewPage() {
         const membersRaw = data.data || [];
         const memberPromises = membersRaw.map(async (member: any) => {
           let medicalConditions: string[] = [];
+          let bloodType: string | undefined = undefined;
           try {
             const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
               headers: { Authorization: `Bearer ${token}` },
@@ -95,6 +106,9 @@ export default function HealthOverviewPage() {
                 medicalConditions = Object.entries(medData.data.healthConditions)
                   .filter(([_, checked]) => checked)
                   .map(([condition]) => condition);
+              }
+              if (medData.data && medData.data.bloodType) {
+                bloodType = medData.data.bloodType;
               }
             }
           } catch {}
@@ -108,6 +122,7 @@ export default function HealthOverviewPage() {
             status: member.status,
             generation: 1, // Placeholder, will be calculated below
             medicalConditions,
+            bloodType,
           };
         });
         let membersWithConditions: Member[] = await Promise.all(memberPromises);
@@ -158,6 +173,91 @@ export default function HealthOverviewPage() {
       return 0;
     }
   });
+
+  async function handleGenerateReport() {
+    setReportLoading(true);
+    setReportError(null);
+    try {
+      const ai = AIService.getInstance();
+      // Instruct AI not to use bold or markdown formatting, and to structure the report clearly
+      const prompt = `${reportPrompt}\n\nPlease do NOT use bold, markdown, or special formatting. Structure the report clearly with section headers, bullet points, and paragraphs as appropriate. Do not use ** or any markdown.`;
+      const draft = await ai.askGemini(prompt, allFamilyData);
+      setReportDraft(draft);
+    } catch (err: any) {
+      setReportError('Failed to generate report. Please try again.');
+    } finally {
+      setReportLoading(false);
+    }
+  }
+
+  function exportReportAsPDF() {
+    const doc = new jsPDF();
+    const logoUrl = '/logo.jpg'; 
+    const companyName = 'TreeTrace';
+    const reportTitle = 'Custom Health Report';
+    const now = new Date();
+    const dateString = now.toLocaleString();
+    let author = '';
+    if (typeof window !== 'undefined') {
+      author = localStorage.getItem('userName') || '';
+    }
+    let y = 18;
+    const img = new Image();
+    img.src = logoUrl;
+    img.onload = function() {
+      doc.addImage(img, 'PNG', 14, 10, 24, 24);
+      doc.setFontSize(18);
+      doc.text(companyName, 42, 22);
+      doc.setFontSize(16);
+      doc.text(reportTitle, 14, 42);
+      doc.setFontSize(10);
+      doc.text(`Date: ${dateString}`, 160, 16, { align: 'right' });
+      if (author) doc.text(`Author: ${author}`, 160, 22, { align: 'right' });
+      y = 52;
+      addReportContent();
+    };
+    img.onerror = function() {
+      doc.setFontSize(18);
+      doc.text(companyName, 14, 22);
+      doc.setFontSize(16);
+      doc.text(reportTitle, 14, 42);
+      doc.setFontSize(10);
+      doc.text(`Date: ${dateString}`, 160, 16, { align: 'right' });
+      if (author) doc.text(`Author: ${author}`, 160, 22, { align: 'right' });
+      y = 52;
+      addReportContent();
+    };
+    if (img.complete) {
+      img.onload();
+    }
+    function addReportContent() {
+      doc.setFontSize(12);
+      const sections = reportDraft.split(/\n\n|(?=\n[A-Z][^\n]+:)/g);
+      let page = 1;
+      sections.forEach(section => {
+        const lines = doc.splitTextToSize(section.trim(), 180);
+        lines.forEach((line: string) => {
+          doc.text(line, 14, y);
+          y += 7;
+        });
+        y += 3;
+        if (y > 270) {
+          addFooter(page++);
+          doc.addPage();
+          y = 18;
+        }
+      });
+      addFooter(page);
+      doc.save('health-report.pdf');
+    }
+    function addFooter(pageNum: number) {
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text('This report is for informational purposes only and does not constitute medical advice. For personalized advice, consult a qualified healthcare professional.', 14, 285, { maxWidth: 180 });
+      doc.text(`Page ${pageNum}`, 200, 290, { align: 'right' });
+      doc.setTextColor(0);
+    }
+  }
 
   if (loading) return <div className="p-8 text-center text-white">Loading health data...</div>;
   if (members.length === 0) return (
@@ -228,6 +328,7 @@ export default function HealthOverviewPage() {
                   >
                     Generation {sortBy === 'generation' ? (sortAsc ? '▲' : '▼') : ''}
                   </th>
+                  <th className="border-b border-gray-800 px-6 py-4 text-left font-semibold">Blood Type</th>
                   {conditions.map(cond => (
                     <th key={cond} className="border-b border-gray-800 px-6 py-4 text-left font-semibold">{cond.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</th>
                   ))}
@@ -236,7 +337,7 @@ export default function HealthOverviewPage() {
               <tbody>
                 {filteredMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={2 + conditions.length} className="text-center py-8 text-gray-400">No members found with the selected condition.</td>
+                    <td colSpan={2 + conditions.length + 1} className="text-center py-8 text-gray-400">No members found with the selected condition.</td>
                   </tr>
                 ) : filteredMembers.map(member => (
                   <tr key={member._id} className="hover:bg-gray-800/60 transition-colors">
@@ -262,6 +363,9 @@ export default function HealthOverviewPage() {
                       })()}
                     </td>
                     <td className="border-b border-gray-800 px-6 py-3">{member.generation}</td>
+                    <td className="border-b border-gray-800 px-6 py-3 text-center whitespace-nowrap">
+                      {member.bloodType || ''}
+                    </td>
                     {conditions.map(cond => (
                       <td key={cond} className="border-b border-gray-800 px-6 py-3 text-center align-middle">
                         <div className="flex justify-center items-center h-full w-full min-h-[24px] min-w-[24px]">
@@ -276,6 +380,17 @@ export default function HealthOverviewPage() {
               </tbody>
             </table>
           </div>
+          <div className="flex justify-center mb-4 mt-10">
+            <div className="flex flex-col items-center">
+              <button
+                className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 shadow cursor-pointer"
+                onClick={() => setShowReportModal(true)}
+                title="Generate a detailed health report based on your chosen criteria or questions."
+              >
+                Create Custom Health Report
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <AIChatSidebar
@@ -288,6 +403,66 @@ export default function HealthOverviewPage() {
         onClick={() => setIsAIChatOpen(!isAIChatOpen)}
         isOpen={isAIChatOpen}
       />
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-gray-900 rounded-xl shadow-lg p-8 max-w-2xl w-full relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-teal-400"
+              onClick={() => setShowReportModal(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-teal-300">Generate Health Report</h2>
+            <label className="block mb-2 text-gray-300">Describe the report you want to generate:</label>
+            <textarea
+              className="w-full p-2 rounded bg-gray-800 text-white border border-gray-700 mb-4"
+              rows={3}
+              value={reportPrompt}
+              onChange={e => setReportPrompt(e.target.value)}
+              placeholder="e.g. Summarize all members with hypertension and their generations."
+            />
+            <div className="flex gap-2 mb-4">
+              <button
+                className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
+                onClick={handleGenerateReport}
+                disabled={reportLoading || !reportPrompt.trim()}
+              >
+                {reportLoading ? 'Generating...' : 'Generate Draft'}
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+                onClick={() => { setReportPrompt(''); setReportDraft(''); }}
+                disabled={reportLoading}
+              >
+                Clear
+              </button>
+            </div>
+            {reportError && <div className="text-red-400 mb-2">{reportError}</div>}
+            {reportDraft && (
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold text-teal-200 mb-2">Draft Report</h3>
+                <pre className="bg-gray-800 p-4 rounded text-white whitespace-pre-wrap max-h-80 overflow-y-auto border border-gray-700">{reportDraft}</pre>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    className="px-4 py-2 bg-teal-700 text-white rounded hover:bg-teal-800"
+                    onClick={handleGenerateReport}
+                    disabled={reportLoading}
+                  >
+                    Regenerate
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    onClick={exportReportAsPDF}
+                  >
+                    Export as PDF
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 } 
