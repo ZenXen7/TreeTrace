@@ -3,451 +3,372 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ChevronRight, Shield, Heart, Database, Lock, Sparkles, HelpCircle } from "lucide-react"
+import { Shield, Heart, Sparkles, ArrowRight, Check } from "lucide-react"
 import Link from "next/link"
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
-import { Card, CardContent } from "@/components/ui/card"
-import { Dna, Trees, Network, FileSearch } from "lucide-react"
+import { Network, TreePine, Activity } from "lucide-react"
 import AnimatedNodes from "@/components/animated-nodes"
 
 export default function Home() {
-  return (
-    <div className="min-h-screen bg-black text-white font-sans relative">
-     
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
-      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
+  const features = [
+    {
+      title: "Interactive Family Tree",
+      description: "Build beautiful, interactive family trees with drag-and-drop simplicity",
+      icon: <TreePine className="w-6 h-6" />,
+      color: "from-teal-500/10 to-teal-600/10",
+      borderColor: "border-teal-500/20",
+      iconBg: "bg-teal-500/20",
+      iconColor: "text-teal-400",
+    },
+    {
+      title: "Health Tracking",
+      description: "Monitor health patterns and hereditary conditions across generations",
+      icon: <Heart className="w-6 h-6" />,
+      color: "from-pink-500/10 to-pink-600/10",
+      borderColor: "border-pink-500/20",
+      iconBg: "bg-pink-500/20",
+      iconColor: "text-pink-400",
+    },
+    {
+      title: "AI-Powered Insights",
+      description: "Get intelligent suggestions and health analysis from our AI assistant",
+      icon: <Sparkles className="w-6 h-6" />,
+      color: "from-blue-500/10 to-blue-600/10",
+      borderColor: "border-blue-500/20",
+      iconBg: "bg-blue-500/20",
+      iconColor: "text-blue-400",
+    },
+    {
+      title: "Smart Connections",
+      description: "Discover potential family connections through our community network",
+      icon: <Network className="w-6 h-6" />,
+      color: "from-orange-500/10 to-orange-600/10",
+      borderColor: "border-orange-500/20",
+      iconBg: "bg-orange-500/20",
+      iconColor: "text-orange-400",
+    },
+  ]
 
-    
+  const benefits = [
+    "Secure, encrypted data storage",
+    "Unlimited family members",
+    "AI health insights & reports",
+    "Community suggestions",
+    "Export & sharing tools",
+    "24/7 customer support",
+  ]
+
+  const stats = [
+    { number: "10K+", label: "Families Connected" },
+    { number: "50K+", label: "Health Records" },
+    { number: "99.9%", label: "Uptime" },
+    { number: "256-bit", label: "Encryption" },
+  ]
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-black text-white font-sans relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none" />
       <AnimatedNodes />
 
-    
-      <div className="absolute top-8 left-8 z-10 flex items-center gap-2">
-        <div className="h-8 w-8">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
-            <path
-              d="M12 3v18M12 7l-3-3M12 7l3-3M5 12h14M7 12l-3 3M7 12l-3-3M17 12l3 3M17 12l3-3M12 17l-3 3M12 17l3 3"
-              stroke="white"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-        <span className="font-medium text-white text-xl tracking-tight">TreeTrace</span>
-      </div>
+      {/* Header */}
+      <header className="relative z-20 flex items-center justify-between p-6 lg:p-8">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="p-2 bg-teal-500/20 rounded-lg">
+            <TreePine className="h-6 w-6 text-teal-400" />
+          </div>
+          <span className="font-bold text-xl tracking-tight">TreeTrace</span>
+        </Link>
 
-    
-      <nav className="absolute top-8 right-8 z-10">
-        <ul className="flex items-center gap-8">
-          <li>
-            <Link href="/features" className="text-gray-400 hover:text-white transition-colors">
-              Features
-            </Link>
-          </li>
-          <li>
-            <Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">
-              Pricing
-            </Link>
-          </li>
-          <li>
-            <Link href="/auth/login" className="text-gray-400 hover:text-white transition-colors">
-              Login
-            </Link>
-          </li>
-          <li>
-            <Link href="/auth/signup">
-              <Button className="bg-white text-black hover:bg-gray-200 transition-colors">Sign Up</Button>
-            </Link>
-          </li>
-        </ul>
-      </nav>
+        <nav className="hidden md:flex items-center gap-8">
+          <Link href="#features" className="text-gray-400 hover:text-white transition-colors">
+            Features
+          </Link>
+          <Link href="#pricing" className="text-gray-400 hover:text-white transition-colors">
+            Pricing
+          </Link>
+          <Link href="/auth/login" className="text-gray-400 hover:text-white transition-colors">
+            Login
+          </Link>
+          <Link href="/auth/signup">
+            <Button className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white border-0 shadow-lg">
+              Get Started
+            </Button>
+          </Link>
+        </nav>
+      </header>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        
-        <motion.div className="text-center space-y-10 pt-16" initial="hidden" animate="visible">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Hero Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center py-20 lg:py-32"
+        >
           <motion.div
-            className="inline-block mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-full border border-gray-700/50 mb-8"
           >
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-800/60 text-gray-300 border border-gray-700">
-              <span className="mr-1 text-green-400">✦</span> Launching Soon
-            </span>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm text-gray-300">Now in Beta</span>
           </motion.div>
 
           <motion.h1
-            className="text-5xl sm:text-7xl font-bold tracking-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="text-5xl lg:text-7xl font-bold mb-6"
           >
-            <span className="block">Your Family Story,</span>
-            <span className="block mt-2">Beautifully Connected</span>
+            <span className="bg-gradient-to-r from-teal-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Your Family Story
+            </span>
+            <br />
+            <span className="text-white">Beautifully Connected</span>
           </motion.h1>
 
           <motion.p
-            className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed font-light"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed"
           >
-            Build, explore, and preserve your family heritage with TreeTrace. Create your interactive family tree, track hereditary health, get AI-powered insights, and discover new connections with our smart suggestions and health tools.
+            Build interactive family trees, track health patterns, and discover new connections with AI-powered
+            insights. Preserve your heritage for future generations.
           </motion.p>
 
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
           >
             <Link href="/auth/signup">
               <Button
                 size="lg"
-                className="bg-white text-black hover:bg-gray-200 transition-colors rounded-full px-8 font-medium flex items-center"
+                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
               >
                 Start Your Tree
-                <ChevronRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-
             <Button
               size="lg"
               variant="outline"
-              className="border-gray-700 text-white hover:bg-white/10 rounded-full px-8 font-medium"
+              className="border-gray-700 text-white hover:bg-white/10 px-8 py-4 rounded-xl transition-all duration-300"
             >
               Watch Demo
             </Button>
           </motion.div>
-        </motion.div>
 
-       
-        <motion.div
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-          className="mt-28 relative"
-        >
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-70" />
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto"
+          >
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl font-bold text-teal-400 mb-2">{stat.number}</div>
+                <div className="text-sm text-gray-400">{stat.label}</div>
+              </div>
+            ))}
+          </motion.div>
+        </motion.section>
 
-          <div className="relative rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
-            <Image
-              src="/treetrace.png?height=600&width=1200"
-              alt="TreeTrace Preview"
-              width={1200}
-              height={600}
-              className="w-full object-cover bg-gray-900"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          </div>
-        </motion.div>
-
-       
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.0 }}
-          className="mt-32 mb-16"
+        {/* App Preview */}
+        <motion.section
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.8 }}
+          className="mb-32"
         >
           <div className="relative">
-            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 w-40 h-40 opacity-10">
-              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M50 10v80M50 30l-20-15M50 30l20-15M30 50h40M30 50l-15 15M30 50l-15-15M70 50l15 15M70 50l15-15M50 70l-20 15M50 70l20 15"
-                  stroke="white"
-                  strokeWidth="2"
-                />
-              </svg>
+            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-70" />
+            <div className="relative rounded-2xl overflow-hidden border border-gray-800/50 shadow-2xl">
+              <Image
+                src="/treetrace.png"
+                alt="TreeTrace Application Preview"
+                width={1200}
+                height={600}
+                className="w-full object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
             </div>
+          </div>
+        </motion.section>
 
-            <h2 className="text-4xl font-bold mb-4 text-center">Discover Your Roots</h2>
-            <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-              Powerful tools to help you build, explore, and share your family history
+        {/* Features Section */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="mb-32"
+          id="features"
+        >
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
+                Everything You Need
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Powerful tools to build, explore, and preserve your family heritage
             </p>
           </div>
 
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full max-w-5xl mx-auto"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {carouselFeatures.map((feature, index) => (
-                <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 1.2 + 0.1 * index }}
-                  >
-                    <Card className="bg-gray-900/30 backdrop-blur-sm border border-gray-800/50 hover:border-gray-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/5">
-                      <CardContent className="p-6">
-                        <div
-                          className={`w-12 h-12 rounded-xl mb-6 flex items-center justify-center ${feature.colorClass}`}
-                        >
-                          {feature.icon}
-                        </div>
-                        <h3 className="text-xl font-semibold mb-3 text-gray-100">{feature.title}</h3>
-                        <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:bg-gray-700 text-gray-400" />
-            <CarouselNext className="hidden md:flex bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:bg-gray-700 text-gray-400" />
-          </Carousel>
-        </motion.div>
-
-      
-        <motion.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4 }}
-          className="py-24 relative"
-        >
-          <div className="absolute -top-10 -right-10 w-40 h-40 opacity-10 rotate-45">
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M50 10v80M50 30l-20-15M50 30l20-15M30 50h40M30 50l-15 15M30 50l-15-15M70 50l15 15M70 50l15-15M50 70l-20 15M50 70l20 15"
-                stroke="white"
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 1.6 }}>
-                <h2 className="text-4xl font-bold mb-6">Track Health History</h2>
-                <p className="text-gray-400 text-lg mb-8">
-                  Understand your family's health background better. Track hereditary conditions and share important
-                  health information with family members securely.
-                </p>
-                <div className="space-y-4">
-                  {healthFeatures.map((feature, index) => (
-                    <motion.div
-                      key={feature.title}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.8 + index * 0.1 }}
-                      className="flex items-start space-x-3"
-                    >
-                      <div className="mt-1 bg-red-900/20 p-1.5 rounded-lg">
-                        <Heart className="h-4 w-4 text-red-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-200">{feature.title}</h3>
-                        <p className="text-sm text-gray-400">{feature.description}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {features.map((feature, index) => (
               <motion.div
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 1.6 }}
-                className="relative"
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className={`rounded-2xl bg-gradient-to-br ${feature.color} backdrop-blur-sm border ${feature.borderColor} p-8 hover:scale-105 transition-all duration-300 group`}
               >
-                <div className="absolute -inset-4 bg-gradient-to-r from-red-500/10 to-purple-500/10 rounded-xl blur-xl" />
-                <div className="relative rounded-xl overflow-hidden border border-gray-800/50 backdrop-blur-sm">
-                  <Image
-                    src="/health-tracking.png"
-                    alt="Health Tracking Feature"
-                    width={600}
-                    height={400}
-                    className="w-full"
-                  />
+                <div
+                  className={`${feature.iconBg} p-3 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform`}
+                >
+                  <div className={feature.iconColor}>{feature.icon}</div>
                 </div>
+                <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
+                <p className="text-gray-300 leading-relaxed">{feature.description}</p>
               </motion.div>
-            </div>
+            ))}
           </div>
         </motion.section>
 
-       
+        {/* Health Focus Section */}
         <motion.section
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2.0 }}
-          className="py-16 relative"
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="mb-32"
         >
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 opacity-10 rotate-180">
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M50 10v80M50 30l-20-15M50 30l20-15M30 50h40M30 50l-15 15M30 50l-15-15M70 50l15 15M70 50l15-15M50 70l-20 15M50 70l20 15"
-                stroke="white"
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4">Your Privacy Matters</h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
-                We take the security and privacy of your family data seriously. Your information is protected with
-                industry-leading security measures.
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-pink-400 to-red-400 bg-clip-text text-transparent">
+                  Health Heritage
+                </span>
+                <br />
+                <span className="text-white">Matters</span>
+              </h2>
+              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+                Understanding your family's health history is crucial for making informed medical decisions. Track
+                hereditary conditions and share vital information securely.
               </p>
-            </div>
+              <div className="space-y-4">
+                {benefits.slice(0, 3).map((benefit, index) => (
+                  <motion.div
+                    key={benefit}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="p-1 bg-pink-500/20 rounded-full">
+                      <Check className="w-4 h-4 text-pink-400" />
+                    </div>
+                    <span className="text-gray-200">{benefit}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              {privacyFeatures.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 2.2 + index * 0.1 }}
-                  className="bg-gray-900/30 backdrop-blur-sm border border-gray-800/50 rounded-xl p-6"
-                >
-                  <div className="bg-blue-900/20 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                    {feature.icon}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 bg-gradient-to-r from-pink-500/20 to-red-500/20 rounded-2xl blur-xl opacity-70" />
+              <div className="relative rounded-2xl overflow-hidden border border-gray-800/50 bg-gray-900/50 p-8">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <Heart className="w-8 h-8 text-pink-400 mb-4" />
+                    <div className="text-2xl font-bold text-white mb-2">Health Tracking</div>
+                    <div className="text-gray-400 text-sm">Monitor conditions across generations</div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2 text-gray-100">{feature.title}</h3>
-                  <p className="text-gray-400 text-sm">{feature.description}</p>
-                </motion.div>
-              ))}
-            </div>
+                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <Activity className="w-8 h-8 text-blue-400 mb-4" />
+                    <div className="text-2xl font-bold text-white mb-2">AI Analysis</div>
+                    <div className="text-gray-400 text-sm">Get intelligent health insights</div>
+                  </div>
+                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 col-span-2">
+                    <Shield className="w-8 h-8 text-green-400 mb-4" />
+                    <div className="text-2xl font-bold text-white mb-2">Secure & Private</div>
+                    <div className="text-gray-400 text-sm">Your health data is encrypted and protected</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </motion.section>
 
-       
+        {/* CTA Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2.4 }}
-          className="py-20 text-center"
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center py-20 mb-20"
         >
-          <div className="max-w-3xl mx-auto px-4">
-            <h2 className="text-4xl font-bold mb-6">Start Tracing Your Roots Today</h2>
-            <p className="text-gray-400 text-lg mb-8">
-              Join thousands of families who are discovering, preserving, and sharing their heritage with TreeTrace.
+          <div className="rounded-2xl bg-gradient-to-r from-teal-900/30 to-blue-900/30 backdrop-blur-sm border border-teal-500/20 p-12">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
+                Start Your Journey
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+              Join thousands of families preserving their heritage and health history with TreeTrace
             </p>
             <Link href="/auth/signup">
               <Button
                 size="lg"
-                className="bg-white text-black hover:bg-gray-200 transition-colors rounded-full px-8 py-6 font-medium text-lg"
+                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-12 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-lg flex items-center gap-3 mx-auto"
               >
                 Create Your Family Tree
+                <ArrowRight className="w-6 h-6" />
               </Button>
             </Link>
           </div>
         </motion.section>
 
-       
-        <footer className="border-t border-gray-800 mt-16 pt-8 pb-16">
+        {/* Footer */}
+        <footer className="border-t border-gray-800/50 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <div className="h-6 w-6">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
-                  <path
-                    d="M12 3v18M12 7l-3-3M12 7l3-3M5 12h14M7 12l-3 3M7 12l-3-3M17 12l3 3M17 12l3-3M12 17l-3 3M12 17l3 3"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+            <div className="flex items-center gap-3 mb-6 md:mb-0">
+              <div className="p-2 bg-teal-500/20 rounded-lg">
+                <TreePine className="h-5 w-5 text-teal-400" />
               </div>
-              <span className="font-medium text-white text-lg tracking-tight">TreeTrace</span>
+              <span className="font-bold text-lg tracking-tight">TreeTrace</span>
             </div>
-            <div className="text-gray-500 text-sm">© {new Date().getFullYear()} TreeTrace. All rights reserved.</div>
+            <div className="flex items-center gap-8">
+              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors text-sm">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors text-sm">
+                Terms of Service
+              </Link>
+              <div className="text-gray-500 text-sm">© {new Date().getFullYear()} TreeTrace. All rights reserved.</div>
+            </div>
           </div>
         </footer>
       </div>
     </div>
   )
 }
-
-const healthFeatures = [
-  {
-    title: "Medical History Tracking",
-    description: "Record and track hereditary conditions across generations",
-  },
-  {
-    title: "Secure Sharing",
-    description: "Share medical history with family members and healthcare providers",
-  },
-  {
-    title: "Health Insights",
-    description: "Understand patterns and potential health risks in your family",
-  },
-]
-
-const privacyFeatures = [
-  {
-    title: "Data Encryption",
-    description: "Your family data is encrypted and securely stored",
-    icon: <Shield className="h-6 w-6 text-blue-400" />,
-  },
-  {
-    title: "Privacy Controls",
-    description: "Granular control over who can see your family information",
-    icon: <Lock className="h-6 w-6 text-blue-400" />,
-  },
-  {
-    title: "Regular Backups",
-    description: "Automatic backups ensure your family history is never lost",
-    icon: <Database className="h-6 w-6 text-blue-400" />,
-  },
-]
-
-const carouselFeatures = [
-  {
-    title: "Family Tree Builder",
-    description:
-      "Create beautiful, interactive family trees with our intuitive drag-and-drop interface. Add, edit, and connect relatives easily.",
-    icon: <Trees className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-green-500/20 to-green-600/20 text-green-400",
-  },
-  {
-    title: "Health Overview & Tracking",
-    description:
-      "Visualize health conditions across generations. Filter, sort, and export your family's health data. Spot hereditary patterns at a glance.",
-    icon: <Heart className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-red-500/20 to-red-600/20 text-red-400",
-  },
-  {
-    title: "Medical History Forms",
-    description:
-      "Easily record and update each family member's medical history, including conditions, allergies, medications, and more.",
-    icon: <FileSearch className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400",
-  },
-  {
-    title: "AI Health Assistant",
-    description:
-      "Get instant health insights, risk analysis, and answers to your questions with our built-in AI assistant.",
-    icon: <Sparkles className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-400",
-  },
-  {
-    title: "Suggestions & Similar Trees",
-    description:
-      "Discover new relatives and connections! Our orange circle highlights similar family members or trees from the TreeTrace community for you to review and add.",
-    icon: <Network className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-orange-500/20 to-orange-600/20 text-orange-400",
-  },
-  {
-    title: "Report Generation",
-    description:
-      "Export your health overview or custom AI-generated reports as CSV or PDF for sharing and record-keeping.",
-    icon: <Database className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-400",
-  },
-  {
-    title: "User Guide",
-    description:
-      "Step-by-step instructions and tips to help you get started and make the most of TreeTrace.",
-    icon: <HelpCircle className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-teal-500/20 to-teal-600/20 text-teal-400",
-  },
-  {
-    title: "Privacy & Security",
-    description:
-      "Your data is encrypted, private, and always under your control. Manage privacy settings and enjoy peace of mind.",
-    icon: <Shield className="w-6 h-6" />,
-    colorClass: "bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 text-indigo-400",
-  },
-]
-
