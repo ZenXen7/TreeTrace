@@ -390,14 +390,14 @@ function Familytree(props: {
               {
                 type: "select",
                 options: [
-                  { value: "ph", text: "Philippines" },
-                  { value: "us", text: "United States" },
-                  { value: "ca", text: "Canada" },
-                  { value: "uk", text: "United Kingdom" },
-                  { value: "au", text: "Australia" },
-                  { value: "jp", text: "Japan" },
-                  { value: "sg", text: "Singapore" },
-                  { value: "hk", text: "Hong Kong" },
+                  { value: "Philippines", text: "Philippines" },
+                  { value: "United States", text: "United States" },
+                  { value: "Canada", text: "Canada" },
+                  { value: "United Kingdom", text: "United Kingdom" },
+                  { value: "Australia", text: "Australia" },
+                  { value: "Japan", text: "Japan" },
+                  { value: "Singapore", text: "Singapore" },
+                  { value: "Hong Kong", text: "Hong Kong" },
                 ],
                 label: "Country",
                 binding: "country",
@@ -1619,14 +1619,14 @@ export default function TreeViewPage() {
                   onChange={(e) => handleFilterChange("country", e.target.value)}
                 >
                   <option value="all">All Countries</option>
-                  <option value="ph">Philippines</option>
-                  <option value="us">United States</option>
-                  <option value="ca">Canada</option>
-                  <option value="uk">United Kingdom</option>
-                  <option value="au">Australia</option>
-                  <option value="jp">Japan</option>
-                  <option value="sg">Singapore</option>
-                  <option value="hk">Hong Kong</option>
+                  <option value="Philippines">Philippines</option>
+                  <option value="United States">United States</option>
+                  <option value="Canada">Canada</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Japan">Japan</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Hong Kong">Hong Kong</option>
                 </select>
 
                 <select
