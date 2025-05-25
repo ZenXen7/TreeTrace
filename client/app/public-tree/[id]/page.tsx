@@ -431,7 +431,7 @@ export default function PublicTreeView() {
               <h3 className="text-sm font-medium text-gray-400 mb-2">Oldest Member</h3>
               <div>
                 <p className="text-xl font-bold text-white truncate">{stats.oldestMember?.name || "N/A"}</p>
-                <p className="text-sm text-gray-500">{stats.oldestMember?.birthDate || "Unknown"}</p>
+                <p className="text-sm text-gray-500">{stats.oldestMember?.birthDate ? new Date(stats.oldestMember.birthDate).toISOString().slice(0, 10) : "Unknown"}</p>
               </div>
             </div>
           </motion.div>
