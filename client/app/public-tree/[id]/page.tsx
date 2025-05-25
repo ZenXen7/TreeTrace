@@ -5,13 +5,14 @@ import { useParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Trees, Users, Clock, Eye, ArrowLeft, UserX, ChevronLeft } from "lucide-react"
+import { Trees, Users, Clock, Eye, ArrowLeft, UserX, ChevronLeft, TreePine, Heart, BarChart3, Sparkles, Info, Filter, Settings, Edit, Navigation, Search, User, Calendar, Flag, Briefcase } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import useTreeStore from "@/store/useTreeStore"
 import { toast } from "react-hot-toast"
 import useUserSearchStore from "@/store/useUserSearchStore"
 import FamilyTree from "@balkangraph/familytree.js"
 import AnimatedNodes from "@/components/animated-nodes"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 export default function PublicTreeView() {
   const { id } = useParams()
@@ -19,9 +20,17 @@ export default function PublicTreeView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [userData, setUserData] = useState<{firstName: string, lastName: string} | null>(null)
-  const { getPublicFamilyTree, currentFamilyTree, familyMembers } = useTreeStore()
+  const { getPublicFamilyTree, currentFamilyTree } = useTreeStore()
   const treeContainerRef = useRef<HTMLDivElement>(null)
   const familyTreeRef = useRef<any>(null)
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    generations: 0,
+    oldestMember: null as any,
+    youngestMember: null as any,
+  })
+  const [showModal, setShowModal] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<any>(null)
 
   useEffect(() => {
     // Function to fetch user details
@@ -64,9 +73,43 @@ export default function PublicTreeView() {
     }
   }, [id, getPublicFamilyTree])
 
+  // Calculate stats when currentFamilyTree changes
+  useEffect(() => {
+    if (!currentFamilyTree || !Array.isArray(currentFamilyTree)) return;
+    const processedData = currentFamilyTree;
+    // Find the maximum generation depth
+    const findGenerationDepth = (memberId: string, depth = 1, visited = new Set<string>()): number => {
+      if (visited.has(memberId)) return depth
+      visited.add(memberId)
+      const member = processedData.find((m: any) => m.id === memberId || m._id === memberId)
+      if (!member) return depth
+      const children = processedData.filter((m: any) => m.fid === memberId || m.mid === memberId)
+      if (children.length === 0) return depth
+      return Math.max(...children.map((child) => findGenerationDepth(child.id || child._id, depth + 1, new Set(visited))))
+    }
+    // Find root members (those without parents)
+    const rootMembers = processedData.filter((m: any) => !m.fid && !m.mid)
+    const maxGeneration = rootMembers.length > 0 ? Math.max(...rootMembers.map((m: any) => findGenerationDepth(m.id || m._id))) : 1
+    setStats({
+      totalMembers: processedData.length,
+      generations: maxGeneration,
+      oldestMember: processedData.reduce((oldest: any, current: any) => {
+        if (!oldest || (oldest.birthDate && current.birthDate && new Date(current.birthDate) < new Date(oldest.birthDate))) {
+          return current
+        }
+        return oldest
+      }, null),
+      youngestMember: processedData.reduce((youngest: any, current: any) => {
+        if (!youngest || (youngest.birthDate && current.birthDate && new Date(current.birthDate) > new Date(youngest.birthDate))) {
+          return current
+        }
+        return youngest
+      }, null),
+    })
+  }, [currentFamilyTree])
+
   useEffect(() => {
     if (!loading && !error && currentFamilyTree && treeContainerRef.current) {
-      console.log("Rendering family tree with data:", currentFamilyTree);
       try {
         // Initialize the family tree
         const treeElement = treeContainerRef.current;
@@ -75,10 +118,6 @@ export default function PublicTreeView() {
         const nameStyle = 'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;" fill="#F3F4F6"';
         const roleStyle = 'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 400;" fill="#D1D5DB"';
         const detailStyle = 'style="font-family: \'Inter\', system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 400;" fill="#9CA3AF"';
-
-        // Define male and female avatars
-        const maleAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM2NEY2QiIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzFGMkEzNyIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiMxRjJBMzciLz48L3N2Zz4=";
-        const femaleAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzgwMzQ2RCIvPjxjaXJjbGUgY3g9IjEwMCIgY3k9IjgwIiByPSI1MCIgZmlsbD0iIzRBMUY0MCIvPjxwYXRoIGQ9Ik01MCwxOTAgQzUwLDEyMCA5MCwxMTAgMTAwLDExMCBDMTEwLDExMCAxNTAsMTIwIDE1MCwxOTAiIGZpbGw9IiM0QTFGNDAiLz48L3N2Zz4=";
 
         // Clear any existing tree
         treeElement.innerHTML = "";
@@ -110,12 +149,12 @@ export default function PublicTreeView() {
             }))
           : [];
         
-        // Updated template definitions to match main tree
-        FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="25" y="60">{val}</text>` // First name
-        FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="25" y="85">{val}</text>` // Surname
-        FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="25" y="110">Birth: {val}</text>` // Birth date
+        // Updated template definitions
+        FamilyTree.templates.tommy.field_0 = `<text class="bft-field-0" ${nameStyle} x="25" y="60">{val}</text>`
+        FamilyTree.templates.tommy.field_1 = `<text class="bft-field-1" ${nameStyle} x="25" y="85">{val}</text>`
+        FamilyTree.templates.tommy.field_4 = `<text class="bft-field-4" ${detailStyle} x="25" y="110">Birth: {val}</text>`
         
-        // Clear all other fields that we don't want to display
+        // Clear all other fields
         FamilyTree.templates.tommy.field_2 = ``;
         FamilyTree.templates.tommy.field_3 = ``;
         FamilyTree.templates.tommy.field_5 = ``;
@@ -124,46 +163,29 @@ export default function PublicTreeView() {
         FamilyTree.templates.tommy.field_8 = ``;
         FamilyTree.templates.tommy.field_9 = ``;
 
-        // Define node templates similar to main tree
+        // Define node templates
         FamilyTree.templates.tommy.node = `
 <g filter="url(#card-shadow)">
-  <!-- Card background with rounded corners -->
   <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
-  
-  <!-- Neutral accent -->
   <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#80cbc4"/>
-  
-  <!-- Simple gender icon at top right -->
   <circle cx="225" cy="30" r="15" fill="#374151" stroke="#4B5563" strokeWidth="1.5"/>
 </g>
 `;
 
         FamilyTree.templates.tommy_female.node = `
 <g filter="url(#card-shadow)">
-  <!-- Card background with rounded corners -->
   <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
-  
-  <!-- Female accent -->
   <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#EC4899"/>
-  
-  <!-- Female icon at top right -->
   <circle cx="225" cy="30" r="15" fill="#EC4899" stroke="#4B5563" strokeWidth="1.5"/>
-  <!-- Female symbol -->
   <image href="https://cdn-icons-png.flaticon.com/128/1019/1019071.png" x="210" y="15" height="30" width="30" preserveAspectRatio="xMidYMid meet"/>
 </g>
 `;
 
         FamilyTree.templates.tommy_male.node = `
 <g filter="url(#card-shadow)">
-  <!-- Card background with rounded corners -->
   <rect x="0" y="0" height="140" width="250" rx="15" ry="15" fill="#1F2937" stroke="#374151" strokeWidth="1.5"/>
-  
-  <!-- Male accent -->
   <rect x="0" y="0" height="10" width="250" rx="10" ry="0" fill="#3B82F6"/>
-  
-  <!-- Male icon at top right -->
   <circle cx="225" cy="30" r="15" fill="#3B82F6" stroke="#4B5563" strokeWidth="1.5"/>
-  <!-- Male Image -->
   <image href="https://cdn-icons-png.flaticon.com/128/1019/1019070.png" x="212" y="17" height="26" width="26" preserveAspectRatio="xMidYMid meet"/>
 </g>
 `;
@@ -177,17 +199,14 @@ export default function PublicTreeView() {
         // Add shadow filter
         const svgContent = `
 <defs>
-  <!-- Filter for card shadow -->
   <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
     <feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.4" floodColor="#000"/>
   </filter>
 </defs>
 `;
 
-        // Initialize the FamilyTree with the array of nodes
+        // Initialize the FamilyTree
         familyTreeRef.current = new FamilyTree(treeElement, {
-          // Configure with no menus for a cleaner view
-          
           nodeBinding: {
             field_0: "name",
             field_1: "surname",
@@ -196,11 +215,7 @@ export default function PublicTreeView() {
           mode: "dark",
           template: "tommy",
           nodes: formattedNodes,
-          
-          // Interactive settings for navigation
           mouseScrool: FamilyTree.action.zoom,
-          
-          // Add better styling
           levelSeparation: 160,
           siblingSeparation: 90,
           subtreeSeparation: 120,
@@ -208,8 +223,6 @@ export default function PublicTreeView() {
           orientation: FamilyTree.orientation.top,
           layout: FamilyTree.layout.normal,
           anim: { func: FamilyTree.anim.outBack, duration: 300 },
-          
-          // Enable search but only for name and surname
           enableSearch: true,
           searchFields: ["name", "surname"],
           searchDisplayField: "name",
@@ -217,11 +230,10 @@ export default function PublicTreeView() {
             "name": 100,
             "surname": 80
           }
-        } as any); // Using type assertion to bypass strict type checking
+        } as any);
 
         // Add event listener for tree initialization
         familyTreeRef.current.on("init", function() {
-          console.log("Tree initialized");
           
           // Add the SVG content to the tree
           const svgElement = treeElement.querySelector("svg");
@@ -235,41 +247,27 @@ export default function PublicTreeView() {
           }
         });
 
-        // Add event listener for node click - just show a simple view (no editing)
+        // Add event listener for node click
         familyTreeRef.current.on("click", function(sender: any, args: any) {
-          // Show details of member but don't allow editing
           const node = args.node;
           if (node) {
-            console.log("Node clicked:", node);
-            
-            // Birth date should already be formatted, but in case it isn't:
-            const birthInfo = node.birthDate ? `Born: ${node.birthDate}` : '';
-            
-            // We could use toast to show the info, or could implement a custom view
-            if (node.name) {
-              toast.success(`${node.name} ${node.surname || ''} ${birthInfo ? '• ' + birthInfo : ''}`, {
-                duration: 3000,
-                style: {
-                  background: '#1F2937',
-                  color: '#F3F4F6',
-                  border: '1px solid #374151'
-                }
-              });
-            }
+            const member = Array.isArray(currentFamilyTree)
+              ? currentFamilyTree.find(
+                  (m: any) => m.id === node.id || m._id === node.id
+                )
+              : null;
+            setSelectedMember(member || node);
+            setShowModal(true);
           }
-          
-          // Prevent default to avoid any built-in edit
           return false;
         });
         
         // Add default avatars based on gender
         familyTreeRef.current.on('render', (sender: any) => {
-          // Update node appearance based on gender
           const nodes = sender.nodes || [];
           for (const nodeId in nodes) {
             const node = nodes[nodeId];
             if (node && node.data) {
-              // Apply gender-specific template
               if (node.data.gender === 'female') {
                 node.templateName = 'tommy_female';
               } else if (node.data.gender === 'male') {
@@ -279,12 +277,10 @@ export default function PublicTreeView() {
           }
         });
       } catch (err) {
-        console.error("Error rendering family tree:", err);
         setError("Failed to render family tree")
       }
     }
     
-    // Cleanup function
     return () => {
       if (familyTreeRef.current) {
         familyTreeRef.current = null;
@@ -362,229 +358,231 @@ export default function PublicTreeView() {
       {/* Animated Background */}
       <AnimatedNodes />
 
-      <div className="container mx-auto px-6 py-8 relative">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center mb-12"
-        >
-          <button
-            onClick={handleGoBack}
-            className="flex items-center text-gray-400 hover:text-teal-400 transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            <span className="ml-1">Back to Search</span>
-          </button>
-        </motion.div>
-
+      <div className="container mx-auto px-4 py-8 relative max-w-7xl">
+        {/* Header Section */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8 text-center"
+          transition={{ delay: 0.1 }}
+          className="mb-8"
         >
-          <h1 className="text-4xl font-semibold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent mb-3">
-            {userData ? (
-              <>{userData.firstName} {userData.lastName}'s Family Tree</>
-            ) : (
-              "Public Family Tree"
-            )}
-          </h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Explore this shared family tree - you can navigate, search, and view details
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="bg-gray-900/30 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-800/50 overflow-hidden mb-8"
-        >
-          <div className="bg-gray-800/50 p-6 border-b border-gray-800/50">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                {userData && (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-sm font-medium">
-                    {userData.firstName[0]}{userData.lastName[0]}
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-xl font-semibold text-white">Family Tree View</h2>
-                  <p className="text-sm text-gray-400">Interactive visualization of family relationships</p>
-                </div>
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => router.back()}
+              className="group flex items-center gap-3 text-gray-400 hover:text-teal-400 transition-all duration-200 cursor-pointer"
+            >
+              <div className="p-2 rounded-lg bg-gray-800/50 group-hover:bg-teal-900/30 transition-colors">
+                <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+              </div>
+              <span className="font-medium">Back</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                <TreePine className="h-4 w-4 text-teal-400" />
+                <span className="text-sm text-gray-300">Public Family Tree</span>
               </div>
             </div>
           </div>
-
-          <div className="p-2">
-            <div ref={treeContainerRef} className="w-full h-[1100px]"></div>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+              {userData ? `${userData.firstName} ${userData.lastName}'s Family Tree` : "Public Family Tree"}
+            </h1>
+            <p className="text-gray-400 max-w-3xl mx-auto text-lg">
+              Explore this shared family tree - you can navigate, search, and view details
+            </p>
           </div>
         </motion.div>
 
-        {!loading && !error && currentFamilyTree && (
+        {/* Stats Cards */}
+        {!loading && !error && currentFamilyTree && Array.isArray(currentFamilyTree) && currentFamilyTree.length > 0 && (
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           >
-            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">
-                Family Members
-              </h3>
-              <div className="flex items-end justify-between">
-                <p className="text-3xl font-semibold text-white">
-                  {Array.isArray(currentFamilyTree) ? currentFamilyTree.length : 0}
-                </p>
-                <span className="text-sm text-teal-400">Total</span>
+            <div className="group rounded-xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm p-6 border border-gray-700/50 hover:border-teal-500/30 transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-teal-500/20 rounded-lg">
+                  <Users className="h-6 w-6 text-teal-400" />
+                </div>
+                <span className="text-xs text-teal-400 font-medium px-2 py-1 bg-teal-500/10 rounded-full">Total</span>
               </div>
+              <h3 className="text-sm font-medium text-gray-400 mb-2">Family Members</h3>
+              <p className="text-3xl font-bold text-white">{stats.totalMembers}</p>
             </div>
-            
-            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">
-                Tree Owner
-              </h3>
-              <div className="flex items-center gap-3">
-                {userData && (
-                  <>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-blue-500 text-white flex items-center justify-center text-sm font-medium">
-                      {userData.firstName[0]}{userData.lastName[0]}
-                    </div>
-                    <p className="text-xl font-semibold text-white truncate">
-                      {userData.firstName} {userData.lastName}
-                    </p>
-                  </>
-                )}
+            <div className="group rounded-xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm p-6 border border-gray-700/50 hover:border-blue-500/30 transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-lg">
+                  <BarChart3 className="h-6 w-6 text-blue-400" />
+                </div>
+                <span className="text-xs text-blue-400 font-medium px-2 py-1 bg-blue-500/10 rounded-full">Depth</span>
               </div>
+              <h3 className="text-sm font-medium text-gray-400 mb-2">Generations</h3>
+              <p className="text-3xl font-bold text-white">{stats.generations}</p>
             </div>
-            
-            <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">
-                Viewing Mode
-              </h3>
-              <div className="flex items-end justify-between">
-                <p className="text-xl font-semibold text-white">
-                  Interactive View
-                </p>
-                <span className="text-sm text-teal-400">Public Access</span>
+            <div className="group rounded-xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm p-6 border border-gray-700/50 hover:border-purple-500/30 transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-lg">
+                  <Heart className="h-6 w-6 text-purple-400" />
+                </div>
+                <span className="text-xs text-purple-400 font-medium px-2 py-1 bg-purple-500/10 rounded-full">Elder</span>
+              </div>
+              <h3 className="text-sm font-medium text-gray-400 mb-2">Oldest Member</h3>
+              <div>
+                <p className="text-xl font-bold text-white truncate">{stats.oldestMember?.name || "N/A"}</p>
+                <p className="text-sm text-gray-500">{stats.oldestMember?.birthDate || "Unknown"}</p>
               </div>
             </div>
           </motion.div>
         )}
 
+        {/* Main Tree Container */}
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="rounded-xl bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-sm border border-gray-700/50 overflow-hidden mb-8 shadow-2xl"
+        >
+          <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 p-6 border-b border-gray-700/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-500/20 rounded-lg">
+                <TreePine className="h-6 w-6 text-teal-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Interactive Family Tree</h2>
+                <p className="text-sm text-gray-400">Explore relationships and discover connections</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4">
+            <div ref={treeContainerRef} className="w-full h-[1100px] rounded-lg overflow-hidden"></div>
+          </div>
+        </motion.div>
+
         {/* Help Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          transition={{ delay: 0.5 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
         >
-          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
-            <div className="text-teal-400 mb-4">
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
-                />
-              </svg>
+          <div className="group rounded-xl bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-sm p-6 border border-gray-700/50 hover:border-teal-500/30 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-teal-500/20 rounded-lg group-hover:bg-teal-500/30 transition-colors">
+                <Navigation className="w-6 h-6 text-teal-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Navigation Tips</h3>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Navigation Tips
-            </h3>
             <ul className="space-y-3 text-gray-400">
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
+              <li className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-teal-400 rounded-full mt-2 flex-shrink-0"></span>
                 <span>Click and drag to pan around the tree</span>
               </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
+              <li className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-teal-400 rounded-full mt-2 flex-shrink-0"></span>
                 <span>Use mouse wheel to zoom in and out</span>
               </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
+              <li className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-teal-400 rounded-full mt-2 flex-shrink-0"></span>
                 <span>Use the search bar to find specific family members</span>
               </li>
             </ul>
           </div>
 
-          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
-            <div className="text-teal-400 mb-4">
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                />
-              </svg>
+          <div className="group rounded-xl bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-sm p-6 border border-gray-700/50 hover:border-yellow-500/30 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-yellow-500/20 rounded-lg group-hover:bg-yellow-500/30 transition-colors">
+                <Eye className="w-6 h-6 text-yellow-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">View Only Mode</h3>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Viewing Options
-            </h3>
             <ul className="space-y-3 text-gray-400">
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
-                <span>Hover over members to see details</span>
+              <li className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                <span>This is a public, read-only family tree</span>
               </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
-                <span>Click on a member to view their profile</span>
+              <li className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                <span>You can view but not edit family members</span>
               </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
-                <span>Use the search to find specific members</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="rounded-xl bg-gray-900/30 backdrop-blur-sm p-6 border border-gray-800/50">
-            <div className="text-teal-400 mb-4">
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-white mb-4">
-              About This Tree
-            </h3>
-            <ul className="space-y-3 text-gray-400">
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
-                <span>This is a public view of the family tree</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
-                <span>Some information may be private</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-teal-400">•</span>
-                <span>Contact the owner for more details</span>
+              <li className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                <span>Some information may be private or hidden by the owner</span>
               </li>
             </ul>
           </div>
         </motion.div>
+
+        {/* Member Details Modal */}
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="bg-gray-900 border border-gray-700/50 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <User className="h-5 w-5 text-teal-400" />
+                Member Details
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedMember && (
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Name</p>
+                    <p className="font-medium">{selectedMember.name || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Surname</p>
+                    <p className="font-medium">{selectedMember.surname || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Birth Date</p>
+                    <p className="font-medium">{selectedMember.birthDate ? new Date(selectedMember.birthDate).toISOString().slice(0, 10) : 'N/A'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Gender</p>
+                    <p className="font-medium capitalize">{selectedMember.gender || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Death Date</p>
+                    <p className="font-medium">{selectedMember.deathDate ? new Date(selectedMember.deathDate).toISOString().slice(0, 10) : 'N/A'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Status</p>
+                    <p className="font-medium capitalize">{selectedMember.status || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Occupation</p>
+                    <p className="font-medium">{selectedMember.occupation || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">Country</p>
+                    <p className="font-medium">{selectedMember.country || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowModal(false)}
+                className="bg-gray-800 hover:bg-gray-700 text-white border-gray-700"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </motion.div>
   )
