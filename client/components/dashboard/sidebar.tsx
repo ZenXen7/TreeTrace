@@ -2,35 +2,21 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import {
-  Users,
-  Trees,
-  GitMerge,
-  Settings,
-  BarChart3,
-
-  Heart,
-  Calendar,
-  LogOut,
-  HelpCircle,
-  Sparkles,
-  Search,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { TreePine, BarChart3, Heart, LogOut, HelpCircle, Search, User } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
+import { motion } from "framer-motion"
 
 const mainNavItems = [
   { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "./main" },
-  { title: "My Tree", icon: <Trees className="h-5 w-5" />, href: "./treeview" },
+  { title: "My Tree", icon: <TreePine className="h-5 w-5" />, href: "./treeview" },
   { title: "Search Users", icon: <Search className="h-5 w-5" />, href: "/search" },
   { title: "Health Overview", icon: <Heart className="h-5 w-5" />, href: "./health-overview" },
 ]
 
 const toolsNavItems = [
-  { title: "Settings", icon: <Settings className="h-5 w-5" />, href: "/tools/settings" },
+  { title: "Profile Settings", icon: <User className="h-5 w-5" />, href: "/tools/settings" },
   { title: "User Guide", icon: <HelpCircle className="h-5 w-5" />, href: "/tools/user-guide" },
 ]
 
@@ -40,166 +26,148 @@ interface SidebarProps {
 
 export function Sidebar({ sidebarOpen }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
-  const { user, fetchUserProfile, isAuthenticated } = useAuthStore((state) => state) // Access user data from the store
+  const { user, fetchUserProfile, isAuthenticated, logout } = useAuthStore((state) => state)
+  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
     if (isAuthenticated) {
-      fetchUserProfile() // Fetch user profile data on mount if authenticated
+      fetchUserProfile()
     }
   }, [isAuthenticated, fetchUserProfile])
 
-  
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const handleLogout = async () => {
+    try {
+      await logout()
+      router.push('/')
+    } catch (error) {
+      console.error('Error during logout:', error)
+    }
+  }
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen w-80 bg-gray-900/70 backdrop-blur-xl border-r border-gray-800/50 z-40 transition-all duration-300 ease-in-out ${
+      className={`fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-gray-900/95 to-gray-950/95 backdrop-blur-xl border-r border-gray-700/50 z-40 transition-all duration-300 ease-in-out ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       } ${mounted ? "opacity-100" : "opacity-0"}`}
     >
       <div className="p-6 h-full flex flex-col">
-       
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-10 w-10 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl opacity-20 animate-pulse" />
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full p-2">
-              <path
-                d="M12 3v18M12 7l-3-3M12 7l3-3M5 12h14M7 12l-3 3M7 12l-3-3M17 12l3 3M17 12l3-3M12 17l-3 3M12 17l3 3"
-                stroke="url(#logoGradient)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <defs>
-                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="100%" stopColor="#0ea5e9" />
-                </linearGradient>
-              </defs>
-            </svg>
+        {/* Logo Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex items-center gap-3 mb-8"
+        >
+          <div className="p-2 bg-teal-500/20 rounded-lg">
+            <TreePine className="h-6 w-6 text-teal-400" />
           </div>
           <div>
             <span className="font-bold text-white text-xl tracking-tight">TreeTrace</span>
-            <p className="text-xs text-gray-400">Family connections</p>
+            <p className="text-xs text-gray-400">Family Heritage Platform</p>
           </div>
-        </div>
+        </motion.div>
 
-    
-        <div className="mb-8 relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-xl blur-sm" />
-          <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30">
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar className="h-12 w-12 border-2 border-emerald-500/20 ring-2 ring-emerald-500/10">
+        {/* User Profile Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="rounded-xl bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm p-4 border border-gray-700/50">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12 border-2 border-teal-500/20 ring-2 ring-teal-500/10">
                 <AvatarImage src="/placeholder.svg?height=48&width=48" />
-                <AvatarFallback className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400">
-                  JD
+                <AvatarFallback className="bg-gradient-to-br from-teal-500/20 to-blue-500/20 text-teal-400 font-semibold">
+                  {user ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}` : "U"}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">{user ? user.firstName : "Loading..."}</p>
-                  <Badge className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">
-                    PRO
-                  </Badge>
-                </div>
-                <p className="text-xs text-gray-400">Family historian</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-gray-400">
-                <span>Storage</span>
-                <span>65%</span>
-              </div>
-              <div className="h-1.5 w-full bg-gray-800/80 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: mounted ? "65%" : "0%" }}
-                />
-              </div>
-              <div className="flex justify-between text-gray-500 text-[10px]">
-                <span>6.5 GB used</span>
-                <span>10 GB total</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User" : "Loading..."}
+                </p>
+                <p className="text-xs text-gray-400">Family Historian</p>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-       
-        <nav className="space-y-1 mb-6">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-2">Main</p>
-          {mainNavItems.map((item, index) => (
-            <Link key={item.title} href={item.href}>
-              <button
-                className="flex items-center justify-between w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group cursor-pointer"
-                style={{
-                  opacity: mounted ? 1 : 0,
-                  transform: mounted ? "translateY(0)" : "translateY(10px)",
-                  transition: `opacity 0.3s ease, transform 0.3s ease`,
-                  transitionDelay: `${index * 50}ms`,
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-teal-500/0 rounded-md group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-300" />
-                    {item.icon}
-                  </div>
-                  <span>{item.title}</span>
-                </div>
-              </button>
-            </Link>
-          ))}
+        {/* Navigation */}
+        <nav className="space-y-1 mb-6 flex-1">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-3">Main</p>
+            <div className="space-y-1">
+              {mainNavItems.map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                >
+                  <Link href={item.href}>
+                    <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 group">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-blue-500/0 rounded-md group-hover:from-teal-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
+                        <div className="relative">{item.icon}</div>
+                      </div>
+                      <span className="font-medium">{item.title}</span>
+                    </button>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
 
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-2 mt-6">Tools</p>
-          {toolsNavItems.map((item, index) => (
-            <Link key={item.title} href={item.href}>
-              <button
-                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group cursor-pointer"
-                style={{
-                  opacity: mounted ? 1 : 0,
-                  transform: mounted ? "translateY(0)" : "translateY(10px)",
-                  transition: `opacity 0.3s ease, transform 0.3s ease`,
-                  transitionDelay: `${(mainNavItems.length + index) * 50}ms`,
-                }}
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-teal-500/0 rounded-md group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-300" />
-                  {item.icon}
-                </div>
-                <span>{item.title}</span>
-              </button>
-            </Link>
-          ))}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="pt-6"
+          >
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-3">Tools</p>
+            <div className="space-y-1">
+              {toolsNavItems.map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.7 + index * 0.1 }}
+                >
+                  <Link href={item.href}>
+                    <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 group">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-blue-500/0 rounded-md group-hover:from-teal-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
+                        <div className="relative">{item.icon}</div>
+                      </div>
+                      <span className="font-medium">{item.title}</span>
+                    </button>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </nav>
 
-     
-        <div className="mt-auto space-y-6">
-         
-
-         
-          <div
-            className="space-y-1"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transition: "opacity 0.5s ease",
-              transitionDelay: "500ms",
-            }}
+        {/* Logout Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
+          className="pt-4 border-t border-gray-700/50"
+        >
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 group"
           >
-            
-            <Link href="/">
-              <button 
-                onClick={() => useAuthStore.getState().logout()}
-                className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Log Out</span>
-              </button>
-            </Link>
-          </div>
-        </div>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-600/0 rounded-md group-hover:from-red-500/20 group-hover:to-red-600/20 transition-all duration-300" />
+              <LogOut className="h-5 w-5" />
+            </div>
+            <span className="font-medium">Log Out</span>
+          </button>
+        </motion.div>
       </div>
     </aside>
   )
 }
-

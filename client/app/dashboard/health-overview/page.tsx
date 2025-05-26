@@ -435,12 +435,6 @@ export default function HealthOverviewPage() {
       )
       doc.text("For personalized advice, consult a qualified healthcare professional.", margin, footerTop + 5)
 
-      // Add page number with circle design
-      doc.setFillColor(0, 128, 128)
-      doc.circle(pageWidth - margin - 12, footerTop, 8, "F")
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(9)
-      doc.text(pageNum.toString(), pageWidth - margin - 12, footerTop + 1, { align: "center" })
 
       // Add TreeTrace branding
       doc.setTextColor(0, 128, 128)
