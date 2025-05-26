@@ -3,12 +3,15 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Shield, Heart, Sparkles, ArrowRight, Check } from "lucide-react"
+import { Shield, Heart, Sparkles, ArrowRight, Check, X } from "lucide-react"
 import Link from "next/link"
 import { Network, TreePine, Activity } from "lucide-react"
 import AnimatedNodes from "@/components/animated-nodes"
+import { useState } from "react"
 
 export default function Home() {
+  const [showVideo, setShowVideo] = useState(false)
+
   const features = [
     {
       title: "Interactive Family Tree",
@@ -157,6 +160,7 @@ export default function Home() {
               size="lg"
               variant="outline"
               className="border-gray-700 text-white hover:bg-white/10 px-8 py-4 rounded-xl transition-all duration-300"
+              onClick={() => setShowVideo(true)}
             >
               Watch Demo
             </Button>
@@ -177,6 +181,30 @@ export default function Home() {
             ))}
           </motion.div>
         </motion.section>
+
+        {/* Video Modal */}
+        {showVideo && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-4xl bg-gray-900 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setShowVideo(false)}
+                className="absolute top-4 right-4 p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+              <div className="aspect-video">
+                <video
+                  className="w-full h-full"
+                  controls
+                  autoPlay
+                >
+                  <source src="/TreeTrace-Demo.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* App Preview */}
         <motion.section
