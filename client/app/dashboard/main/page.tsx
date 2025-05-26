@@ -402,7 +402,7 @@ export default function Dashboard() {
                   <h3 className="text-lg font-bold text-white">Help & Resources</h3>
                 </div>
                 <div className="space-y-4">
-                  <Link href="/dashboard/user-guide">
+                  <Link href="/tools/user-guide">
                     <div className="p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 transition-all duration-200 cursor-pointer border border-gray-700/50 hover:border-gray-600/50 group">
                       <div className="flex items-start gap-3">
                         <BookOpen className="h-5 w-5 text-green-400 mt-0.5" />
