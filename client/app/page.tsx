@@ -1,17 +1,13 @@
 "use client"
-
-import Image from "next/image"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Shield, Heart, Sparkles, ArrowRight, Check, X } from "lucide-react"
 import Link from "next/link"
 import { Network, TreePine, Activity } from "lucide-react"
 import AnimatedNodes from "@/components/animated-nodes"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function Home() {
-  const [showVideo, setShowVideo] = useState(false)
-
   const features = [
     {
       title: "Interactive Family Tree",
@@ -66,6 +62,217 @@ export default function Home() {
     { number: "99.9%", label: "Uptime" },
     { number: "256-bit", label: "Encryption" },
   ]
+
+  const [showVideo, setShowVideo] = useState(false)
+
+  const [currentSlide, setCurrentSlide] = useState(0)
+
+  const screenshots = [
+    {
+      src: "/ScreenShotTreeTrace.png",
+      alt: "TreeTrace Dashboard",
+      title: "Comprehensive Dashboard",
+      description:
+        "Get a complete overview of your family tree with interactive stats, AI insights, and quick actions all in one place.",
+    },
+    {
+      src: "/ScreenShotHealthOverview.png",
+      alt: "Health Overview",
+      title: "Family Health Tracking",
+      description:
+        "Visualize health conditions across generations, identify patterns, and generate detailed health reports with AI assistance.",
+    },
+    {
+      src: "/ScreenShotSearch.png",
+      alt: "Search Users",
+      title: "Community Connections",
+      description:
+        "Find other family historians and explore public family trees to discover potential connections and expand your research.",
+    },
+    {
+      src: "/AIChat.png",
+      alt: "Personal AI Health Assistant",
+      title: "AI Health Assistant",
+      description: "Get intelligent insights into hereditary health patterns across your family tree. Ask health-related questions and receive personalized AI-powered answers.",
+    },
+     {
+      src: "/GenerateHealthReport.png",
+      alt: "AI-Generated Family Health Report",
+      title: "Health Report Generator",
+      description: "Analyze family health data with AI and generate personalized reports. Export and print comprehensive health summaries in PDF format for medical use or family records.",
+    }
+
+  ]
+
+  const AppScreenshotSlideshow = () => {
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % screenshots.length)
+      }, 5000)
+      return () => clearInterval(timer)
+    }, [])
+
+    return (
+      <div className="relative max-w-6xl mx-auto">
+        <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-70" />
+
+        <div className="relative rounded-2xl overflow-hidden border border-gray-800/50 shadow-2xl bg-gray-900/50 backdrop-blur-sm">
+          {/* Screenshot Display */}
+          <div className="relative aspect-video overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 300 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -300 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0"
+              >
+                {/* Using regular img tag instead of Next.js Image for external URLs */}
+                <img
+                  src={screenshots[currentSlide].src || "/placeholder.svg"}
+                  alt={screenshots[currentSlide].alt}
+                  className="w-full h-full object-cover"
+                  loading={currentSlide === 0 ? "eager" : "lazy"}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev - 1 + screenshots.length) % screenshots.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 group"
+            >
+              <svg
+                className="w-5 h-5 text-white group-hover:scale-110 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev + 1) % screenshots.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 group"
+            >
+              <svg
+                className="w-5 h-5 text-white group-hover:scale-110 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Slide Indicators */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {screenshots.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentSlide ? "bg-teal-400 scale-125" : "bg-white/40 hover:bg-white/60"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Content Description */}
+          <div className="p-8 bg-gradient-to-r from-gray-900/80 to-gray-800/80">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="text-center"
+              >
+                <h3 className="text-2xl font-bold text-white mb-3">{screenshots[currentSlide].title}</h3>
+                <p className="text-gray-300 text-lg max-w-3xl mx-auto leading-relaxed">
+                  {screenshots[currentSlide].description}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              {currentSlide === 0 && (
+                <>
+                  <span className="px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-sm border border-teal-500/30">
+                    Dashboard
+                  </span>
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm border border-blue-500/30">
+                    AI Insights
+                  </span>
+                  <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm border border-purple-500/30">
+                    Quick Actions
+                  </span>
+                </>
+              )}
+              {currentSlide === 1 && (
+                <>
+                  <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-sm border border-pink-500/30">
+                    Health Tracking
+                  </span>
+                  <span className="px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm border border-red-500/30">
+                    Pattern Analysis
+                  </span>
+                  <span className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm border border-orange-500/30">
+                    AI Reports
+                  </span>
+                </>
+              )}
+              {currentSlide === 2 && (
+                <>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">
+                    User Search
+                  </span>
+                  <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm border border-cyan-500/30">
+                    Public Trees
+                  </span>
+                  <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30">
+                    Community
+                  </span>
+                </>
+              )}
+               {currentSlide === 3 && (
+                <>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">
+                    AI Health Assistant
+                  </span>
+                  <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm border border-cyan-500/30">
+                    Ask Health Questions
+                  </span>
+                  <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30">
+                    Get Instant Insights
+                  </span>
+                </>
+              )}
+              {currentSlide === 4 && (
+                <>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">
+                    Health Report
+                  </span>
+                  <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm border border-cyan-500/30">
+                     Smart Analysis
+                  </span>
+                  <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30">
+                    Export to PDF
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-black text-white font-sans relative overflow-hidden">
@@ -182,51 +389,25 @@ export default function Home() {
           </motion.div>
         </motion.section>
 
-        {/* Video Modal */}
-        {showVideo && (
-          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-4xl bg-gray-900 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setShowVideo(false)}
-                className="absolute top-4 right-4 p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
-              <div className="aspect-video">
-                <video
-                  className="w-full h-full"
-                  controls
-                  autoPlay
-                >
-                  <source src="/TreeTrace-Demo.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* App Preview */}
+        {/* App Preview Slideshow */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.8 }}
           className="mb-32"
         >
-          <div className="relative">
-            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-70" />
-            <div className="relative rounded-2xl overflow-hidden border border-gray-800/50 shadow-2xl">
-              <Image
-                src="/treetrace.png"
-                alt="TreeTrace Application Preview"
-                width={1200}
-                height={600}
-                className="w-full object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-            </div>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
+                See TreeTrace in Action
+              </span>
+            </h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Explore the powerful features that make TreeTrace the perfect platform for your family heritage
+            </p>
           </div>
+
+          <AppScreenshotSlideshow />
         </motion.section>
 
         {/* Features Section */}
@@ -397,6 +578,107 @@ export default function Home() {
           </div>
         </footer>
       </div>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {showVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowVideo(false)
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-5xl bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl overflow-hidden border border-gray-700/50 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gray-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-teal-500/20 rounded-lg">
+                    <TreePine className="h-5 w-5 text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">TreeTrace Demo</h3>
+                    <p className="text-sm text-gray-400">See how TreeTrace works</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowVideo(false)}
+                  className="group p-2 bg-gray-800/50 hover:bg-red-500/20 rounded-xl transition-all duration-200 border border-gray-700/50 hover:border-red-500/30"
+                  aria-label="Close video"
+                >
+                  <X className="w-5 h-5 text-gray-400 group-hover:text-red-400 transition-colors" />
+                </button>
+              </div>
+
+              {/* Video Container */}
+              <div className="relative bg-black">
+                <div className="aspect-video">
+                  <video className="w-full h-full object-cover" controls autoPlay playsInline preload="metadata">
+                    <source src="/TreeTrace-Demo.mp4" type="video/mp4" />
+                    <div className="flex items-center justify-center h-full bg-gray-800 text-white">
+                      <div className="text-center">
+                        <p className="text-lg mb-2">Video not available</p>
+                        <p className="text-sm text-gray-400">Your browser does not support the video format.</p>
+                      </div>
+                    </div>
+                  </video>
+                </div>
+
+                {/* Video Overlay Controls */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white border border-white/20">
+                      Demo Video
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowVideo(false)}
+                    className="px-4 py-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white text-sm rounded-lg transition-colors border border-white/20"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 bg-gray-900/30 border-t border-gray-700/50">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-sm text-gray-400">Ready to start building your family tree?</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowVideo(false)}
+                      className="px-4 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 rounded-lg transition-colors border border-gray-700/50"
+                    >
+                      Close
+                    </button>
+                    <Link href="/auth/signup">
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg"
+                        onClick={() => setShowVideo(false)}
+                      >
+                        Get Started
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
