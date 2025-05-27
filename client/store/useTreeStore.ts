@@ -127,36 +127,11 @@ const useTreeStore = create<TreeState>((set) => ({
       // Get all family members for this user
       const response = await api.get(`/family-members/user/${userId}`);
       
-      if (response.data && response.data.data && response.data.data.length > 0) {
-        const familyMembers = response.data.data;
-        console.log(`Found ${familyMembers.length} family members for user ${userId}`);
-        
-        // Process data like in TreeView
-        const processedData = familyMembers.map((member: any) => ({
-          id: member._id,
-          name: member.name || '',
-          surname: member.surname || '',
-          gender: member.gender || '',
-          status: member.status || 'unknown',
-          birthDate: member.birthDate || '',
-          deathDate: member.deathDate || '',
-          country: member.country || '',
-          occupation: member.occupation || '',
-          fid: member.fatherId || '',
-          mid: member.motherId || '',
-          pids: member.partnerId || [],
-          childId: member.childId || [],
-          tags: member.tags || []
-        }));
-        
-        set({ 
-          familyMembers: familyMembers,
-          currentFamilyTree: processedData,
-          isLoading: false 
-        });
-        toast.success("Family tree loaded successfully");
+      const familyMembers = response.data.familyMembers || [];
+      
+      if (response.data.familyMembers && response.data.familyMembers.length > 0) {
+        set({ familyMembers: response.data.familyMembers });
       } else {
-        console.log("No family tree data received:", response.data);
         set({
           currentFamilyTree: null,
           error: "No family tree found for this user",

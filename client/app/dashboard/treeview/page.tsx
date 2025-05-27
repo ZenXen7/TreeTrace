@@ -278,7 +278,6 @@ function Familytree(props: {
               subtree: true 
             });
             
-            console.log('Tree-Trace form fixer initialized');
           }
         `
         document.head.appendChild(script)
@@ -449,7 +448,7 @@ function Familytree(props: {
 
       // Add event listener for tree initialization
       familyAny.on("init", () => {
-        console.log("Tree initialized")
+        // Tree initialized
       })
 
       // Add event listener to remove the avatar from edit forms
@@ -690,7 +689,6 @@ function Familytree(props: {
 
         // Get the actual node data from the args
         const nodeId = args.node.id
-        console.log("Suggestion badge clicked via FamilyTree click event for node ID:", nodeId)
 
         // Navigate to the suggestions page with the real ID (ensure it's a string)
         const realNodeId = String(nodeId).replace(/{.*}/, "")
@@ -716,12 +714,6 @@ function Familytree(props: {
             const birthDate = rawData.birthDate ? new Date(rawData.birthDate) : null
             const deathDate = rawData.deathDate ? new Date(rawData.deathDate) : null
 
-            console.log("Edit form raw data:", rawData)
-            console.log("Country value:", rawData.country)
-            console.log("Occupation value:", rawData.occupation)
-            console.log("Birth date:", birthDate)
-            console.log("Death date:", deathDate)
-
             const updatedData = {
               name: rawData.name,
               surname: rawData.surname,
@@ -734,15 +726,10 @@ function Familytree(props: {
               tags: rawData.tags,
             }
 
-            console.log("Updating family member with ID:", resolvedId)
-            console.log("Update data:", updatedData)
-
             await updateFamilyMember(token, resolvedId, updatedData)
-            console.log("Family member updated successfully, fetching data...")
 
             // Explicitly trigger the check for similar family members
             try {
-              console.log("Triggering check for similar family members...")
               const response = await fetch(
                 `http://localhost:3001/notifications/check-similar-family-members/${resolvedId}`,
                 {
@@ -754,9 +741,7 @@ function Familytree(props: {
                 },
               )
 
-              if (response.ok) {
-                console.log("Similar family members check completed successfully")
-              } else {
+              if (!response.ok) {
                 console.error("Failed to check for similar family members:", await response.text())
               }
             } catch (error) {
@@ -764,11 +749,9 @@ function Familytree(props: {
             }
 
             await props.fetchData()
-            console.log("Data fetched successfully, including new suggestion counts")
 
             // Force a complete tree redraw and ensure badges are properly attached
             setTimeout(() => {
-              console.log("Forcing redraw to update suggestion badges")
               family.draw()
 
               // Wait for the redraw to complete, then attach badge event handlers
@@ -792,7 +775,6 @@ function Familytree(props: {
                   newBadge.addEventListener("click", (e) => {
                     e.stopPropagation()
                     e.preventDefault()
-                    console.log(`SVG Badge clicked for node ${nodeId}, redirecting`)
                     window.location.href = `/dashboard/suggestions/${nodeId}`
                     return false
                   })
@@ -813,7 +795,6 @@ function Familytree(props: {
                   badge.addEventListener("click", (e) => {
                     e.stopPropagation()
                     e.preventDefault()
-                    console.log(`Custom badge clicked for node ${nodeId}, redirecting`)
                     window.location.href = `/dashboard/suggestions/${nodeId}`
                   })
                 })
@@ -838,7 +819,6 @@ function Familytree(props: {
 
               const nodeId = badgeElement.getAttribute("data-node-id")
               if (nodeId) {
-                console.log("Badge clicked via event listener, redirecting to:", nodeId)
                 try {
                   const idStr = String(nodeId) // Ensure ID is a string
                   window.location.href = `/dashboard/suggestions/${encodeURIComponent(idStr)}`
@@ -853,7 +833,6 @@ function Familytree(props: {
               if (nodeElement) {
                 const nodeId = nodeElement.getAttribute("data-n-id")
                 if (nodeId) {
-                  console.log("Badge clicked via parent lookup, redirecting to:", nodeId)
                   window.location.href = `/dashboard/suggestions/${nodeId}`
                   return
                 }
@@ -1174,15 +1153,12 @@ export default function TreeViewPage() {
 
   // Define a handler function for filter changes
   const handleFilterChange = (name: string, value: string) => {
-    console.log(`Filter changed: ${name} = ${value}`)
-
     // Update the filter state and trigger re-fetch
     setActiveFilters((prev) => {
       const newFilters = {
         ...prev,
         [name]: value,
       }
-      console.log("New filters:", newFilters)
       return newFilters
     })
 
@@ -1192,7 +1168,6 @@ export default function TreeViewPage() {
 
   // Update the useEffect for filters to ensure they trigger properly
   useEffect(() => {
-    console.log("Filter effect triggered with:", activeFilters)
     fetchData()
   }, [activeFilters])
 
@@ -1210,12 +1185,9 @@ export default function TreeViewPage() {
         throw new Error("No authentication token found")
       }
 
-      console.log("Fetching data with filters:", activeFilters)
-
       // Use the fetchFilteredFamilyMembers function from familyService
       try {
         const members = await fetchFilteredFamilyMembers(token, activeFilters)
-        console.log("API returned members:", members)
 
         if (!members || members.length === 0) {
           setData([])
@@ -1244,8 +1216,6 @@ export default function TreeViewPage() {
         const processedDataPromises = strictFiltered.map(async (member: any) => {
           // Use the fixed getMemberSuggestionCount function which now exactly matches the suggestions page logic
           const filteredSuggestionCount = await getMemberSuggestionCount(token, member._id)
-
-          console.log(`Member ${member.name}: Found ${filteredSuggestionCount} valid suggestions after filtering`)
 
           // Add this member's filtered count to the total
           totalSuggestionsCount += filteredSuggestionCount

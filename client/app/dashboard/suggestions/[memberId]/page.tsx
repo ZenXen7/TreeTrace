@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, Calendar, Flag, Briefcase, Info, Sparkles } from "lucide-react";
+import { ArrowLeft, User, Calendar, Flag, Briefcase, Info, TreePine, Sparkles } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { AnimatedNodes } from "@/components/AnimatedNodes";
+import AnimatedNodes from "@/components/animated-nodes";
 
 interface SuggestionData {
   count: number;
@@ -52,7 +52,7 @@ async function makeApiCall(url: string, options: RequestInit = {}) {
     ...options.headers
   };
   
-  console.log("Making API call to:", url);
+
   
   try {
     const response = await fetch(url, {
@@ -63,7 +63,6 @@ async function makeApiCall(url: string, options: RequestInit = {}) {
     // If not OK, try to parse the error response
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`API error (${response.status}):`, errorText);
       
       let errorMessage = `API error (${response.status})`;
       try {
@@ -88,14 +87,12 @@ async function makeApiCall(url: string, options: RequestInit = {}) {
         'data' in responseData && 
         responseData.data !== null && 
         typeof responseData.data === 'object') {
-      // Removed performance-impacting log
       return responseData.data;
     }
     
     // Otherwise, return the full response
     return responseData;
   } catch (error) {
-    console.error("API call failed:", error);
     throw error;
   }
 }
@@ -124,7 +121,7 @@ const fetchGenderFromSourceMember = async (sourceMemberId: string): Promise<stri
       }
     }
   } catch (err) {
-    console.warn("Could not fetch source member for gender:", err);
+    // Could not fetch source member for gender
   }
   
   return undefined;
@@ -177,8 +174,6 @@ export default function MemberSuggestionsPage() {
       setLoading(true);
       setError(null);
       
-      // Removed performance-impacting log
-      
       try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -187,7 +182,6 @@ export default function MemberSuggestionsPage() {
         
         // Fetch member data
         const response = await makeApiCall(`http://localhost:3001/family-members/${memberId}`);
-        // Removed performance-impacting log
         
         const extractedMember = response?.data || response;
         
@@ -197,7 +191,6 @@ export default function MemberSuggestionsPage() {
         }
         
         setMemberData(extractedMember);
-        // Removed performance-impacting log
         
         // Fetch partner information if the member has partners
         if (extractedMember.partnerId && extractedMember.partnerId.length > 0) {
@@ -222,14 +215,11 @@ export default function MemberSuggestionsPage() {
             });
             
             const partnerInfo = await Promise.all(partnerPromises);
-            // Removed performance-impacting log
             setPartnerInfo(partnerInfo);
             
             // Fetch child information
             let childrenInfo: { name: string; id: string }[] = [];
             if (extractedMember.childId && extractedMember.childId.length > 0) {
-              // Removed performance-impacting log
-              console.log("Member has children, fetching details");
               
               const childPromises = extractedMember.childId.map(async (childId: string) => {
                 const childResponse = await makeApiCall(`http://localhost:3001/family-members/${childId}`);
@@ -240,13 +230,12 @@ export default function MemberSuggestionsPage() {
               });
               
               childrenInfo = await Promise.all(childPromises);
-              // Removed performance-impacting log
               setChildInfo(childrenInfo);
             } else {
               setChildInfo([]);
             }
           } catch (err) {
-            console.warn("Error fetching partner information:", err);
+            // Error fetching partner information
           }
         }
         
@@ -265,10 +254,9 @@ export default function MemberSuggestionsPage() {
             processedSuggestions = processedData.data || [];
           }
         } catch (err) {
-          console.warn(`Error fetching processed suggestions:`, err);
+
         }
         
-        // Removed performance-impacting log
         setAppliedSuggestions(processedSuggestions);
         
         // Step 3: Get member similarities (suggestions)
@@ -281,7 +269,7 @@ export default function MemberSuggestionsPage() {
           });
           
           if (!suggestionsResponse.ok) {
-            console.warn(`Suggestions API returned ${suggestionsResponse.status}`);
+
             // Initialize with empty data
             setSuggestionsData({
               count: 0,
@@ -292,7 +280,6 @@ export default function MemberSuggestionsPage() {
           } else {
             // Process normal suggestions response
             const suggestionsData = await suggestionsResponse.json();
-            // Removed performance-impacting log
             
             // Extract data from response
             const actualSuggestionsData = suggestionsData.data;
@@ -331,7 +318,6 @@ export default function MemberSuggestionsPage() {
             }
           }
         } catch (err) {
-          console.error("Error fetching suggestions:", err);
           setSuggestionsData({
             count: 0,
             suggestionCount: 0,
@@ -340,7 +326,6 @@ export default function MemberSuggestionsPage() {
           });
         }
       } catch (error) {
-        console.error("Error in fetchData:", error);
         setError(error instanceof Error ? error.message : "An unknown error occurred");
       } finally {
         setLoading(false);
@@ -389,23 +374,18 @@ export default function MemberSuggestionsPage() {
     // Parse the suggestion and extract the data to update
     let updateData: any = {};
     
-    console.log("Parsing suggestion:", suggestion);
-    
     if (suggestion.includes("birth date")) {
-      console.log("Found birth date suggestion:", suggestion);
       
       // Handle "Birth date may be X (recorded by another user) instead of Y" pattern
       let birthDateMatch = suggestion.match(/Birth date may be ([^(]+) \(recorded by another user\) instead of/i);
       if (birthDateMatch && birthDateMatch[1]) {
         updateData.birthDate = birthDateMatch[1].trim();
-        console.log("Extracted birth date from 'may be' format:", updateData.birthDate);
       }
       // Handle "Consider updating birth date from X to Y" pattern
       else if (suggestion.includes("Consider updating birth date from")) {
         const updateMatch = suggestion.match(/Consider updating birth date from [^ ]+ to ([^ ]+)/i);
         if (updateMatch && updateMatch[1]) {
           updateData.birthDate = updateMatch[1].trim();
-          console.log("Extracted birth date from 'updating from/to' format:", updateData.birthDate);
         }
       }
       // Handle "Consider adding birth date (X)" pattern
@@ -413,7 +393,6 @@ export default function MemberSuggestionsPage() {
         const addMatch = suggestion.match(/Consider adding birth date \(([^)]+)\)/i);
         if (addMatch && addMatch[1]) {
           updateData.birthDate = addMatch[1].trim();
-          console.log("Extracted birth date from 'adding' format:", updateData.birthDate);
         }
       }
       // Handle "Confirm birth date X" pattern
@@ -421,7 +400,6 @@ export default function MemberSuggestionsPage() {
         const confirmMatch = suggestion.match(/Confirm birth date ([^ ]+)/i);
         if (confirmMatch && confirmMatch[1]) {
           updateData.birthDate = confirmMatch[1].trim();
-          console.log("Extracted birth date from 'confirm' format:", updateData.birthDate);
         }
       }
       // Fallback to looking for any date pattern
@@ -429,18 +407,15 @@ export default function MemberSuggestionsPage() {
         const match = suggestion.match(/(\d{4}-\d{2}-\d{2})/);
         if (match) {
           updateData.birthDate = match[0];
-          console.log("Extracted birth date from generic pattern:", updateData.birthDate);
         }
       }
     } else if (suggestion.includes("death date")) {
-      console.log("Found death date suggestion:", suggestion);
       
       // Handle "Death date may be X (recorded by another user) instead of Y" pattern
       let deathDateMatch = suggestion.match(/Death date may be ([^(]+) \(recorded by another user\) instead of/i);
       if (deathDateMatch && deathDateMatch[1]) {
         updateData.deathDate = deathDateMatch[1].trim();
         updateData.status = "dead"; // Set status to dead when death date is provided
-        console.log("Extracted death date from 'may be' format:", updateData.deathDate);
       }
       // Handle "Consider updating death date from X to Y" pattern
       else if (suggestion.includes("Consider updating death date from")) {
@@ -448,7 +423,6 @@ export default function MemberSuggestionsPage() {
         if (updateMatch && updateMatch[1]) {
           updateData.deathDate = updateMatch[1].trim();
           updateData.status = "dead"; // Set status to dead when death date is provided
-          console.log("Extracted death date from 'updating from/to' format:", updateData.deathDate);
         }
       }
       // Handle "Consider adding death date (X)" pattern
@@ -457,7 +431,6 @@ export default function MemberSuggestionsPage() {
         if (addMatch && addMatch[1]) {
           updateData.deathDate = addMatch[1].trim();
           updateData.status = "dead"; // Set status to dead when death date is provided
-          console.log("Extracted death date from 'adding' format:", updateData.deathDate);
         }
       }
       // Handle "Confirm death date X" pattern
@@ -466,7 +439,6 @@ export default function MemberSuggestionsPage() {
         if (confirmMatch && confirmMatch[1]) {
           updateData.deathDate = confirmMatch[1].trim();
           updateData.status = "dead"; // Set status to dead when death date is provided
-          console.log("Extracted death date from 'confirm' format:", updateData.deathDate);
         }
       }
       // Fallback to looking for any date pattern
@@ -475,25 +447,21 @@ export default function MemberSuggestionsPage() {
         if (match) {
           updateData.deathDate = match[0];
           updateData.status = "dead"; // Set status to dead when death date is provided
-          console.log("Extracted death date from generic pattern:", updateData.deathDate);
         }
       }
     } else if (suggestion.includes("country")) {
-      console.log("Found country suggestion:", suggestion);
       
       // Improved regex to handle different formats of country suggestions
       // First try to match "Country may be X (recorded by another user) instead of Y" pattern
       let countryMatch = suggestion.match(/Country may be ([^(]+) \(recorded by another user\) instead of/i);
       if (countryMatch && countryMatch[1]) {
         updateData.country = countryMatch[1].trim();
-        console.log("Extracted country from 'may be' format:", updateData.country);
       } 
       // Try "Consider updating country to X" pattern
       else if (suggestion.includes("Consider updating country to")) {
         const updateMatch = suggestion.match(/Consider updating country to "([^"]+)"/i);
         if (updateMatch && updateMatch[1]) {
           updateData.country = updateMatch[1].trim();
-          console.log("Extracted country from 'updating to' format:", updateData.country);
         }
       }
       // Try "Consider updating country from X to Y" pattern
@@ -501,7 +469,6 @@ export default function MemberSuggestionsPage() {
         const updateFromMatch = suggestion.match(/Consider updating country from "([^"]+)" to "([^"]+)"/i);
         if (updateFromMatch && updateFromMatch[2]) {
           updateData.country = updateFromMatch[2].trim();
-          console.log("Extracted country from 'updating from/to' format:", updateData.country);
         }
       }
       // Try "Consider adding country X" pattern
@@ -509,7 +476,6 @@ export default function MemberSuggestionsPage() {
         const addMatch = suggestion.match(/Consider adding country "([^"]+)"/i);
         if (addMatch && addMatch[1]) {
           updateData.country = addMatch[1].trim();
-          console.log("Extracted country from 'adding' format:", updateData.country);
         }
       }
       // Try "Confirm country X" pattern
@@ -517,7 +483,6 @@ export default function MemberSuggestionsPage() {
         const confirmMatch = suggestion.match(/Confirm country "([^"]+)"/i);
         if (confirmMatch && confirmMatch[1]) {
           updateData.country = confirmMatch[1].trim();
-          console.log("Extracted country from 'confirm' format:", updateData.country);
         }
       }
       // Try other patterns
@@ -525,36 +490,26 @@ export default function MemberSuggestionsPage() {
         const countryRegex = /country "([^"]+)"|"([^"]+)" country|country from "([^"]+)"|country to "([^"]+)"|adding country "([^"]+)"|country ([A-Za-z]+)/i;
         const match = suggestion.match(countryRegex);
         
-        console.log("Country regex match:", match);
-        
         if (match) {
           // Find the first non-undefined group which contains the country
           const country = match[1] || match[2] || match[3] || match[4] || match[5] || match[6];
           if (country) {
             updateData.country = country;
-            console.log("Extracted country:", updateData.country);
-          } else {
-            console.log("No country value found in match groups");
           }
-        } else {
-          console.log("Country regex didn't match the suggestion");
         }
       }
     } else if (suggestion.includes("occupation")) {
-      console.log("Found occupation suggestion:", suggestion);
       
       // Handle "Occupation may be X (recorded by another user) instead of Y" pattern
       let occupationMatch = suggestion.match(/Occupation may be "([^"]+)" \(recorded by another user\) instead of/i);
       if (occupationMatch && occupationMatch[1]) {
         updateData.occupation = occupationMatch[1].trim();
-        console.log("Extracted occupation from 'may be' format:", updateData.occupation);
       } 
       // Handle "Consider updating occupation to X" pattern
       else if (suggestion.includes("Consider updating occupation to")) {
         const updateMatch = suggestion.match(/Consider updating occupation to "([^"]+)"/i);
         if (updateMatch && updateMatch[1]) {
           updateData.occupation = updateMatch[1].trim();
-          console.log("Extracted occupation from 'updating to' format:", updateData.occupation);
         }
       }
       // Handle "Consider updating occupation from X to Y" pattern
@@ -562,7 +517,6 @@ export default function MemberSuggestionsPage() {
         const updateFromMatch = suggestion.match(/Consider updating occupation from "([^"]+)" to "([^"]+)"/i);
         if (updateFromMatch && updateFromMatch[2]) {
           updateData.occupation = updateFromMatch[2].trim();
-          console.log("Extracted occupation from 'updating from/to' format:", updateData.occupation);
         }
       }
       // Handle "Consider adding occupation X" pattern
@@ -570,7 +524,6 @@ export default function MemberSuggestionsPage() {
         const addMatch = suggestion.match(/Consider adding occupation "([^"]+)"/i);
         if (addMatch && addMatch[1]) {
           updateData.occupation = addMatch[1].trim();
-          console.log("Extracted occupation from 'adding' format:", updateData.occupation);
         }
       }
       // Handle "Confirm occupation X" pattern
@@ -578,7 +531,6 @@ export default function MemberSuggestionsPage() {
         const confirmMatch = suggestion.match(/Confirm occupation "([^"]+)"/i);
         if (confirmMatch && confirmMatch[1]) {
           updateData.occupation = confirmMatch[1].trim();
-          console.log("Extracted occupation from 'confirm' format:", updateData.occupation);
         }
       }
       // Try other patterns
@@ -586,48 +538,37 @@ export default function MemberSuggestionsPage() {
         const occupationRegex = /occupation "([^"]+)"|"([^"]+)" occupation|occupation from "([^"]+)"|occupation to "([^"]+)"|adding occupation "([^"]+)"/i;
         const match = suggestion.match(occupationRegex);
         
-        console.log("Occupation regex match:", match);
-        
         if (match) {
           // Find the first non-undefined group which contains the occupation
           const occupation = match[1] || match[2] || match[3] || match[4] || match[5];
           if (occupation) {
             updateData.occupation = occupation;
-            console.log("Extracted occupation:", updateData.occupation);
-          } else {
-            console.log("No occupation value found in match groups");
           }
-        } else {
-          console.log("Occupation regex didn't match the suggestion");
         }
       }
     } else if (suggestion.includes("dead") || suggestion.includes("deceased")) {
-      console.log("Found status suggestion (dead):", suggestion);
       
       // Handle different patterns for dead/deceased status
       if (suggestion.includes("Consider updating status to") || 
           suggestion.includes("This family member may be") ||
           suggestion.includes("Confirm dead status")) {
         updateData.status = "dead";
-        console.log("Setting status to dead");
       }
     } else if (suggestion.includes("alive")) {
-      console.log("Found status suggestion (alive):", suggestion);
       
       // Handle different patterns for alive status
       if (suggestion.includes("Verify status") || 
           suggestion.includes("recorded as alive")) {
         updateData.status = "alive";
-        console.log("Setting status to alive");
       }
     } else if (suggestion.includes("Consider adding father") || suggestion.includes("adding father")) {
-      console.log("Found father suggestion:", suggestion);
+
       
       // Ask for confirmation before proceeding with parent addition
       const confirmed = window.confirm(`Do you want to add a father for this family member? This will create a new parent node in your family tree.`);
       
       if (!confirmed) {
-        console.log("User declined to add father");
+ 
         return;
       }
       
@@ -638,7 +579,7 @@ export default function MemberSuggestionsPage() {
       const fatherNameMatch = suggestion.match(/adding father "([^"]+)"/i);
       if (fatherNameMatch && fatherNameMatch[1]) {
         updateData._fatherName = fatherNameMatch[1].trim();
-        console.log("Extracted father name:", updateData._fatherName);
+  
         
         // NEVER extract surname from name - it should come from explicit surname field only
       }
@@ -647,7 +588,7 @@ export default function MemberSuggestionsPage() {
       const fatherSurnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
       if (fatherSurnameMatch && fatherSurnameMatch[1]) {
         updateData._fatherSurname = fatherSurnameMatch[1].trim();
-        console.log("Directly extracted father surname:", updateData._fatherSurname);
+
       }
       
       // Try different possible formats
@@ -659,17 +600,16 @@ export default function MemberSuggestionsPage() {
       
       if (sourceMemberMatch && sourceMemberMatch[1]) {
         updateData._sourceMemberId = sourceMemberMatch[1].trim();
-        console.log("Extracted source member ID:", updateData._sourceMemberId);
+
       }
       
     } else if (suggestion.includes("adding mother") || suggestion.includes("Consider adding mother")) {
-      console.log("Found mother suggestion:", suggestion);
+
       
       // Ask for confirmation before proceeding with parent addition
       const confirmed = window.confirm(`Do you want to add a mother for this family member? This will create a new parent node in your family tree.`);
       
       if (!confirmed) {
-        console.log("User declined to add mother");
         return;
       }
       
@@ -680,7 +620,7 @@ export default function MemberSuggestionsPage() {
       const motherNameMatch = suggestion.match(/adding mother "([^"]+)"/i);
       if (motherNameMatch && motherNameMatch[1]) {
         updateData._motherName = motherNameMatch[1].trim();
-        console.log("Extracted mother name:", updateData._motherName);
+
         
         // NEVER extract surname from name - it should come from explicit surname field only
       }
@@ -689,7 +629,7 @@ export default function MemberSuggestionsPage() {
       const motherSurnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
       if (motherSurnameMatch && motherSurnameMatch[1]) {
         updateData._motherSurname = motherSurnameMatch[1].trim();
-        console.log("Directly extracted mother surname:", updateData._motherSurname);
+
       }
       
       // Try different possible formats to find source member ID
@@ -701,16 +641,16 @@ export default function MemberSuggestionsPage() {
       
       if (sourceMemberMatch && sourceMemberMatch[1]) {
         updateData._sourceMemberId = sourceMemberMatch[1].trim();
-        console.log("Extracted source member ID:", updateData._sourceMemberId);
+
       }
     } else if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
-      console.log("Found partner suggestion:", suggestion);
+
       
       // Ask for confirmation before proceeding with partner addition
       const confirmed = window.confirm(`Do you want to add a partner for this family member? This will create a new partner node in your family tree.`);
       
       if (!confirmed) {
-        console.log("User declined to add partner");
+
         return;
       }
       
@@ -722,14 +662,14 @@ export default function MemberSuggestionsPage() {
       if (partnerNameMatch && partnerNameMatch[1]) {
         // Preserve the full name without splitting or extracting surnames
         updateData._partnerName = partnerNameMatch[1].trim();
-        console.log("Extracted full partner name:", updateData._partnerName);
+
       }
       
       // Only use explicitly mentioned surname
       const partnerSurnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
       if (partnerSurnameMatch && partnerSurnameMatch[1]) {
         updateData._partnerSurname = partnerSurnameMatch[1].trim();
-        console.log("Directly extracted partner surname:", updateData._partnerSurname);
+
       }
       
       // Try different possible formats to find source member ID
@@ -741,7 +681,7 @@ export default function MemberSuggestionsPage() {
       
       if (sourceMemberMatch && sourceMemberMatch[1]) {
         updateData._sourceMemberId = sourceMemberMatch[1].trim();
-        console.log("Extracted source member ID:", updateData._sourceMemberId);
+
       }
       
       // Store the partner suggestion in pending changes
@@ -776,17 +716,17 @@ export default function MemberSuggestionsPage() {
       
       if (childNameMatch && childNameMatch[1]) {
         childName = childNameMatch[1].trim();
-        console.log(`Successfully extracted child name: "${childName}" from suggestion: "${suggestion}"`);
+
       } else {
-        console.warn(`Could not extract child name from suggestion: "${suggestion}"`);
+
         // Fallback: try to find any quoted name in the suggestion
         const fallbackMatch = suggestion.match(/"([^"]+)"/);
         if (fallbackMatch && fallbackMatch[1] && !fallbackMatch[1].toLowerCase().includes("kyle")) {
           childName = fallbackMatch[1].trim();
-          console.log(`Using fallback extraction for child name: "${childName}"`);
+
         } else {
           childName = "Child"; // Default fallback
-          console.log("Using default fallback name: Child");
+
         }
       }
       
@@ -794,7 +734,7 @@ export default function MemberSuggestionsPage() {
       const confirmed = window.confirm(`Do you want to add child "${childName}" to this family member? This will create a new node in your family tree.`);
       
       if (!confirmed) {
-        console.log("User declined to add child");
+
         return;
       }
 
@@ -808,7 +748,7 @@ export default function MemberSuggestionsPage() {
       
       if (sourceMemberMatch && sourceMemberMatch[1]) {
         sourceMemberId = sourceMemberMatch[1].trim();
-        console.log("Extracted source member ID:", sourceMemberId);
+
       }
       
       // Extract the clean member ID
@@ -822,20 +762,20 @@ export default function MemberSuggestionsPage() {
 
       if (sourceMemberId) {
         try {
-          console.log(`Fetching gender from source member: ${sourceMemberId}`);
+
           const sourceGender = await fetchGenderFromSourceMember(sourceMemberId);
           if (sourceGender) {
             childGender = sourceGender;
             relation = childGender === "male" ? "son" : "daughter";
-            console.log(`Successfully fetched gender from source: ${childGender}, relation: ${relation}`);
+
           } else {
-            console.warn("Could not get gender from source member, falling back to suggestion text");
+
           }
         } catch (err) {
-          console.warn("Error fetching source member gender:", err);
+
         }
       } else {
-        console.warn("No source member ID found in suggestion, falling back to suggestion text");
+
       }
 
       // If still no gender, check for relation in suggestion text
@@ -844,35 +784,35 @@ export default function MemberSuggestionsPage() {
         if (suggestion.toLowerCase().includes("adding son")) {
           childGender = "male";
           relation = "son";
-          console.log(`Found 'son' in suggestion text: setting gender to male`);
+
         } 
         else if (suggestion.toLowerCase().includes("adding daughter")) {
           childGender = "female";
           relation = "daughter";
-          console.log(`Found 'daughter' in suggestion text: setting gender to female`);
+
         }
         // Then look for relation mentioned elsewhere in the suggestion
         else if (suggestion.toLowerCase().includes("this son for this person")) {
           childGender = "male";
           relation = "son";
-          console.log(`Found relation 'son' in suggestion text: setting gender to male`);
+
         } 
         else if (suggestion.toLowerCase().includes("this daughter for this person")) {
           childGender = "female";
           relation = "daughter";
-          console.log(`Found relation 'daughter' in suggestion text: setting gender to female`);
+  
         }
         // Generic gender references as fallback
         else if (suggestion.toLowerCase().includes("male")) {
           childGender = "male";
           relation = "son";
-          console.log(`Found 'male' in suggestion text: setting gender to male`);
+
         } 
         else {
           // Default to female if no gender information in suggestion
           childGender = "female";
           relation = "daughter";
-          console.log(`No gender info in suggestion: defaulting to female`);
+
         }
       }
 
@@ -881,12 +821,12 @@ export default function MemberSuggestionsPage() {
       if (suggestion.toLowerCase().includes("adding son") || suggestion.toLowerCase().includes("this son for this person")) {
         childGender = "male";
         relation = "son";
-        console.log("FINAL CHECK: Found 'son' in suggestion text, enforcing male gender");
+
       }
       else if (suggestion.toLowerCase().includes("adding daughter") || suggestion.toLowerCase().includes("this daughter for this person")) {
         childGender = "female";
         relation = "daughter";
-        console.log("FINAL CHECK: Found 'daughter' in suggestion text, enforcing female gender");
+
       }
 
       // Store one child action with a unique key
@@ -907,13 +847,10 @@ export default function MemberSuggestionsPage() {
         _sourceSuggestion: suggestion // Store the original suggestion to properly mark only this one as processed
       };
       
-      console.log("ACTION DATA DEBUG - Creating child action with:", {
-        childName,
-        actionData,
-        _childrenNames: actionData._childrenNames
-      });
+
+
       
-      console.log("Creating child action with gender:", childGender);
+
       
       // Set appropriate parent fields based on gender
       if (memberData && memberData.gender === "male") {
@@ -965,15 +902,15 @@ export default function MemberSuggestionsPage() {
           ? (memberId as any).toString()
           : String(memberId);
         
-        console.log("Working with member ID:", cleanMemberId);
+
         
         // ALWAYS fetch fresh data to ensure we have the latest
-        console.log("Fetching fresh member data...");
+
         let validMemberData: MemberData;
         
         try {
           const freshMemberResponse = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
-          console.log("API returned response:", freshMemberResponse);
+
           
           // Extract the actual member data from the response structure
           // The API returns { statusCode, message, data } where data is the actual member object
@@ -982,7 +919,7 @@ export default function MemberSuggestionsPage() {
           // Check if we have a nested response structure
           if (freshMemberResponse && typeof freshMemberResponse === 'object') {
             if (freshMemberResponse.data && typeof freshMemberResponse.data === 'object') {
-              console.log("Extracting member data from nested response");
+
               actualMemberData = freshMemberResponse.data;
             } else {
               // If not nested, assume the response itself is the member data
@@ -990,11 +927,11 @@ export default function MemberSuggestionsPage() {
             }
           }
           
-          console.log("Extracted member object:", actualMemberData);
+
           
           // Validate that we have a proper object with _id
           if (!actualMemberData || typeof actualMemberData !== 'object' || !actualMemberData._id) {
-            console.error("API returned invalid member data:", actualMemberData);
+
             toast.error("Could not retrieve valid member data");
             return;
           }
@@ -1003,17 +940,16 @@ export default function MemberSuggestionsPage() {
           setMemberData(actualMemberData);
           validMemberData = actualMemberData;
         } catch (fetchError) {
-          console.error("Failed to fetch member data:", fetchError);
+
           toast.error("Failed to get member data");
           return;
         }
         
-        console.log("Using validated member data:", validMemberData);
-        console.log("Adding parent from suggestion:", updateData);
+
         
         // Double-check that we have a valid ID before proceeding
         if (!validMemberData._id) {
-          console.error("Member data is missing ID:", validMemberData);
+
           toast.error("Cannot add parent: Missing member ID");
           return;
         }
@@ -1032,7 +968,7 @@ export default function MemberSuggestionsPage() {
         const surnameMatch = suggestion.match(/surname "([^"]+)"/i) || suggestion.match(/with surname "([^"]+)"/i);
         if (surnameMatch && surnameMatch[1]) {
           explicitSurname = surnameMatch[1].trim();
-          console.log(`Directly found surname in suggestion: "${explicitSurname}"`);
+
         }
 
         // Check if the name contains spaces (potentially has FirstName LastName format)
@@ -1040,12 +976,11 @@ export default function MemberSuggestionsPage() {
         let firstName = parentName; // Keep the full name intact
         let extractedSurname = "";
 
-        // NEVER extract surname from name parts - only use explicit surname
-        console.log(`Using full name as is: "${firstName}", no surname extraction from name`);
+
 
         // Use surname in this priority: explicit from suggestion, source member, member's own
         let parentSurname = explicitSurname || validMemberData.surname || "";
-        console.log(`Final surname determination (explicit only): "${parentSurname}"`);
+
 
         // Prepare data for the new parent - keeping full name in name field
         const parentData: {
@@ -1062,29 +997,29 @@ export default function MemberSuggestionsPage() {
           surname: parentSurname, // Only use explicit surname
           gender: updateData._specialAction === "addFather" ? "male" : "female",
           status: "alive",
-          country: validMemberData.country || "Philippines",
+          country: validMemberData.country || "",
           occupation: ""
         };
         
         // Try to get additional details from source member if available
         if (updateData._sourceMemberId) {
           try {
-            console.log(`Fetching details from source member ${updateData._sourceMemberId}`);
+
             const sourceResponse = await makeApiCall(`http://localhost:3001/family-members/${updateData._sourceMemberId}`);
             
             if (sourceResponse && (sourceResponse.data || sourceResponse)) {
               const sourceData = sourceResponse.data || sourceResponse;
-              console.log("Found source member data:", sourceData);
+
               
               // CRITICAL FIX: Use the full name and surname from source member
               if (sourceData.name) {
-                console.log(`Using source member name: "${sourceData.name}" instead of "${parentData.name}"`);
+
                 parentData.name = sourceData.name;
               }
               
               // Always use source member's surname when available
               if (sourceData.surname) {
-                console.log(`Using source member surname: "${sourceData.surname}" instead of "${parentData.surname}"`);
+
                 parentData.surname = sourceData.surname;
               }
               
@@ -1096,7 +1031,7 @@ export default function MemberSuggestionsPage() {
               if (sourceData.occupation) parentData.occupation = sourceData.occupation;
             }
           } catch (sourceError) {
-            console.warn("Could not fetch source member data:", sourceError);
+
             // Continue with the basic data we have
           }
         }
@@ -1138,8 +1073,7 @@ export default function MemberSuggestionsPage() {
         return;
         
       } catch (error) {
-        console.error("Error preparing parent addition:", error);
-        toast.error(`Failed to prepare parent addition: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  toast.error(`Failed to prepare parent addition: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return;
       }
     } else if (updateData._specialAction === "addPartner") {
@@ -1160,7 +1094,7 @@ export default function MemberSuggestionsPage() {
         surname: updateData._partnerSurname || memberData.surname || "Unknown",
         gender: partnerGender,
         status: "alive",
-        country: memberData.country || "Philippines",
+        country: memberData.country || "ph",
         occupation: ""
       };
       
@@ -1182,7 +1116,7 @@ export default function MemberSuggestionsPage() {
           const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${memberData._id}`);
           setMemberData(refreshedMemberData);
         } catch (refreshError) {
-          console.error("Error refreshing member data:", refreshError);
+
         }
       };
       
@@ -1203,28 +1137,13 @@ export default function MemberSuggestionsPage() {
           surname: updateData._partnerSurname || memberData.surname || "",
           gender: partnerGender,
           status: "alive",
-          country: memberData.country || "Philippines",
+          country: memberData.country || "ph",
           occupation: ""
         };
         
-        // Log the partner name details for debugging
-        console.log("Adding partner with name data:", {
-          fullName: partnerData.name, 
-          surname: partnerData.surname,
-          relation: relation
-        });
+     
         
-        // Call the handler to add the partner
-        console.log(`Adding ${relation} with data:`, partnerData);
-        const result = await handleAddMember(
-          localStorage.getItem("token") || "", 
-          syntheticNode, 
-          relation, 
-          refreshFunction, 
-          partnerData
-        );
-        
-        console.log(`Partner addition result:`, result);
+
         
         // Mark suggestion as processed in the backend as well
         if (memberId) {
@@ -1240,7 +1159,7 @@ export default function MemberSuggestionsPage() {
         // Set flag in sessionStorage to indicate tree should refresh
         sessionStorage.setItem('treeNeedsRefresh', 'true');
       } catch (error) {
-        console.error("Error adding partner:", error);
+
         toast.error(`Failed to add partner: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setLoading(false);
@@ -1248,8 +1167,7 @@ export default function MemberSuggestionsPage() {
       
       return;
     } else if (updateData._specialAction === "addChildren") {
-      // Handle adding children
-      console.log("Adding children from suggestion:", updateData);
+
       
       // First ensure we have valid member data
       if (!memberData) {
@@ -1275,7 +1193,7 @@ export default function MemberSuggestionsPage() {
           const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${memberData._id}`);
           setMemberData(refreshedMemberData);
         } catch (refreshError) {
-          console.error("Error refreshing member data:", refreshError);
+
         }
       };
       
@@ -1295,12 +1213,12 @@ export default function MemberSuggestionsPage() {
           // Get gender directly from action data without any defaults
           const childGender = updateData.gender;
           if (!childGender) {
-            console.error("Missing gender in child action data:", updateData);
+
             toast.error("Gender information is missing for child. Cannot proceed.");
             continue; // Skip this child but continue with others
           }
           
-          console.log(`Using gender from action data: ${childGender}`);
+
           // IMPORTANT: Always use the gender to determine relation, not the other way around
           // This ensures the gender is preserved from the suggestion
           let relation = childGender === "male" ? "son" : "daughter";
@@ -1326,7 +1244,7 @@ export default function MemberSuggestionsPage() {
             surname: memberData.surname || "",
             gender: childGender,
             status: "alive",
-            country: memberData.country || "Philippines",
+            country: memberData.country || "ph",
             occupation: "",
             _parentId: currentMemberId, // Explicitly set parent ID to establish relationship
             // Set parent fields based on member's gender
@@ -1341,7 +1259,7 @@ export default function MemberSuggestionsPage() {
             childData.fatherId = memberData.partnerId[0];
           }
           
-          console.log(`Adding child ${i + 1}/${childrenCount} with relation ${relation}:`, childData);
+
           
           try {
             // CRITICAL FIX: Double-check gender is set correctly and relation matches gender
@@ -1355,21 +1273,21 @@ export default function MemberSuggestionsPage() {
               // Always derive relation from gender for consistency
               relation = childData.gender === "male" ? "son" : "daughter";
               
-              console.log(`GENDER FIXED - Child gender: "${childData.gender}", using relation: "${relation}"`);
+
             } else {
               // If gender is missing, default to female
               childData.gender = "female";
               relation = "daughter";
-              console.log(`No gender specified - defaulting to female, relation: "daughter"`);
+
             }
 
             // FINAL CHECK: The familyService.handleAddMember will use relation to set gender, 
             // so we need to ensure they match exactly. Relation takes precedence.
             if (relation === "son") {
-              console.log("RELATION OVERRIDE: Using relation 'son' requires male gender - enforcing gender");
+
               childData.gender = "male";
             } else if (relation === "daughter") {
-              console.log("RELATION OVERRIDE: Using relation 'daughter' requires female gender - enforcing gender");
+
               childData.gender = "female";
             }
 
@@ -1394,12 +1312,12 @@ export default function MemberSuggestionsPage() {
               await new Promise(resolve => setTimeout(resolve, 300));
             }
           } catch (childError) {
-            console.error(`Error adding child ${i + 1}:`, childError);
+
             toast.error(`Failed to add child ${childName}: ${childError instanceof Error ? childError.message : 'Unknown error'}`);
           }
         }
         
-        console.log(`Finished adding ${childrenCount} children`);
+
         
         // Final refresh of data
         await refreshFunction();
@@ -1412,7 +1330,7 @@ export default function MemberSuggestionsPage() {
           toast.success(`Added ${childrenCount} children`);
         }
       } catch (error) {
-        console.error("Error adding children:", error);
+
         toast.error(`Failed to add children: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
       
@@ -1425,9 +1343,9 @@ export default function MemberSuggestionsPage() {
         // Ensure the date is in the correct format
         const parsedDate = new Date(updateData.birthDate);
         updateData.birthDate = parsedDate.toISOString().split('T')[0];
-        console.log("Formatted birth date:", updateData.birthDate);
+
       } catch (error) {
-        console.error("Error formatting birth date:", error);
+
       }
     }
     
@@ -1436,13 +1354,13 @@ export default function MemberSuggestionsPage() {
         // Ensure the date is in the correct format
         const parsedDate = new Date(updateData.deathDate);
         updateData.deathDate = parsedDate.toISOString().split('T')[0];
-        console.log("Formatted death date:", updateData.deathDate);
+
       } catch (error) {
-        console.error("Error formatting death date:", error);
+
       }
     }
     
-    console.log("Adding to pending changes:", updateData);
+
     
     // Save previous data for comparison
     prevMemberDataRef.current = memberData ? { ...memberData } : null;
@@ -1475,8 +1393,7 @@ export default function MemberSuggestionsPage() {
         ...updateData
       };
       
-      console.log("Previous member data:", prevMemberDataRef.current);
-      console.log("Updating member data in UI:", updatedMemberData);
+
       
       // Identify which fields are being updated
       const fieldsBeingUpdated: Record<string, boolean> = {};
@@ -1529,14 +1446,10 @@ export default function MemberSuggestionsPage() {
       
       // First apply regular changes if any
       if (Object.keys(regularChanges).length > 0) {
-        console.log(`Sending PATCH request to update member ${cleanMemberId} with data:`, regularChanges);
-        
         const result = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`, {
           method: "PATCH",
           body: JSON.stringify(regularChanges)
         });
-        
-        console.log("Update successful, response:", result);
       }
       
       // Then handle special actions (parent additions or child additions)
@@ -1546,8 +1459,6 @@ export default function MemberSuggestionsPage() {
         
         for (const action of specialActions) {
           try {
-            console.log(`Processing special action:`, action);
-            
             // Create synthetic node representing the target member
             const syntheticNode = {
               id: cleanMemberId,
@@ -1566,7 +1477,7 @@ export default function MemberSuggestionsPage() {
                 const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
                 setMemberData(refreshedMemberData);
               } catch (refreshError) {
-                console.error("Error refreshing member data:", refreshError);
+                // Error refreshing member data
               }
             };
             
@@ -1576,7 +1487,6 @@ export default function MemberSuggestionsPage() {
               const relation = action.data._specialAction === "addFather" ? "father" : "mother";
               
               // Call the handler to add the parent
-              console.log(`Adding ${relation} with data:`, action.data.parentData);
               const result = await handleAddMember(
                 localStorage.getItem("token") || "", 
                 syntheticNode, 
@@ -1584,8 +1494,6 @@ export default function MemberSuggestionsPage() {
                 refreshFunction, 
                 action.data.parentData
               );
-              
-              console.log(`${relation} addition result:`, result);
             } 
             else if (action.data._specialAction === "addPartner") {
               // Handle partner addition
@@ -1605,18 +1513,11 @@ export default function MemberSuggestionsPage() {
                 surname: action.data._partnerSurname || memberData.surname || "Unknown",
                 gender: partnerGender,
                 status: "alive",
-                country: memberData.country || "Philippines",
+                country: memberData.country || "ph",
                 occupation: ""
               };
               
-              console.log("Creating partner with name data:", {
-                fullName: partnerData.name,
-                surname: partnerData.surname,
-                relation: relation
-              });
-              
               // Call the handler to add the partner
-              console.log(`Adding ${relation} with data:`, partnerData);
               const result = await handleAddMember(
                 localStorage.getItem("token") || "", 
                 syntheticNode, 
@@ -1625,13 +1526,10 @@ export default function MemberSuggestionsPage() {
                 partnerData
               );
               
-              console.log(`Partner addition result:`, result);
               toast.success(`Added partner "${partnerData.name}"`);
             }
             else if (action.data._specialAction === "addChildren") {
               // Handle adding children
-              console.log("Adding children from suggestion:", action.data);
-              
               const childrenNames = action.data._childrenNames || [];
               const childrenCount = action.data._childrenCount || childrenNames.length || 1;
               
@@ -1647,19 +1545,15 @@ export default function MemberSuggestionsPage() {
                   // Look for relation information first
                   const relation = action.data.relation;
                   if (relation === "son") {
-                    console.log("Using 'son' relation to set gender to male");
                     action.data.gender = "male";
                   } else if (relation === "daughter") {
-                    console.log("Using 'daughter' relation to set gender to female");
                     action.data.gender = "female";
                   } else {
                     // Default to female if no relation or gender info
-                    console.log("No gender or relation info - defaulting to female");
                     action.data.gender = "female";
                   }
                 }
                 
-                console.log(`Using gender from action data: ${childGender}`);
                 // IMPORTANT: Always use the gender to determine relation, not the other way around
                 // This ensures the gender is preserved from the suggestion
                 let relation = childGender === "male" ? "son" : "daughter";
@@ -1671,7 +1565,7 @@ export default function MemberSuggestionsPage() {
                   // Get gender from action data 
                   gender: action.data.gender || "",
                   status: "alive",
-                  country: memberData.country || "Philippines",
+                  country: memberData.country || "ph",
                   occupation: "",
                   _parentId: cleanMemberId, // Explicitly set parent ID to establish relationship
                   // Set parent fields based on member's gender
@@ -1682,7 +1576,6 @@ export default function MemberSuggestionsPage() {
                 // If we have a source member ID, try to fetch proper surname and ensure gender is correct
                 if (action.data._sourceMemberId) {
                   try {
-                    console.log(`Fetching additional details from source member: ${action.data._sourceMemberId}`);
                     const token = localStorage.getItem("token");
                     if (token) {
                       const sourceMemberResponse = await fetch(`http://localhost:3001/family-members/${action.data._sourceMemberId}`, {
@@ -1697,24 +1590,20 @@ export default function MemberSuggestionsPage() {
                         const sourceMemberData = await sourceMemberResponse.json();
                         const sourceMember = sourceMemberData.data || sourceMemberData;
                         
-                        console.log("Source member data:", sourceMember);
-                        
                         // Always prioritize gender from source member
                         if (sourceMember.gender) {
                           const normalizedGender = sourceMember.gender.toLowerCase() === "male" ? "male" : "female";
-                          console.log(`Updating gender from source member: ${normalizedGender} (was: ${childData.gender})`);
                           childData.gender = normalizedGender;
                         }
                         
                         // Also copy surname from source if available
                         if (sourceMember.surname) {
-                          console.log(`Using surname from source member: ${sourceMember.surname}`);
                           childData.surname = sourceMember.surname;
                         }
                       }
                     }
                   } catch (error) {
-                    console.warn("Error fetching additional data from source member:", error);
+                    // Error fetching additional data from source member
                   }
                 }
                 
@@ -1728,30 +1617,22 @@ export default function MemberSuggestionsPage() {
                 try {
                   // CRITICAL FIX: Double-check gender is set correctly and relation matches gender
                   if (childData.gender) {
-                    // Original gender for logging
-                    const originalGender = childData.gender;
-                    
                     // Force normalize gender to lowercase "male" or "female"
                     childData.gender = childData.gender.toLowerCase() === "male" ? "male" : "female";
                     
                     // Always derive relation from gender for consistency
                     relation = childData.gender === "male" ? "son" : "daughter";
-                    
-                    console.log(`GENDER FIXED - Child gender: "${childData.gender}", using relation: "${relation}"`);
                   } else {
                     // If gender is missing, default to female
                     childData.gender = "female";
                     relation = "daughter";
-                    console.log(`No gender specified - defaulting to female, relation: "daughter"`);
                   }
 
                   // FINAL CHECK: The familyService.handleAddMember will use relation to set gender, 
                   // so we need to ensure they match exactly. Relation takes precedence.
                   if (relation === "son") {
-                    console.log("RELATION OVERRIDE: Using relation 'son' requires male gender - enforcing gender");
                     childData.gender = "male";
                   } else if (relation === "daughter") {
-                    console.log("RELATION OVERRIDE: Using relation 'daughter' requires female gender - enforcing gender");
                     childData.gender = "female";
                   }
 
@@ -1774,7 +1655,6 @@ export default function MemberSuggestionsPage() {
                     await new Promise(resolve => setTimeout(resolve, 300));
                   }
                 } catch (childError) {
-                  console.error(`Error adding child ${i + 1}:`, childError);
                   toast.error(`Failed to add child ${childName}: ${childError instanceof Error ? childError.message : 'Unknown error'}`);
                 }
               }
@@ -1791,7 +1671,6 @@ export default function MemberSuggestionsPage() {
               }
             }
           } catch (actionError) {
-            console.error(`Error processing action:`, actionError);
             toast.error(`Failed to add family member: ${actionError instanceof Error ? actionError.message : 'Unknown error'}`);
           }
         }
@@ -1799,8 +1678,6 @@ export default function MemberSuggestionsPage() {
       
       // Mark all applied suggestions as processed in the database
       if (pendingChanges.sourceSuggestions.length > 0) {
-
-        
         for (const suggestion of pendingChanges.sourceSuggestions) {
           await markSuggestionAsProcessed(cleanMemberId, suggestion);
         }
@@ -1817,7 +1694,6 @@ export default function MemberSuggestionsPage() {
       
       // Explicitly fetch the latest member data to ensure we have the most up-to-date information
       const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
-
       
       // Update the member data with the refreshed data
       setMemberData(refreshedMemberData);
@@ -1867,11 +1743,10 @@ export default function MemberSuggestionsPage() {
           });
         }
       } catch (error) {
-        console.error("Error refreshing suggestions:", error);
+        // Error refreshing suggestions
       }
       
     } catch (error) {
-      console.error("Error applying changes:", error);
       toast.error(error instanceof Error ? error.message : "Failed to apply changes");
     } finally {
       setLoading(false);
@@ -1985,24 +1860,20 @@ export default function MemberSuggestionsPage() {
             }
           }
         } catch (partnerError) {
-          console.error("Error marking suggestion as processed for partner:", partnerError);
-          // Don't throw this error to avoid breaking the main flow
+
         }
       }
       
       return true;
     } catch (error) {
-      console.error("Error marking suggestion as processed:", error);
+
       return false;
     }
   };
 
   const SuggestionCard = ({ similarMember }: { similarMember: any }) => {
-    // Removed performance-impacting log
-    
     // Don't render if no suggestions
     if (!similarMember.suggestions || similarMember.suggestions.length === 0) {
-      console.log("Skipping card - no suggestions");
       return null;
     }
     
@@ -2028,7 +1899,6 @@ export default function MemberSuggestionsPage() {
               if (partnerInfo.some((partner: {name: string, id: string}) => 
                 partner.name.toLowerCase().includes(suggestedPartnerName) ||
                 suggestedPartnerName.includes(partner.name.toLowerCase()))) {
-                console.log(`Filtering out partner suggestion for "${suggestedPartnerName}" as it matches existing partner`);
                 return false;
               }
             }
@@ -2050,13 +1920,11 @@ export default function MemberSuggestionsPage() {
                 if (childInfo.some((child: {name: string, id: string}) => 
                   child.name.toLowerCase().includes(suggestedChildName) ||
                   suggestedChildName.includes(child.name.toLowerCase()))) {
-                  // Removed performance-impacting log
                   return false;
                 }
               } else {
                 // If we don't have childInfo, be conservative and filter out all child suggestions
                 // Since we know the member has children but we don't have their details
-                // Removed performance-impacting log
                 return false;
               }
             }
@@ -2073,7 +1941,6 @@ export default function MemberSuggestionsPage() {
             // If member already has this parent type, filter out the suggestion
             if ((parentType === 'father' && memberData.fatherId) || 
                 (parentType === 'mother' && memberData.motherId)) {
-              console.log(`Filtering out ${parentType} suggestion for "${suggestedParentName}" as ${parentType} already exists`);
               return false;
             }
           }
@@ -2086,7 +1953,6 @@ export default function MemberSuggestionsPage() {
             const suggestedDate = dateMatch[1].trim();
             const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
             if (suggestedDate === currentDate) {
-              console.log(`Filtering out birth date suggestion for "${suggestedDate}" as it matches current value`);
               return false;
             }
           }
@@ -2099,7 +1965,6 @@ export default function MemberSuggestionsPage() {
             const suggestedDate = dateMatch[1].trim();
             const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
             if (suggestedDate === currentDate) {
-              console.log(`Filtering out death date suggestion for "${suggestedDate}" as it matches current value`);
               return false;
             }
           }
@@ -2109,7 +1974,6 @@ export default function MemberSuggestionsPage() {
         if ((suggestion.includes("Confirm dead status") || 
             suggestion.includes("Consider updating status to \"dead\"")) && 
             memberData?.status === "dead") {
-          console.log(`Filtering out dead status suggestion as member is already marked dead`);
           return false;
         }
 
@@ -2119,7 +1983,6 @@ export default function MemberSuggestionsPage() {
           if (countryMatch && countryMatch[1]) {
             const suggestedCountry = countryMatch[1].trim().toLowerCase();
             if (memberData.country.toLowerCase() === suggestedCountry) {
-              console.log(`Filtering out country suggestion for "${suggestedCountry}" as it matches current value`);
               return false;
             }
           }
@@ -2130,21 +1993,16 @@ export default function MemberSuggestionsPage() {
       }
     );
     
-    console.log("Filtered suggestions count:", filteredSuggestions.length);
-    
-    // Removed performance-impacting log
-    
     // Don't render if all suggestions have been filtered out
     if (filteredSuggestions.length === 0) {
-      console.log("Skipping card - all suggestions filtered out");
       return null;
     }
     
     return (
-      <div className="bg-gray-800/70 rounded-lg border border-gray-700/50 p-5 mb-4">
+      <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-sm rounded-lg border border-gray-700/50 p-5 mb-4 shadow-lg">
         <h3 className="text-lg font-semibold mb-3 text-white flex items-center">
           <span className="flex-grow">Suggestions from similar member</span>
-          <span className="text-sm bg-gray-700 rounded-full px-3 py-1 text-gray-300">
+          <span className="text-sm bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full px-3 py-1">
             {filteredSuggestions.length} suggestion{filteredSuggestions.length !== 1 ? 's' : ''}
           </span>
         </h3>
@@ -2158,13 +2016,13 @@ export default function MemberSuggestionsPage() {
         </div>
         <div className="space-y-3">
           {filteredSuggestions.map((suggestion: string, idx: number) => (
-            <div key={idx} className="flex items-start space-x-2 bg-gray-700/50 rounded-lg p-3 border border-gray-600/30">
+            <div key={idx} className="flex items-start space-x-2 bg-gray-800/50 rounded-lg p-3 border border-gray-600/30">
               <div className="flex-grow">
                 <p className="text-gray-300">{suggestion}</p>
               </div>
               <button
                 onClick={() => handleApplySuggestion(suggestion)}
-                className="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors text-sm flex-shrink-0"
+                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-3 py-1 rounded-lg transition-all duration-300 text-sm flex-shrink-0 shadow-lg"
               >
                 Apply
               </button>
@@ -2185,7 +2043,7 @@ export default function MemberSuggestionsPage() {
       }
       return date.toLocaleDateString();
     } catch (error) {
-      console.error("Error formatting date:", error);
+
       return dateString; // Return as is if there's an error
     }
   };
@@ -2194,36 +2052,90 @@ export default function MemberSuggestionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B1120] text-gray-100 flex items-center justify-center">
-        <div className="h-12 w-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
+      <div className="min-h-screen bg-[#0B1120] text-white relative overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none" />
+        <AnimatedNodes />
+
+        <div className="flex items-center justify-center min-h-screen">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
+            <div className="relative mb-6">
+              <div className="h-16 w-16 mx-auto rounded-full border-4 border-teal-500/20 border-t-teal-500 animate-spin"></div>
+              <div
+                className="absolute inset-0 h-16 w-16 mx-auto rounded-full border-4 border-transparent border-r-blue-500/50 animate-spin"
+                style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+              ></div>
+            </div>
+            <p className="text-teal-300 text-lg font-medium">Loading suggestions...</p>
+            <p className="text-gray-400 text-sm mt-2">Discovering potential family connections</p>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0B1120] text-gray-100 flex flex-col items-center justify-center p-6">
-        <div className="text-red-400 text-xl mb-4">Error: {error}</div>
-        <button 
-          onClick={() => router.back()}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-        >
-          Go Back
-        </button>
+      <div className="min-h-screen bg-[#0B1120] text-white relative overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none" />
+        <AnimatedNodes />
+
+        <div className="flex flex-col items-center justify-center min-h-screen p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center max-w-md"
+          >
+            <div className="w-16 h-16 mx-auto bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Something went wrong</h3>
+            <p className="text-red-300 mb-6">{error}</p>
+            <button 
+              onClick={() => router.back()}
+              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg transition-all duration-300 shadow-lg"
+            >
+              Go Back
+            </button>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   if (!memberData) {
     return (
-      <div className="min-h-screen bg-[#0B1120] text-gray-100 flex flex-col items-center justify-center p-6">
-        <div className="text-gray-400 text-xl mb-4">Member not found</div>
-        <button 
-          onClick={() => router.back()}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-        >
-          Go Back
-        </button>
+      <div className="min-h-screen bg-[#0B1120] text-white relative overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none" />
+        <AnimatedNodes />
+
+        <div className="flex flex-col items-center justify-center min-h-screen p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center max-w-md"
+          >
+            <div className="w-16 h-16 mx-auto bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
+              <User className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Member not found</h3>
+            <p className="text-gray-400 mb-6">The requested family member could not be found.</p>
+            <button 
+              onClick={() => router.back()}
+              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg transition-all duration-300 shadow-lg"
+            >
+              Go Back
+            </button>
+          </motion.div>
+        </div>
       </div>
     );
   }
@@ -2233,13 +2145,10 @@ export default function MemberSuggestionsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen bg-black text-white font-sans relative"
+      className="min-h-screen bg-[#0B1120] text-white relative overflow-hidden"
     >
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-black pointer-events-none" />
-      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-15 pointer-events-none" />
-
-      {/* Animated Background */}
+      <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none" />
       <AnimatedNodes />
 
       <div className="container mx-auto px-4 py-8 relative max-w-7xl">
@@ -2253,12 +2162,13 @@ export default function MemberSuggestionsPage() {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => {
+                // Set flag to refresh tree when returning
                 if (pendingChanges.sourceSuggestions.length > 0) {
                   sessionStorage.setItem('treeNeedsRefresh', 'true');
                 }
                 router.push("/dashboard/treeview");
               }}
-              className="group flex items-center gap-3 text-gray-400 hover:text-teal-400 transition-all duration-200 cursor-pointer"
+              className="group flex items-center gap-3 text-gray-400 hover:text-teal-400 transition-all duration-200"
             >
               <div className="p-2 rounded-lg bg-gray-800/50 group-hover:bg-teal-900/30 transition-colors">
                 <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
@@ -2268,48 +2178,50 @@ export default function MemberSuggestionsPage() {
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                <Sparkles className="h-4 w-4 text-orange-400" />
+                <Sparkles className="h-4 w-4 text-teal-400" />
                 <span className="text-sm text-gray-300">AI Suggestions</span>
               </div>
             </div>
           </div>
 
           <div className="text-center">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 via-teal-400 to-blue-400 bg-clip-text text-transparent mb-4">
-              Member Suggestions
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+              Family Suggestions for {memberData.name} {memberData.surname}
             </h1>
             <p className="text-gray-400 max-w-3xl mx-auto text-lg">
-              Review and apply AI-powered suggestions to enhance your family member's information
+              Discover potential family connections and enhance your family tree with AI-powered suggestions.
             </p>
           </div>
         </motion.div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Member Details Card */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="lg:col-span-1"
           >
-            <div className="rounded-2xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm border border-gray-700/50 overflow-hidden shadow-xl">
+            <div className="rounded-xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm border border-gray-700/50 overflow-hidden shadow-2xl">
+              <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 p-6 border-b border-gray-700/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-teal-500/20 rounded-lg">
+                    <User className="h-6 w-6 text-teal-400" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Member Details</h2>
+                </div>
+              </div>
+              
               <div className="p-6">
-                <h2 className="text-2xl font-semibold mb-6 text-white flex items-center gap-3">
-                  <User className="w-6 h-6 text-teal-400" />
-                  Member Details
-                </h2>
-                
-                <div className="space-y-6">
-                  {/* Name */}
-                  <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg">
-                      <User className="w-6 h-6 text-white" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center">
+                      <User className="w-6 h-6 text-teal-400" />
                     </div>
                     <div>
                       <div className="text-sm text-gray-400">Name</div>
                       <motion.div 
-                        className={`text-white font-medium ${updatedFields.name || updatedFields.surname ? 'bg-teal-900/30 px-3 py-1.5 rounded-lg' : ''}`}
+                        className={`text-white font-medium ${updatedFields.name || updatedFields.surname ? 'bg-teal-800/30 px-2 py-1 rounded' : ''}`}
                         animate={{ 
                           backgroundColor: updatedFields.name || updatedFields.surname ? 'rgba(6, 95, 70, 0.3)' : 'rgba(0, 0, 0, 0)',
                         }}
@@ -2319,16 +2231,15 @@ export default function MemberSuggestionsPage() {
                       </motion.div>
                     </div>
                   </div>
-
-                  {/* Birth Date */}
-                  <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                      <Calendar className="w-6 h-6 text-white" />
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-blue-400" />
                     </div>
                     <div>
                       <div className="text-sm text-gray-400">Birth Date</div>
                       <motion.div 
-                        className={`text-white font-medium ${updatedFields.birthDate ? 'bg-teal-900/30 px-3 py-1.5 rounded-lg' : ''}`}
+                        className={`text-white font-medium ${updatedFields.birthDate ? 'bg-teal-800/30 px-2 py-1 rounded' : ''}`}
                         animate={{ 
                           backgroundColor: updatedFields.birthDate ? 'rgba(6, 95, 70, 0.3)' : 'rgba(0, 0, 0, 0)',
                         }}
@@ -2339,16 +2250,53 @@ export default function MemberSuggestionsPage() {
                     </div>
                   </div>
 
-                  {/* Country */}
+                  {memberData.deathDate && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                        <Calendar className="w-6 h-6 text-red-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">Death Date</div>
+                        <motion.div 
+                          className={`text-white font-medium ${updatedFields.deathDate ? 'bg-teal-800/30 px-2 py-1 rounded' : ''}`}
+                          animate={{ 
+                            backgroundColor: updatedFields.deathDate ? 'rgba(6, 95, 70, 0.3)' : 'rgba(0, 0, 0, 0)',
+                          }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          {formatDate(memberData.deathDate)}
+                        </motion.div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                      <Info className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Status</div>
+                      <motion.div 
+                        className={`text-white font-medium capitalize ${updatedFields.status ? 'bg-teal-800/30 px-2 py-1 rounded' : ''}`}
+                        animate={{ 
+                          backgroundColor: updatedFields.status ? 'rgba(6, 95, 70, 0.3)' : 'rgba(0, 0, 0, 0)',
+                        }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        {memberData.status || 'Unknown'}
+                      </motion.div>
+                    </div>
+                  </div>
+                  
                   {(memberData.country || pendingChanges.changes.country) && (
-                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
-                        <Flag className="w-6 h-6 text-white" />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <Flag className="w-6 h-6 text-green-400" />
                       </div>
                       <div>
                         <div className="text-sm text-gray-400">Country</div>
                         <motion.div 
-                          className={`text-white font-medium ${updatedFields.country ? 'bg-teal-900/30 px-3 py-1.5 rounded-lg' : ''}`}
+                          className={`text-white font-medium ${updatedFields.country ? 'bg-teal-800/30 px-2 py-1 rounded' : ''}`}
                           animate={{ 
                             backgroundColor: updatedFields.country ? 'rgba(6, 95, 70, 0.3)' : 'rgba(0, 0, 0, 0)',
                           }}
@@ -2359,17 +2307,16 @@ export default function MemberSuggestionsPage() {
                       </div>
                     </div>
                   )}
-
-                  {/* Occupation */}
+                  
                   {(memberData.occupation || pendingChanges.changes.occupation) && (
-                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
-                        <Briefcase className="w-6 h-6 text-white" />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center">
+                        <Briefcase className="w-6 h-6 text-orange-400" />
                       </div>
                       <div>
                         <div className="text-sm text-gray-400">Occupation</div>
                         <motion.div 
-                          className={`text-white font-medium ${updatedFields.occupation ? 'bg-teal-900/30 px-3 py-1.5 rounded-lg' : ''}`}
+                          className={`text-white font-medium ${updatedFields.occupation ? 'bg-teal-800/30 px-2 py-1 rounded' : ''}`}
                           animate={{ 
                             backgroundColor: updatedFields.occupation ? 'rgba(6, 95, 70, 0.3)' : 'rgba(0, 0, 0, 0)',
                           }}
@@ -2383,49 +2330,146 @@ export default function MemberSuggestionsPage() {
                 </div>
               </div>
             </div>
-
+            
             {/* Pending Changes Card */}
             {hasPendingChanges && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-6 rounded-2xl bg-gradient-to-br from-orange-900/20 to-orange-800/20 backdrop-blur-sm border border-orange-700/30 overflow-hidden shadow-xl"
+                className="mt-6 rounded-xl bg-gradient-to-br from-orange-900/30 to-yellow-900/30 backdrop-blur-sm border border-orange-700/50 overflow-hidden shadow-lg"
               >
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-4 text-orange-300 flex items-center gap-2">
-                    <span>Pending Changes</span>
-                    <span className="bg-orange-700/70 text-orange-100 text-xs rounded-full px-2.5 py-1">
+                <div className="bg-gradient-to-r from-orange-900/50 to-yellow-900/50 p-4 border-b border-orange-700/50">
+                  <h2 className="text-lg font-semibold text-orange-300 flex items-center">
+                    <span className="mr-2">Pending Changes</span>
+                    <span className="bg-orange-700/70 text-orange-100 text-xs rounded-full px-2 py-1">
                       {Object.keys(pendingChanges.changes).length}
                     </span>
                   </h2>
-                  
+                </div>
+                
+                <div className="p-6">
                   <div className="space-y-3 mb-6">
-                    {Object.entries(pendingChanges.changes).map(([field, value]) => (
-                      <div key={field} className="flex justify-between items-center p-3 bg-orange-950/40 rounded-lg border border-orange-800/30">
-                        <div>
-                          <div className="text-sm text-orange-200/70">{formatFieldName(field)}</div>
-                          <div className="text-orange-100">
-                            {field === 'birthDate' || field === 'deathDate' 
-                              ? formatDate(value as string)
-                              : value?.toString() || ''}
+                    {Object.entries(pendingChanges.changes).map(([field, value]) => {
+                      // Handle special actions for adding parents
+                      if (field === "_addFatherAction") {
+                        const parentData = (value as any).parentData;
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-orange-950/40 rounded-lg border border-orange-800/30">
+                            <div>
+                              <div className="text-sm text-orange-200/70">Add Father</div>
+                              <div className="text-orange-100">
+                                {parentData.name}{parentData.surname ? ` ${parentData.surname}` : ''}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      } else if (field === "_addMotherAction") {
+                        const parentData = (value as any).parentData;
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">Add Mother</div>
+                              <div className="text-yellow-100">
+                                {parentData.name}{parentData.surname ? ` ${parentData.surname}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else if (field === "_addPartnerAction") {
+                        const partnerData = (value as any);
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">Add Partner</div>
+                              <div className="text-yellow-100">
+                                {partnerData._partnerName}{partnerData._partnerSurname ? ` ${partnerData._partnerSurname}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else if (field === "_addChildrenAction" || field.startsWith("_addChildAction_")) {
+                        const childrenData = (value as any);
+                        
+                        // For UI display, we need to ensure consistency between gender and relation
+                        let childGender = childrenData.gender ? childrenData.gender.toLowerCase() : "";
+                        let childRelation = childrenData.relation || "";
+                        
+                        // If relation is explicitly specified, use it to determine gender and display
+                        if (childRelation === "son") {
+                          childGender = "male";
+                        } else if (childRelation === "daughter") {
+                          childGender = "female";
+                        } else if (childGender) {
+                          // If no relation but gender is specified, derive relation from gender
+                          childRelation = childGender === "male" ? "son" : "daughter";
+                        } else {
+                          // Default case: use female gender and daughter relation
+                          childGender = "female";
+                          childRelation = "daughter";
+                        }
+                        
+                        // Display based on relation
+                        const genderDisplay = childRelation === "daughter" ? "Daughter" : "Son";
+                        const genderColor = childRelation === "daughter" ? "text-pink-300" : "text-blue-300";
+                        
+                        // Get the child's name - prioritize the actual name over surname
+                        const childName = childrenData._childrenNames && childrenData._childrenNames.length > 0 
+                          ? childrenData._childrenNames[0] 
+                          : "Child";
+                        
+                        // Determine surname to display - if no explicit surname, use member's surname
+                        const displaySurname = childrenData.surname || memberData.surname || "";
+                        
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70 flex items-center">
+                                Add {genderDisplay}
+                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${genderColor} bg-gray-800/50`}>
+                                  {childRelation}
+                                </span>
+                              </div>
+                              <div className="text-yellow-100">
+                                {childName}{displaySurname ? ` ${displaySurname}` : ""}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        // Regular field changes
+                        return (
+                          <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
+                            <div>
+                              <div className="text-sm text-yellow-200/70">{formatFieldName(field)}</div>
+                              <div className="text-yellow-100">
+                                {field === 'birthDate' || field === 'deathDate' 
+                                  ? formatDate(value as string)
+                                  : value?.toString() || ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                    })}
                   </div>
                   
                   <div className="flex gap-3">
                     <button 
                       type="button"
                       onClick={applyPendingChanges}
-                      className="flex-1 px-4 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-teal-500/20"
+                      className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
                     >
                       Save Changes
                     </button>
                     <button 
                       type="button"
-                      onClick={cancelPendingChanges}
-                      className="px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 text-white rounded-lg transition-all duration-200 border border-gray-600/50"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        cancelPendingChanges();
+                        return false;
+                      }}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
                     >
                       Cancel
                     </button>
@@ -2435,22 +2479,105 @@ export default function MemberSuggestionsPage() {
             )}
           </motion.div>
 
-          {/* Suggestions Section */}
+          {/* Suggestions Card */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <div className="rounded-2xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm border border-gray-700/50 overflow-hidden shadow-xl">
-              <div className="p-6">
-                <h2 className="text-2xl font-semibold mb-6 text-white flex items-center gap-3">
-                  <Sparkles className="w-6 h-6 text-orange-400" />
-                  <span>AI Suggestions</span>
+            <div className="rounded-xl bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm border border-gray-700/50 overflow-hidden shadow-2xl">
+              <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 p-6 border-b border-gray-700/50">
+                <h2 className="text-xl font-bold text-white flex items-center gap-3">
                   {(() => {
+                    // Calculate suggestion count using the same filtering logic as SuggestionCard
                     const displayCount = suggestionsData.similarMembers.reduce((total, member) => {
                       const filteredSuggestions = member.suggestions.filter((suggestion: string) => {
-                        // ... existing filtering logic ...
+                        // Skip suggestions that have already been explicitly applied
+                        if (appliedSuggestions.includes(suggestion)) {
+                          return false;
+                        }
+
+                        // Filter out partner suggestions if they already have the suggested partner
+                        if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+                          const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+                          if (partnerNameMatch && partnerNameMatch[1] && memberData) {
+                            const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+                            if (memberData.partnerId && memberData.partnerId.length > 0) {
+                              if (partnerInfo.some((partner: {name: string, id: string}) => 
+                                partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+                                return false;
+                              }
+                            }
+                          }
+                        }
+                        
+                        // Filter out child suggestions if the child is already connected to this member
+                        if (suggestion.includes("adding child") || suggestion.includes("more children") ||
+                            suggestion.includes("adding son") || suggestion.includes("adding daughter")) {
+                          const childNameMatch = suggestion.match(/(?:child|son|daughter) "([^"]+)"/i);
+                          if (childNameMatch && childNameMatch[1] && memberData) {
+                            const suggestedChildName = childNameMatch[1].trim().toLowerCase();
+                            if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+                              if (childInfo && childInfo.length > 0) {
+                                if (childInfo.some((child: {name: string, id: string}) => 
+                                  child.name.toLowerCase().includes(suggestedChildName) ||
+                                  suggestedChildName.includes(child.name.toLowerCase()))) {
+                                  return false;
+                                }
+                              } else {
+                                return false;
+                              }
+                            }
+                          }
+                        }
+                        
+                        // Filter out parent suggestions if parent is already connected
+                        if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
+                          const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
+                          if (parentNameMatch && parentNameMatch[2] && memberData) {
+                            const parentType = parentNameMatch[1].toLowerCase();
+                            if ((parentType === 'father' && memberData.fatherId) || 
+                                (parentType === 'mother' && memberData.motherId)) {
+                              return false;
+                            }
+                          }
+                        }
+                        
+                        // Skip birth date confirmations if birth date is already set to that value
+                        if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
+                          const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+                          if (dateMatch && dateMatch[1]) {
+                            const suggestedDate = dateMatch[1].trim();
+                            const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
+                            if (suggestedDate === currentDate) return false;
+                          }
+                        }
+
+                        if (suggestion.includes("Confirm death date") && memberData?.deathDate) {
+                          const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+                          if (dateMatch && dateMatch[1]) {
+                            const suggestedDate = dateMatch[1].trim();
+                            const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
+                            if (suggestedDate === currentDate) return false;
+                          }
+                        }
+
+                        if ((suggestion.includes("Confirm dead status") || 
+                            suggestion.includes("Consider updating status to \"dead\"")) && 
+                            memberData?.status === "dead") {
+                          return false;
+                        }
+
+                        if (suggestion.includes("Confirm country") && memberData?.country) {
+                          const countryMatch = suggestion.match(/country "([^"]+)"/i);
+                          if (countryMatch && countryMatch[1]) {
+                            const suggestedCountry = countryMatch[1].trim().toLowerCase();
+                            if (memberData.country.toLowerCase() === suggestedCountry) return false;
+                          }
+                        }
+                        
                         return true;
                       });
                       return total + filteredSuggestions.length;
@@ -2462,19 +2589,24 @@ export default function MemberSuggestionsPage() {
                       </span>
                     );
                   })()}
+                  <Sparkles className="h-6 w-6 text-orange-400" />
+                  AI Suggestions
                 </h2>
+              </div>
 
+              <div className="p-6">
                 <div className="space-y-4">
                   {(() => {
                     if (!suggestionsData || !suggestionsData.similarMembers) {
                       return (
-                        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50 text-center">
-                          <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                          <p className="text-gray-400 text-lg">No suggestions available</p>
+                        <div className="p-4 rounded-lg bg-gray-700/50 border border-gray-600/50">
+                          <p className="text-gray-300">No suggestions available</p>
                         </div>
                       );
                     }
                     
+                    
+                    // Modified condition to check if we have similarMembers with actual suggestions after filtering
                     const hasSimilarMembers = suggestionsData.similarMembers.some(similar => 
                       similar.suggestions && similar.suggestions.filter(
                         (suggestion: string) => !appliedSuggestions.includes(suggestion)
@@ -2483,26 +2615,26 @@ export default function MemberSuggestionsPage() {
                     
                     if (!hasSimilarMembers) {
                       return (
-                        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50 text-center">
-                          <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                          <p className="text-gray-400 text-lg">No suggestions available for this member</p>
+                        <div className="p-4 rounded-lg bg-gray-700/50 border border-gray-600/50">
+                          <p className="text-gray-300">No suggestions available for this member</p>
                         </div>
                       );
                     }
                     
+                    // Count suggestions that haven't been applied yet
                     const availableSuggestions = suggestionsData.similarMembers.flatMap(similar => 
                       similar.suggestions.filter((suggestion: string) => !appliedSuggestions.includes(suggestion))
                     );
                     
                     if (availableSuggestions.length === 0) {
                       return (
-                        <div className="p-6 rounded-xl bg-teal-900/30 border border-teal-700/50 text-center">
-                          <Sparkles className="w-12 h-12 text-teal-400 mx-auto mb-4" />
-                          <p className="text-teal-300 text-lg">All suggestions have been applied!</p>
+                        <div className="p-4 rounded-lg bg-green-900/30 border border-green-700/50">
+                          <p className="text-green-300">All suggestions have been applied!</p>
                         </div>
                       );
                     }
                     
+                    // Return the actual component rendering
                     return suggestionsData.similarMembers.map((similar, index) => (
                       <SuggestionCard key={index} similarMember={similar} />
                     ));
