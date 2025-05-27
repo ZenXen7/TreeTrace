@@ -505,13 +505,13 @@ export default function HealthOverviewPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <Link
-                href="/dashboard/treeview"
+                href="/dashboard/main"
                 className="group flex items-center gap-3 text-gray-400 hover:text-teal-400 transition-all duration-200"
               >
                 <div className="p-2 rounded-lg bg-gray-800/50 group-hover:bg-teal-900/30 transition-colors">
                   <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                 </div>
-                <span className="font-medium">Back to Family Tree</span>
+                <span className="font-medium">Back to Dashboard</span>
               </Link>
 
               <div className="flex items-center gap-3">
@@ -612,20 +612,26 @@ export default function HealthOverviewPage() {
 
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center bg-gray-800/80 rounded-lg px-4 py-2.5 shadow-inner border border-gray-700/50">
-                    <Filter className="h-4 w-4 text-teal-400 mr-2" />
-                    <select
-                      id="conditionFilter"
-                      className="bg-transparent text-white border-none focus:ring-0 focus:outline-none text-sm"
-                      value={selectedCondition}
-                      onChange={(e) => setSelectedCondition(e.target.value)}
-                    >
-                      <option value="">All Conditions</option>
-                      {conditions.map((cond) => (
-                        <option key={cond} value={cond}>
-                          {cond.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                        </option>
-                      ))}
-                    </select>
+                  <Filter className="h-4 w-4 text-teal-400 mr-2" />
+                  <select
+                    id="conditionFilter"
+                    className="bg-gray-800 text-white border-none focus:ring-0 focus:outline-none text-sm"
+                    style={{
+                    backgroundColor: "#1f2937",
+                    color: "#fff",
+                    border: "none",
+                    boxShadow: "none",
+                    }}
+                    value={selectedCondition}
+                    onChange={(e) => setSelectedCondition(e.target.value)}
+                  >
+                    <option value="">All Conditions</option>
+                    {conditions.map((cond) => (
+                    <option key={cond} value={cond}>
+                      {cond.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                    </option>
+                    ))}
+                  </select>
                   </div>
 
                   <button
