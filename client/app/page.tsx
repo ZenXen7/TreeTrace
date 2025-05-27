@@ -635,20 +635,7 @@ export default function Home() {
                   </video>
                 </div>
 
-                {/* Video Overlay Controls */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white border border-white/20">
-                      Demo Video
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowVideo(false)}
-                    className="px-4 py-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white text-sm rounded-lg transition-colors border border-white/20"
-                  >
-                    Close
-                  </button>
-                </div>
+            
               </div>
 
               {/* Modal Footer */}
@@ -656,15 +643,8 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <p className="text-sm text-gray-400">Ready to start building your family tree?</p>
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowVideo(false)}
-                      className="px-4 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 rounded-lg transition-colors border border-gray-700/50"
-                    >
-                      Close
-                    </button>
                     <Link href="/auth/signup">
                       <Button
-                        size="sm"
                         className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg"
                         onClick={() => setShowVideo(false)}
                       >
