@@ -76,8 +76,6 @@ export class FamilyController {
       if (country && country !== 'all') filters['country'] = country;
       if (status && status !== 'all') filters['status'] = status;
       
-      console.log(`API received filter request: ${JSON.stringify(filters)}`);
-      
       // Pass filters to service method
       const familyMembers = await this.familyService.findAll(userId, filters);
       
