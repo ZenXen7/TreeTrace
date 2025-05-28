@@ -352,7 +352,6 @@ export class NotificationController {
       return suggestions;
     }
     
-    console.log(`Generating suggestions for matched members: "${currentMember.name}" and "${otherMember.name}"`);
     
     // Check for parent relationship suggestions
     suggestions = await this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);

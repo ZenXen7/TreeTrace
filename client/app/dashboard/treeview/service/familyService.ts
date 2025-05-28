@@ -22,7 +22,6 @@ async function fetchFilteredFamilyMembers(token: string, filters: {
   country?: string;
   status?: string;
 }) {
-  console.log("Sending filters to API:", filters);
   
   // Build URL with query parameters for filters
   let url = API_URL;
@@ -46,7 +45,6 @@ async function fetchFilteredFamilyMembers(token: string, filters: {
     url += `?${queryParams.join('&')}`;
   }
   
-  console.log("Fetching from URL:", url);
   
   // Make the API request
   const response = await fetch(url, {
@@ -71,12 +69,10 @@ async function addFamilyMember(token: string, memberData: any) {
     if (memberData.gender) {
       const normalizedGender = memberData.gender.toLowerCase();
       memberData.gender = normalizedGender === "male" ? "male" : "female";
-      console.log(`GENDER DEBUG - Normalized gender for member creation: ${memberData.gender}`);
     } else {
       console.warn("No gender specified for member creation. This might cause issues.");
     }
     
-    console.log("Sending member data to server:", JSON.stringify(memberData));
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -91,12 +87,10 @@ async function addFamilyMember(token: string, memberData: any) {
     }
 
     const result = await response.json();
-    console.log("Server response:", result);
     
     // Explicitly check for similar family members
     try {
       const newMemberId = result.data._id;
-      console.log("Triggering check for similar family members for new member:", newMemberId);
       
       const checkResponse = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${newMemberId}`, {
         method: "POST",
@@ -107,7 +101,6 @@ async function addFamilyMember(token: string, memberData: any) {
       });
       
       if (checkResponse.ok) {
-        console.log("Similar family members check completed successfully for new member");
       } else {
         console.error("Failed to check for similar family members for new member:", await checkResponse.text());
       }
@@ -167,7 +160,6 @@ async function handleAddMember(
       // This ensures consistency between relation and gender
       const gender = relation === "son" ? "male" : "female";
       
-      console.log(`Setting gender to ${gender} based on relation ${relation}`);
       
       // Determine the parent ID
       const parentId = node.id || node._id;
@@ -200,7 +192,6 @@ async function handleAddMember(
       }
       
       // Create the child with proper parent relationships
-      console.log("FINAL CREATION - Creating child with data:", childData);
 
       // FINAL CRITICAL GENDER CHECK - ensure daughter relation has female gender and son relation has male gender
       if (relation === "daughter" && childData.gender !== "female") {
@@ -260,7 +251,6 @@ async function handleAddMember(
     
     // If we have newMemberData, use it to override defaults
     if (newMemberData) {
-      console.log("Using provided member data:", newMemberData);
       memberData = {
         ...memberData,
         ...newMemberData
@@ -273,8 +263,6 @@ async function handleAddMember(
     switch (relation) {
       case "father":
         memberData.gender = "male";
-        console.log("Adding father with data:", memberData);
-        console.log("Child node data:", node);
         if (node.mid) {
           memberData.partnerId = [node.mid];
           existingParentUpdate = {
@@ -284,7 +272,6 @@ async function handleAddMember(
         }
         const father = await addFamilyMember(token, memberData);
         const fatherId = father.id || father["_id"] || father.data?._id;
-        console.log("Created father with ID:", fatherId);
         updateCurrentNode.fatherId = fatherId;
 
         if (existingParentUpdate) {
@@ -294,8 +281,6 @@ async function handleAddMember(
 
       case "mother":
         memberData.gender = "female";
-        console.log("Adding mother with data:", memberData);
-        console.log("Child node data:", node);
         if (node.fid) {
           memberData.partnerId = [node.fid];
           existingParentUpdate = {
@@ -305,7 +290,6 @@ async function handleAddMember(
         }
         const mother = await addFamilyMember(token, memberData);
         const motherId = mother.id || mother["_id"] || mother.data?._id;
-        console.log("Created mother with ID:", motherId);
         updateCurrentNode.motherId = motherId;
 
         if (existingParentUpdate) {
@@ -362,8 +346,6 @@ async function handleAddMember(
       console.error("Node keys:", Object.keys(node));
       throw new Error("Cannot update family member: No valid ID found");
     }
-    
-    console.log("Updating family member with ID:", nodeId, "with data:", updateCurrentNode);
     try {
       await updateFamilyMember(token, nodeId, updateCurrentNode);
     } catch (updateError) {
@@ -371,7 +353,6 @@ async function handleAddMember(
       
       // Even though the update failed, we've already created the parent
       // We should inform the user and proceed with fetch
-      console.log("Parent was created but couldn't update the child's parent reference");
     }
 
     if (existingParentUpdate) {
@@ -589,7 +570,6 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     const memberData = memberResult.data || memberResult;
     
     // Debug log for member being processed
-    console.log(`Processing suggestions for member ${memberData.name} (ID: ${memberId})`);
 
     // Fetch any applied suggestions
     const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${memberId}`, {
@@ -795,7 +775,6 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
       }, 0);
     }
     
-    console.log(`After filtering, found ${displayCount} valid suggestions for ${memberData.name}`);
     return displayCount;
   } catch (error) {
     console.error("Error fetching member suggestion count:", error);
