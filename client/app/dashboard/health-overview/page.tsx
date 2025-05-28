@@ -76,6 +76,7 @@ export default function HealthOverviewPage() {
     mostCommonCondition: "",
     mostCommonBloodType: "",
   })
+  const [memberSearch, setMemberSearch] = useState("")
 
   useEffect(() => {
     async function fetchAllData() {
@@ -235,6 +236,12 @@ export default function HealthOverviewPage() {
   let filteredMembers = members
   if (selectedCondition) {
     filteredMembers = filteredMembers.filter((m) => m.medicalConditions.includes(selectedCondition))
+  }
+  if (memberSearch.trim()) {
+    filteredMembers = filteredMembers.filter((m) => {
+      const fullName = `${m.name} ${m.surname || ""}`.toLowerCase()
+      return fullName.includes(memberSearch.toLowerCase())
+    })
   }
   filteredMembers = [...filteredMembers].sort((a, b) => {
     if (sortBy === "generation") {
@@ -612,26 +619,50 @@ export default function HealthOverviewPage() {
 
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center bg-gray-800/80 rounded-lg px-4 py-2.5 shadow-inner border border-gray-700/50">
-                  <Filter className="h-4 w-4 text-teal-400 mr-2" />
-                  <select
-                    id="conditionFilter"
-                    className="bg-gray-800 text-white border-none focus:ring-0 focus:outline-none text-sm"
-                    style={{
-                    backgroundColor: "#1f2937",
-                    color: "#fff",
-                    border: "none",
-                    boxShadow: "none",
-                    }}
-                    value={selectedCondition}
-                    onChange={(e) => setSelectedCondition(e.target.value)}
-                  >
-                    <option value="">All Conditions</option>
-                    {conditions.map((cond) => (
-                    <option key={cond} value={cond}>
-                      {cond.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                    </option>
-                    ))}
-                  </select>
+                    <Filter className="h-4 w-4 text-teal-400 mr-2" />
+                    <select
+                      id="conditionFilter"
+                      className="bg-gray-800 text-white border-none focus:ring-0 focus:outline-none text-sm"
+                      style={{
+                        backgroundColor: "#1f2937",
+                        color: "#fff",
+                        border: "none",
+                        boxShadow: "none",
+                      }}
+                      value={selectedCondition}
+                      onChange={(e) => setSelectedCondition(e.target.value)}
+                    >
+                      <option value="">All Conditions</option>
+                      {conditions.map((cond) => (
+                        <option key={cond} value={cond}>
+                          {cond.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center bg-gray-800/80 rounded-lg px-4 py-2.5 shadow-inner border border-gray-700/50">
+                    <Users className="h-4 w-4 text-blue-400 mr-2" />
+                    <input
+                      type="text"
+                      placeholder="Search family members..."
+                      className="bg-gray-800 text-white border-none focus:ring-0 focus:outline-none text-sm placeholder-gray-400 w-48"
+                      style={{
+                        backgroundColor: "#1f2937",
+                        color: "#fff",
+                        border: "none",
+                        boxShadow: "none",
+                      }}
+                      value={memberSearch}
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                    />
+                    {memberSearch && (
+                      <button
+                        onClick={() => setMemberSearch("")}
+                        className="ml-2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
 
                   <button
@@ -705,14 +736,35 @@ export default function HealthOverviewPage() {
                             <Filter className="w-8 h-8 text-gray-600" />
                           </div>
                           <h3 className="text-xl font-semibold text-white mb-2">No matches found</h3>
-                          <p className="text-gray-400 mb-4">No members found with the selected condition.</p>
-                          <button
-                            onClick={() => setSelectedCondition("")}
-                            className="px-4 py-2 bg-teal-600/30 hover:bg-teal-600/50 text-teal-300 rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            <Filter className="w-4 h-4" />
-                            Clear Filter
-                          </button>
+                          <p className="text-gray-400 mb-4">
+                            {selectedCondition && memberSearch
+                              ? `No members found matching "${memberSearch}" with the selected condition.`
+                              : selectedCondition
+                              ? "No members found with the selected condition."
+                              : memberSearch
+                              ? `No members found matching "${memberSearch}".`
+                              : "No members found."}
+                          </p>
+                          <div className="flex gap-2">
+                            {selectedCondition && (
+                              <button
+                                onClick={() => setSelectedCondition("")}
+                                className="px-4 py-2 bg-teal-600/30 hover:bg-teal-600/50 text-teal-300 rounded-lg transition-colors flex items-center gap-2"
+                              >
+                                <Filter className="w-4 h-4" />
+                                Clear Condition Filter
+                              </button>
+                            )}
+                            {memberSearch && (
+                              <button
+                                onClick={() => setMemberSearch("")}
+                                className="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded-lg transition-colors flex items-center gap-2"
+                              >
+                                <Users className="w-4 h-4" />
+                                Clear Search
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -755,8 +807,8 @@ export default function HealthOverviewPage() {
                             const partnerIds = Array.isArray(member.partnerId)
                               ? member.partnerId
                               : member.partnerId
-                                ? [member.partnerId]
-                                : []
+                              ? [member.partnerId]
+                              : []
                             if (!partnerIds.length) return "No partner"
                             const partnerNames = partnerIds
                               .map((pid) => {

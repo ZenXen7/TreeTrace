@@ -14,13 +14,11 @@ import {
   Stethoscope,
   Syringe,
   FileText,
+  X,
+  Lock,
 } from "lucide-react"
 import React from "react"
-import {
-  getMedicalHistory,
-  saveMedicalHistory,
-  formatHealthConditionsFromAPI,
-} from "../services/medicalHistoryService";
+import { getMedicalHistory, saveMedicalHistory } from "../services/medicalHistoryService"
 import { toast } from "sonner"
 import Link from "next/link"
 import AnimatedNodes from "@/components/animated-nodes"
@@ -43,63 +41,68 @@ export default function MedicalHistoryPage(props: { params: any }) {
   const [error, setError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  // Expanded list of health conditions
-  const [healthConditions, setHealthConditions] = useState({
-    diabetes: false,
-    hypertension: false,
-    asthma: false,
-    cancer: false,
-    heartDisease: false,
-    stroke: false,
-    alzheimers: false,
-    arthritis: false,
-    depression: false,
-    anxiety: false,
-    adhd: false,
-    allergies: false,
-    anemia: false,
-    autism: false,
-    bronchitis: false,
-    chronicFatigue: false,
-    chronicPain: false,
-    cirrhosis: false,
-    crohnsDisease: false,
-    dementia: false,
-    dermatitis: false,
-    eczema: false,
-    emphysema: false,
-    epilepsy: false,
-    fibromyalgia: false,
-    glaucoma: false,
-    gout: false,
-    hemophilia: false,
-    hepatitis: false,
-    highCholesterol: false,
-    hiv: false,
-    hypothyroidism: false,
-    hyperthyroidism: false,
-    ibs: false,
-    kidneyDisease: false,
-    leukemia: false,
-    lupus: false,
-    lymphoma: false,
-    migraines: false,
-    multiplesclerosis: false,
-    osteoporosis: false,
-    parkinsons: false,
-    pneumonia: false,
-    psoriasis: false,
-    ptsd: false,
-    rheumatoidArthritis: false,
-    schizophrenia: false,
-    sciatica: false,
-    scoliosis: false,
-    sleepApnea: false,
-    thyroidDisorder: false,
-    tuberculosis: false,
-    ulcer: false,
-    ulcerativeColitis: false,
-  })
+  // Replace the existing healthConditions state with this:
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+
+  // Add this list of all available health conditions
+  const allHealthConditions = [
+    "Diabetes",
+    "Hypertension",
+    "Asthma",
+    "Cancer",
+    "Heart Disease",
+    "Stroke",
+    "Alzheimer's",
+    "Arthritis",
+    "Depression",
+    "Anxiety",
+    "ADHD",
+    "Allergies",
+    "Anemia",
+    "Autism",
+    "Bronchitis",
+    "Chronic Fatigue",
+    "Chronic Pain",
+    "Cirrhosis",
+    "Crohn's Disease",
+    "Dementia",
+    "Dermatitis",
+    "Eczema",
+    "Emphysema",
+    "Epilepsy",
+    "Fibromyalgia",
+    "Glaucoma",
+    "Gout",
+    "Hemophilia",
+    "Hepatitis",
+    "High Cholesterol",
+    "HIV",
+    "Hypothyroidism",
+    "Hyperthyroidism",
+    "IBS",
+    "Kidney Disease",
+    "Leukemia",
+    "Lupus",
+    "Lymphoma",
+    "Migraines",
+    "Multiple Sclerosis",
+    "Osteoporosis",
+    "Parkinson's",
+    "Pneumonia",
+    "Psoriasis",
+    "PTSD",
+    "Rheumatoid Arthritis",
+    "Schizophrenia",
+    "Sciatica",
+    "Scoliosis",
+    "Sleep Apnea",
+    "Thyroid Disorder",
+    "Tuberculosis",
+    "Ulcer",
+    "Ulcerative Colitis",
+  ]
 
   // Additional medical information
   const [allergies, setAllergies] = useState("")
@@ -155,17 +158,22 @@ export default function MedicalHistoryPage(props: { params: any }) {
           // Fetch medical history if it exists
           const medicalHistory = await getMedicalHistory(token, memberId)
 
+          // In the useEffect, replace the healthConditions update section with:
           if (medicalHistory) {
             setMedicalHistoryId(medicalHistory._id)
 
-            // Process health conditions - convert from Map to object if needed
-            const formattedHealthConditions = formatHealthConditionsFromAPI(medicalHistory.healthConditions)
-
-            // Update state with existing data
-            setHealthConditions((prevState) => ({
-              ...prevState,
-              ...formattedHealthConditions,
-            }))
+            // Convert old format to new format if needed
+            if (medicalHistory.healthConditions) {
+              if (Array.isArray(medicalHistory.healthConditions)) {
+                setSelectedConditions(medicalHistory.healthConditions)
+              } else {
+                // Convert from old object format to array
+                const conditions = Object.entries(medicalHistory.healthConditions)
+                  .filter(([_, value]) => value === true)
+                  .map(([key, _]) => key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase()))
+                setSelectedConditions(conditions)
+              }
+            }
 
             setAllergies(medicalHistory.allergies || "")
             setMedications(medicalHistory.medications || "")
@@ -195,12 +203,31 @@ export default function MedicalHistoryPage(props: { params: any }) {
     fetchData()
   }, [memberId, router])
 
-  const handleConditionChange = (condition: string) => {
-    setHealthConditions((prev) => ({
-      ...prev,
-      [condition]: !prev[condition as keyof typeof prev],
-    }))
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && searchTerm.trim()) {
+      const condition = searchTerm.trim()
+      if (!selectedConditions.includes(condition)) {
+        setSelectedConditions((prev) => [...prev, condition])
+      }
+      setSearchTerm("")
+    }
   }
+
+  const handleConditionSelect = (condition: string) => {
+    if (!selectedConditions.includes(condition)) {
+      setSelectedConditions((prev) => [...prev, condition])
+    }
+    setSearchTerm("")
+  }
+
+  const handleConditionRemove = (conditionToRemove: string) => {
+    setSelectedConditions((prev) => prev.filter((condition) => condition !== conditionToRemove))
+  }
+
+  const filteredConditions = allHealthConditions.filter(
+    (condition) =>
+      condition.toLowerCase().includes(searchTerm.toLowerCase()) && !selectedConditions.includes(condition),
+  )
 
   const handleSave = async () => {
     try {
@@ -214,11 +241,11 @@ export default function MedicalHistoryPage(props: { params: any }) {
         return
       }
 
-      // Prepare data for submission
+      // In handleSave, replace the medicalData object with:
       const medicalData = {
-        _id: medicalHistoryId, // Will be included for updates, undefined for new records
+        _id: medicalHistoryId,
         familyMemberId: memberId,
-        healthConditions,
+        healthConditions: selectedConditions, // Changed from object to array
         allergies,
         medications,
         surgeries,
@@ -260,13 +287,13 @@ export default function MedicalHistoryPage(props: { params: any }) {
       {/* Header */}
       <header className="relative z-20 flex items-center justify-between p-6 lg:p-8">
         <Link
-          href="/dashboard/treeview"
+          href="/dashboard/health-overview"
           className="group flex items-center gap-3 text-gray-400 hover:text-teal-400 transition-colors"
         >
           <div className="p-2 rounded-lg bg-gray-800/50 group-hover:bg-gray-700/50 transition-colors">
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
           </div>
-          <span className="font-medium">Back to Family Tree</span>
+          <span className="font-medium">Back to Health Overview</span>
         </Link>
 
         <div className="flex items-center gap-3">
@@ -360,48 +387,100 @@ export default function MedicalHistoryPage(props: { params: any }) {
                 </div>
               </div>
 
-              <div className="p-8">
-                {/* Health Conditions Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
+              <div className="p-6 space-y-6">
+                {/* Health Conditions Section - Compact */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
                     <div className="p-2 bg-pink-500/20 rounded-lg">
-                      <Stethoscope className="h-5 w-5 text-pink-400" />
+                      <Stethoscope className="h-4 w-4 text-pink-400" />
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Health Conditions</h3>
+                    <h3 className="text-lg font-semibold text-white">Health Conditions</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                    {Object.entries(healthConditions).map(([condition, checked], index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          id={condition}
-                          checked={checked}
-                          onChange={() => handleConditionChange(condition)}
-                          className="h-5 w-5 rounded border-gray-600 text-pink-500 focus:ring-pink-500 bg-gray-700"
-                        />
-                        <label htmlFor={condition} className="text-gray-200 capitalize">
-                          {condition.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                        </label>
+                  <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+                    {/* Search Bar - Compact */}
+                    <div className="relative mb-3">
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyPress={handleSearchKeyPress}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                        placeholder="Search conditions and press Enter..."
+                        className="w-full h-10 pl-3 pr-3 bg-gray-800/50 border border-gray-700/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-pink-500/30 focus:border-pink-500 transition-colors text-sm"
+                      />
+
+                      {/* Search Suggestions - Compact */}
+                      {isSearchFocused && searchTerm && filteredConditions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
+                          {filteredConditions.slice(0, 6).map((condition, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleConditionSelect(condition)}
+                              className="w-full text-left px-3 py-2 hover:bg-gray-700 text-gray-200 transition-colors text-sm first:rounded-t-lg last:rounded-b-lg"
+                            >
+                              {condition}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Selected Conditions - Compact */}
+                    {selectedConditions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-gray-400">Selected:</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedConditions.map((condition, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-1.5 bg-pink-500/20 text-pink-200 px-2.5 py-1 rounded-md border border-pink-500/30 text-sm"
+                            >
+                              <span>{condition}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleConditionRemove(condition)
+                                }}
+                                className="text-pink-300 hover:text-pink-100 transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {selectedConditions.length === 0 && (
+                      <p className="text-gray-400 text-xs">No conditions selected. Search above to add.</p>
+                    )}
                   </div>
                 </div>
 
-                {/* Blood Type Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-red-500/20 rounded-lg">
-                      <Droplets className="h-5 w-5 text-red-400" />
+                {/* Two Column Layout for Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Blood Type */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-red-500/20 rounded-md">
+                        <Droplets className="h-4 w-4 text-red-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Blood Type</h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Blood Type</h3>
-                  </div>
-
-                  <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
                     <select
+                    id="bloodtypeFilter"
+                    style={{
+                    backgroundColor: "#1f2937",
+                    color: "#fff",
+                    border: "none",
+                    boxShadow: "none",
+                    }}
                       value={bloodType}
                       onChange={(e) => setBloodType(e.target.value)}
-                      className="w-full h-12 pl-4 pr-10 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors appearance-none cursor-pointer"
+                      className="w-full h-10 pl-3 pr-8 bg-gray-800/50 border border-gray-700/50 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-red-500/30 focus:border-red-500 transition-colors appearance-none cursor-pointer text-sm"
                     >
                       <option value="">Unknown</option>
                       <option value="A+">A+</option>
@@ -414,139 +493,141 @@ export default function MedicalHistoryPage(props: { params: any }) {
                       <option value="O-">O-</option>
                     </select>
                   </div>
+
+                  {/* Quick Actions or Summary could go here */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-gray-500/20 rounded-md">
+                        <FileText className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Quick Summary</h3>
+                    </div>
+                    <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
+                      <p className="text-xs text-gray-400">
+                        {selectedConditions.length} condition{selectedConditions.length !== 1 ? "s" : ""} • Blood type:{" "}
+                        {bloodType || "Unknown"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Allergies Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-orange-500/20 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-orange-400" />
+                {/* Compact Text Areas in Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Allergies */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-orange-500/20 rounded-md">
+                        <AlertCircle className="h-4 w-4 text-orange-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Allergies</h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Allergies</h3>
-                  </div>
-
-                  <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
                     <textarea
                       value={allergies}
                       onChange={(e) => setAllergies(e.target.value)}
-                      className="w-full rounded-xl bg-gray-800/50 border border-gray-700/50 text-white px-4 py-3 h-24 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-colors"
-                      placeholder="Enter any allergies (medications, foods, environmental)..."
+                      className="w-full rounded-lg bg-gray-800/50 border border-gray-700/50 text-white px-3 py-2 h-20 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500 transition-colors text-sm resize-none"
+                      placeholder="Medications, foods, environmental..."
                     />
                   </div>
-                </div>
 
-                {/* Medications Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Pill className="h-5 w-5 text-blue-400" />
+                  {/* Medications */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-blue-500/20 rounded-md">
+                        <Pill className="h-4 w-4 text-blue-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Medications</h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Current Medications</h3>
-                  </div>
-
-                  <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
                     <textarea
                       value={medications}
                       onChange={(e) => setMedications(e.target.value)}
-                      className="w-full rounded-xl bg-gray-800/50 border border-gray-700/50 text-white px-4 py-3 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      placeholder="List medications, dosage, and frequency..."
+                      className="w-full rounded-lg bg-gray-800/50 border border-gray-700/50 text-white px-3 py-2 h-20 focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-colors text-sm resize-none"
+                      placeholder="Current medications, dosage..."
                     />
                   </div>
-                </div>
 
-                {/* Surgeries Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <Stethoscope className="h-5 w-5 text-purple-400" />
+                  {/* Surgeries */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-purple-500/20 rounded-md">
+                        <Stethoscope className="h-4 w-4 text-purple-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Surgeries</h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Surgeries & Hospitalizations</h3>
-                  </div>
-
-                  <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
                     <textarea
                       value={surgeries}
                       onChange={(e) => setSurgeries(e.target.value)}
-                      className="w-full rounded-xl bg-gray-800/50 border border-gray-700/50 text-white px-4 py-3 h-24 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors"
-                      placeholder="List surgeries or procedures with dates if known..."
+                      className="w-full rounded-lg bg-gray-800/50 border border-gray-700/50 text-white px-3 py-2 h-20 focus:outline-none focus:ring-1 focus:ring-purple-500/30 focus:border-purple-500 transition-colors text-sm resize-none"
+                      placeholder="Surgeries, procedures, dates..."
                     />
                   </div>
-                </div>
 
-                {/* Immunizations Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <Syringe className="h-5 w-5 text-green-400" />
+                  {/* Immunizations */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-green-500/20 rounded-md">
+                        <Syringe className="h-4 w-4 text-green-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Immunizations</h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Immunization History</h3>
-                  </div>
-
-                  <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
                     <textarea
                       value={immunizations}
                       onChange={(e) => setImmunizations(e.target.value)}
-                      className="w-full rounded-xl bg-gray-800/50 border border-gray-700/50 text-white px-4 py-3 h-24 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
-                      placeholder="List vaccines and dates if known..."
+                      className="w-full rounded-lg bg-gray-800/50 border border-gray-700/50 text-white px-3 py-2 h-20 focus:outline-none focus:ring-1 focus:ring-green-500/30 focus:border-green-500 transition-colors text-sm resize-none"
+                      placeholder="Vaccines, dates..."
                     />
                   </div>
                 </div>
 
-                {/* Family Medical History Section */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-teal-500/20 rounded-lg">
-                      <FileText className="h-5 w-5 text-teal-400" />
+                {/* Family History - Full Width */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-teal-500/20 rounded-md">
+                      <FileText className="h-4 w-4 text-teal-400" />
                     </div>
-                    <h3 className="text-xl font-semibold text-white">Family Medical History Notes</h3>
+                    <h3 className="text-lg font-semibold text-white">Family Medical History</h3>
                   </div>
-
-                  <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                    <textarea
-                      value={familyHistory}
-                      onChange={(e) => setFamilyHistory(e.target.value)}
-                      className="w-full rounded-xl bg-gray-800/50 border border-gray-700/50 text-white px-4 py-3 h-24 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors"
-                      placeholder="Note any relevant family medical conditions..."
-                    />
-                  </div>
+                  <textarea
+                    value={familyHistory}
+                    onChange={(e) => setFamilyHistory(e.target.value)}
+                    className="w-full rounded-lg bg-gray-800/50 border border-gray-700/50 text-white px-3 py-2 h-20 focus:outline-none focus:ring-1 focus:ring-teal-500/30 focus:border-teal-500 transition-colors text-sm resize-none"
+                    placeholder="Relevant family medical conditions and history..."
+                  />
                 </div>
 
-                {/* Status Messages */}
-                <div className="h-16 mb-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: saveSuccess ? 1 : 0, y: saveSuccess ? 0 : -10 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center text-teal-400 bg-teal-500/10 px-6 py-4 rounded-xl border border-teal-500/20"
-                  >
-                    <Check className="h-5 w-5 mr-3" />
-                    <span>Medical history saved successfully!</span>
-                  </motion.div>
-                </div>
+                {/* Status Messages - Compact */}
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: saveSuccess ? 1 : 0, y: saveSuccess ? 0 : -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center text-teal-400 bg-teal-500/10 px-4 py-2 rounded-lg border border-teal-500/20"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  <span className="text-sm">Medical history saved successfully!</span>
+                </motion.div>
 
-                {/* Save Button */}
-                <div className="flex justify-center mt-8">
+                {/* Save Button - Compact */}
+                <div className="flex justify-center pt-4">
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className={`px-8 py-4 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-700 hover:to-pink-600 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-3 ${
+                    className={`px-6 py-2.5 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-700 hover:to-pink-600 text-white rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 text-sm ${
                       saving ? "opacity-70 cursor-not-allowed" : ""
                     }`}
                   >
                     {saving ? (
                       <>
-                        <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         <span>Saving...</span>
                       </>
                     ) : saveSuccess ? (
                       <>
-                        <Check className="h-5 w-5" />
-                        <span>Saved Successfully</span>
+                        <Check className="h-4 w-4" />
+                        <span>Saved</span>
                       </>
                     ) : (
                       <>
-                        <Save className="h-5 w-5" />
-                        <span>{medicalHistoryId ? "Update" : "Create"} Medical History</span>
+                        <Save className="h-4 w-4" />
+                        <span>{medicalHistoryId ? "Update" : "Save"} Medical History</span>
                       </>
                     )}
                   </button>
@@ -554,10 +635,10 @@ export default function MedicalHistoryPage(props: { params: any }) {
               </div>
             </div>
 
-            <div className="text-center text-sm text-gray-500 mb-8 max-w-2xl mx-auto">
-              <p className="flex items-center justify-center gap-2">
-                <Lock className="h-4 w-4" />
-                This information is kept private and secure. Only you have access to this medical data.
+            <div className="text-center text-xs text-gray-500 mb-4 max-w-xl mx-auto">
+              <p className="flex items-center justify-center gap-1">
+                <Lock className="h-3 w-3" />
+                Private and secure - only you have access to this data
               </p>
             </div>
           </motion.div>
@@ -567,5 +648,4 @@ export default function MedicalHistoryPage(props: { params: any }) {
   )
 }
 
-// Add Lock icon import
-import { Lock } from "lucide-react"
+
