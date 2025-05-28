@@ -79,6 +79,7 @@ export class UserController {
           firstName: user.firstName,
           lastName: user.lastName,
           gender: user.gender,
+          birthDate: user.birthDate,
         },
       };
     } catch (error) {
@@ -103,6 +104,7 @@ export class UserController {
           firstName: updatedUser.firstName,
           lastName: updatedUser.lastName,
           gender: updatedUser.gender,
+          birthDate: updatedUser.birthDate,
         },
       };
     } catch (error) {
@@ -142,6 +144,7 @@ export class UserController {
           id: user._id,
           firstName: user.firstName,
           lastName: user.lastName,
+          birthDate: user.birthDate,
         },
       };
     } catch (error) {

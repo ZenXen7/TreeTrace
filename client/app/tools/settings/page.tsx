@@ -6,9 +6,20 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
-import { User, Mail, Lock, Save, ArrowLeft, Eye, EyeOff, Check, AlertCircle, Users, UserCircle } from "lucide-react"
+import { User, Mail, Lock, Save, ArrowLeft, Eye, EyeOff, Check, AlertCircle, Users, UserCircle, Calendar } from "lucide-react"
 import Link from "next/link"
 import AnimatedNodes from "@/components/animated-nodes"
+
+function formatDateForInput(dateString?: string) {
+  if (!dateString) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+  if (dateString.includes('T')) return dateString.split('T')[0];
+  const d = new Date(dateString);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split('T')[0];
+  }
+  return "";
+}
 
 const ProfileSettings = () => {
   // Split selectors to minimize re-renders
@@ -25,6 +36,7 @@ const ProfileSettings = () => {
     lastName: string
     email: string
     gender: string
+    birthDate: string
   } | null>(null)
 
   const [formData, setFormData] = useState<{
@@ -32,12 +44,14 @@ const ProfileSettings = () => {
     lastName: string
     email: string
     gender: string
+    birthDate: string
     password?: string
   }>({
     firstName: "",
     lastName: "",
     email: "",
     gender: "",
+    birthDate: "",
     password: "",
   })
 
@@ -49,7 +63,8 @@ const ProfileSettings = () => {
         lastName: user.lastName || "",
         email: user.email || "",
         gender: user.gender || "",
-        password: "", // Never pre-fill the password field for security reasons
+        birthDate: formatDateForInput(user.birthDate),
+        password: "", 
       })
       setIsDirty(false)
       setInitialData({
@@ -57,6 +72,7 @@ const ProfileSettings = () => {
         lastName: user.lastName || "",
         email: user.email || "",
         gender: user.gender || "",
+        birthDate: formatDateForInput(user.birthDate),
       })
     }
   }, [user])
@@ -81,6 +97,7 @@ const ProfileSettings = () => {
         (name === "firstName" && value !== (user.firstName || "")) ||
         (name === "lastName" && value !== (user.lastName || "")) ||
         (name === "gender" && value !== (user.gender || "")) ||
+        (name === "birthDate" && value !== (user.birthDate || "")) ||
         (name === "password" && value.trim() !== "")
 
       setIsDirty(hasChanges)
@@ -120,6 +137,7 @@ const ProfileSettings = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           gender: formData.gender,
+          birthDate: formData.birthDate,
         })
       }
 
@@ -274,6 +292,23 @@ const ProfileSettings = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="birthDate" className="block text-sm font-medium text-gray-300">
+                    Birth Date
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      id="birthDate"
+                      name="birthDate"
+                      value={formData.birthDate}
+                      onChange={handleChange}
+                      className="w-full h-12 pl-12 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors"
+                    />
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                   </div>
                 </div>
               </div>

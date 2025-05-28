@@ -17,3 +17,7 @@ body {
 * {
   font-family: inherit;
 }
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
