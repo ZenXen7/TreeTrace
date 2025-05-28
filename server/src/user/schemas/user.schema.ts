@@ -21,6 +21,9 @@ export class User {
   @Prop({ required: true, enum: ['male', 'female'] })
   gender: string;
 
+  @Prop({ type: Date })
+  birthDate: Date;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'FamilyMember' }] })
   familyTree: Types.Array<Types.ObjectId>;
 

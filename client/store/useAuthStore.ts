@@ -59,6 +59,7 @@ interface UserData {
   lastName: string;
   email: string;
   gender?: string;
+  birthDate?: string;
 }
 
 interface RegisterData {
@@ -80,6 +81,7 @@ interface UpdateUserData {
   email?: string;
   password?: string;
   gender?: string;
+  birthDate?: string;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
