@@ -3,6 +3,7 @@
 import type React from "react"
 import "./globals.css"
 import { Outfit } from "next/font/google"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -17,9 +18,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`min-h-screen bg-black antialiased ${outfit.variable} ${outfit.className}`}>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`min-h-screen bg-background text-foreground antialiased ${outfit.variable} ${outfit.className}`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

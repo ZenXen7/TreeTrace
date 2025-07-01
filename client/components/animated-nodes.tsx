@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 
 export default function AnimatedNodes() {
+  const { theme } = useTheme()
   const [nodes, setNodes] = useState<Array<{
     id: number;
     top: string;
@@ -15,7 +17,6 @@ export default function AnimatedNodes() {
   }>>([]);
 
   useEffect(() => {
-   
     const generatedNodes = Array.from({ length: 20 }, (_, i) => ({
       id: i,
       top: `${Math.random() * 100}%`,
@@ -34,7 +35,7 @@ export default function AnimatedNodes() {
       {nodes.map((node) => (
         <motion.div 
           key={node.id}
-          className="absolute rounded-full bg-white/30"
+          className="absolute rounded-full bg-primary/10 border border-primary/20"
           initial={{ 
             top: node.top, 
             left: node.left,
@@ -54,7 +55,9 @@ export default function AnimatedNodes() {
           style={{
             width: `${node.width}px`,
             height: `${node.height}px`,
-            boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.3)'
+            boxShadow: theme === 'dark' 
+              ? '0 0 8px 2px rgba(255, 255, 255, 0.1)' 
+              : '0 0 8px 2px rgba(0, 0, 0, 0.1)'
           }}
         />
       ))}

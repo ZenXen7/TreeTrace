@@ -360,7 +360,7 @@ export default function HealthOverviewPage() {
 
       // Check if this is a section header
       if (trimmedSection.match(/^[A-Z][^:]+:/)) {
-        const headerMatch = trimmedSection.match(/^([A-Z][^:]+):(.*)/s)
+        const headerMatch = trimmedSection.match(/^([A-Z][^:]+):(.*)$/)
         if (headerMatch) {
           const [_, header, content] = headerMatch
 

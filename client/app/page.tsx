@@ -5,6 +5,8 @@ import { Shield, Heart, Sparkles, ArrowRight, Check, X } from "lucide-react"
 import Link from "next/link"
 import { Network, TreePine, Activity } from "lucide-react"
 import AnimatedNodes from "@/components/animated-nodes"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { MobileNav } from "@/components/ui/mobile-nav"
 import { useState, useEffect } from "react"
 
 export default function Home() {
@@ -116,7 +118,7 @@ export default function Home() {
       <div className="relative max-w-6xl mx-auto">
         <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-70" />
 
-        <div className="relative rounded-2xl overflow-hidden border border-gray-800/50 shadow-2xl bg-gray-900/50 backdrop-blur-sm">
+        <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl bg-card/50 backdrop-blur-sm">
           {/* Screenshot Display */}
           <div className="relative aspect-video overflow-hidden">
             <AnimatePresence mode="wait">
@@ -135,17 +137,17 @@ export default function Home() {
                   className="w-full h-full object-cover"
                   loading={currentSlide === 0 ? "eager" : "lazy"}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
               </motion.div>
             </AnimatePresence>
 
             {/* Navigation Arrows */}
             <button
               onClick={() => setCurrentSlide((prev) => (prev - 1 + screenshots.length) % screenshots.length)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 group"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-background/50 hover:bg-background/70 rounded-full transition-all duration-200 backdrop-blur-sm border border-border/20 group"
             >
               <svg
-                className="w-5 h-5 text-white group-hover:scale-110 transition-transform"
+                className="w-5 h-5 text-foreground group-hover:scale-110 transition-transform"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -156,10 +158,10 @@ export default function Home() {
 
             <button
               onClick={() => setCurrentSlide((prev) => (prev + 1) % screenshots.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 group"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-background/50 hover:bg-background/70 rounded-full transition-all duration-200 backdrop-blur-sm border border-border/20 group"
             >
               <svg
-                className="w-5 h-5 text-white group-hover:scale-110 transition-transform"
+                className="w-5 h-5 text-foreground group-hover:scale-110 transition-transform"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -175,7 +177,7 @@ export default function Home() {
                   key={index}
                   onClick={() => setCurrentSlide(index)}
                   className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentSlide ? "bg-teal-400 scale-125" : "bg-white/40 hover:bg-white/60"
+                    index === currentSlide ? "bg-teal-400 scale-125" : "bg-muted-foreground/40 hover:bg-muted-foreground/60"
                   }`}
                 />
               ))}
@@ -183,7 +185,7 @@ export default function Home() {
           </div>
 
           {/* Content Description */}
-          <div className="p-8 bg-gradient-to-r from-gray-900/80 to-gray-800/80">
+          <div className="p-8 bg-gradient-to-r from-card/80 to-muted/80">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSlide}
@@ -193,8 +195,8 @@ export default function Home() {
                 transition={{ duration: 0.3 }}
                 className="text-center"
               >
-                <h3 className="text-2xl font-bold text-white mb-3">{screenshots[currentSlide].title}</h3>
-                <p className="text-gray-300 text-lg max-w-3xl mx-auto leading-relaxed">
+                <h3 className="text-2xl font-bold text-foreground mb-3">{screenshots[currentSlide].title}</h3>
+                <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
                   {screenshots[currentSlide].description}
                 </p>
               </motion.div>
@@ -275,7 +277,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-black text-white font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground font-sans relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-[url('/tree-connections.svg')] bg-center opacity-10 pointer-events-none" />
       <AnimatedNodes />
@@ -290,21 +292,23 @@ export default function Home() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="#features" className="text-gray-400 hover:text-white transition-colors">
+          <Link href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
             Features
           </Link>
-          <Link href="#pricing" className="text-gray-400 hover:text-white transition-colors">
+          <Link href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
             Pricing
           </Link>
-          <Link href="/auth/login" className="text-gray-400 hover:text-white transition-colors">
+          <Link href="/auth/login" className="text-muted-foreground hover:text-foreground transition-colors">
             Login
           </Link>
+          <ThemeToggle />
           <Link href="/auth/signup">
             <Button className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white border-0 shadow-lg">
               Get Started
             </Button>
           </Link>
         </nav>
+        <MobileNav />
       </header>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -319,10 +323,10 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-full border border-gray-700/50 mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card/50 rounded-full border border-border/50 mb-8"
           >
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-300">Now in Beta</span>
+            <span className="text-sm text-muted-foreground">Now in Beta</span>
           </motion.div>
 
           <motion.h1
@@ -335,14 +339,14 @@ export default function Home() {
               Your Family Story
             </span>
             <br />
-            <span className="text-white">Beautifully Connected</span>
+            <span className="text-foreground">Beautifully Connected</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed"
+            className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
           >
             Build interactive family trees, track health patterns, and discover new connections with AI-powered
             insights. Preserve your heritage for future generations.
@@ -366,7 +370,7 @@ export default function Home() {
             <Button
               size="lg"
               variant="outline"
-              className="border-gray-700 text-white hover:bg-white/10 px-8 py-4 rounded-xl transition-all duration-300"
+              className="border-border text-foreground hover:bg-accent px-8 py-4 rounded-xl transition-all duration-300"
               onClick={() => setShowVideo(true)}
             >
               Watch Demo
@@ -383,7 +387,7 @@ export default function Home() {
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl font-bold text-teal-400 mb-2">{stat.number}</div>
-                <div className="text-sm text-gray-400">{stat.label}</div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>
@@ -402,7 +406,7 @@ export default function Home() {
                 See TreeTrace in Action
               </span>
             </h2>
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Explore the powerful features that make TreeTrace the perfect platform for your family heritage
             </p>
           </div>
@@ -425,7 +429,7 @@ export default function Home() {
                 Everything You Need
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Powerful tools to build, explore, and preserve your family heritage
             </p>
           </div>
@@ -445,8 +449,8 @@ export default function Home() {
                 >
                   <div className={feature.iconColor}>{feature.icon}</div>
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
-                <p className="text-gray-300 leading-relaxed">{feature.description}</p>
+                <h3 className="text-2xl font-bold text-foreground mb-4">{feature.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -472,9 +476,9 @@ export default function Home() {
                   Health Heritage
                 </span>
                 <br />
-                <span className="text-white">Matters</span>
+                <span className="text-foreground">Matters</span>
               </h2>
-              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 Understanding your family's health history is crucial for making informed medical decisions. Track
                 hereditary conditions and share vital information securely.
               </p>
@@ -491,7 +495,7 @@ export default function Home() {
                     <div className="p-1 bg-pink-500/20 rounded-full">
                       <Check className="w-4 h-4 text-pink-400" />
                     </div>
-                    <span className="text-gray-200">{benefit}</span>
+                    <span className="text-muted-foreground">{benefit}</span>
                   </motion.div>
                 ))}
               </div>
@@ -505,22 +509,22 @@ export default function Home() {
               className="relative"
             >
               <div className="absolute -inset-4 bg-gradient-to-r from-pink-500/20 to-red-500/20 rounded-2xl blur-xl opacity-70" />
-              <div className="relative rounded-2xl overflow-hidden border border-gray-800/50 bg-gray-900/50 p-8">
+              <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-card/50 p-8">
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                  <div className="bg-card/80 rounded-xl p-6 border border-border/50">
                     <Heart className="w-8 h-8 text-pink-400 mb-4" />
-                    <div className="text-2xl font-bold text-white mb-2">Health Tracking</div>
-                    <div className="text-gray-400 text-sm">Monitor conditions across generations</div>
+                    <div className="text-2xl font-bold text-foreground mb-2">Health Tracking</div>
+                    <div className="text-muted-foreground text-sm">Monitor conditions across generations</div>
                   </div>
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                  <div className="bg-card/80 rounded-xl p-6 border border-border/50">
                     <Activity className="w-8 h-8 text-blue-400 mb-4" />
-                    <div className="text-2xl font-bold text-white mb-2">AI Analysis</div>
-                    <div className="text-gray-400 text-sm">Get intelligent health insights</div>
+                    <div className="text-2xl font-bold text-foreground mb-2">AI Analysis</div>
+                    <div className="text-muted-foreground text-sm">Get intelligent health insights</div>
                   </div>
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 col-span-2">
+                  <div className="bg-card/80 rounded-xl p-6 border border-border/50 col-span-2">
                     <Shield className="w-8 h-8 text-green-400 mb-4" />
-                    <div className="text-2xl font-bold text-white mb-2">Secure & Private</div>
-                    <div className="text-gray-400 text-sm">Your health data is encrypted and protected</div>
+                    <div className="text-2xl font-bold text-foreground mb-2">Secure & Private</div>
+                    <div className="text-muted-foreground text-sm">Your health data is encrypted and protected</div>
                   </div>
                 </div>
               </div>
@@ -542,7 +546,7 @@ export default function Home() {
                 Start Your Journey
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
               Join thousands of families preserving their heritage and health history with TreeTrace
             </p>
             <Link href="/auth/signup">
@@ -558,7 +562,7 @@ export default function Home() {
         </motion.section>
 
         {/* Footer */}
-        <footer className="border-t border-gray-800/50 py-12">
+        <footer className="border-t border-border/50 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-3 mb-6 md:mb-0">
               <div className="p-2 bg-teal-500/20 rounded-lg">
@@ -567,13 +571,13 @@ export default function Home() {
               <span className="font-bold text-lg tracking-tight">TreeTrace</span>
             </div>
             <div className="flex items-center gap-8">
-              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors text-sm">
+              <Link href="/privacy" className="text-muted-foreground hover:text-foreground text-sm">
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors text-sm">
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground text-sm">
                 Terms of Service
               </Link>
-              <div className="text-gray-500 text-sm">© {new Date().getFullYear()} TreeTrace. All rights reserved.</div>
+              <div className="text-muted-foreground text-sm">© {new Date().getFullYear()} TreeTrace. All rights reserved.</div>
             </div>
           </div>
         </footer>
@@ -586,7 +590,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setShowVideo(false)
@@ -598,38 +602,38 @@ export default function Home() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-5xl bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl overflow-hidden border border-gray-700/50 shadow-2xl"
+              className="relative w-full max-w-5xl bg-gradient-to-br from-card/95 to-muted/95 backdrop-blur-xl rounded-2xl overflow-hidden border border-border/50 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gray-900/50">
+              <div className="flex items-center justify-between p-6 border-b border-border/50 bg-card/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-teal-500/20 rounded-lg">
                     <TreePine className="h-5 w-5 text-teal-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">TreeTrace Demo</h3>
-                    <p className="text-sm text-gray-400">See how TreeTrace works</p>
+                    <h3 className="text-lg font-semibold text-foreground">TreeTrace Demo</h3>
+                    <p className="text-sm text-muted-foreground">See how TreeTrace works</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowVideo(false)}
-                  className="group p-2 bg-gray-800/50 hover:bg-red-500/20 rounded-xl transition-all duration-200 border border-gray-700/50 hover:border-red-500/30"
+                  className="group p-2 bg-muted/50 hover:bg-red-500/20 rounded-xl transition-all duration-200 border border-border/50 hover:border-red-500/30"
                   aria-label="Close video"
                 >
-                  <X className="w-5 h-5 text-gray-400 group-hover:text-red-400 transition-colors" />
+                  <X className="w-5 h-5 text-muted-foreground group-hover:text-red-400 transition-colors" />
                 </button>
               </div>
 
               {/* Video Container */}
-              <div className="relative bg-black">
+              <div className="relative bg-background">
                 <div className="aspect-video">
                   <video className="w-full h-full object-cover" controls autoPlay playsInline preload="metadata">
                     <source src="/TreeTrace-Demo.mp4" type="video/mp4" />
-                    <div className="flex items-center justify-center h-full bg-gray-800 text-white">
+                    <div className="flex items-center justify-center h-full bg-muted text-foreground">
                       <div className="text-center">
                         <p className="text-lg mb-2">Video not available</p>
-                        <p className="text-sm text-gray-400">Your browser does not support the video format.</p>
+                        <p className="text-sm text-muted-foreground">Your browser does not support the video format.</p>
                       </div>
                     </div>
                   </video>
@@ -639,9 +643,9 @@ export default function Home() {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-6 bg-gray-900/30 border-t border-gray-700/50">
+              <div className="p-6 bg-card/30 border-t border-border/50">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <p className="text-sm text-gray-400">Ready to start building your family tree?</p>
+                  <p className="text-sm text-muted-foreground">Ready to start building your family tree?</p>
                   <div className="flex gap-3">
                     <Link href="/auth/signup">
                       <Button
