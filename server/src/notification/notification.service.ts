@@ -191,4 +191,119 @@ export class NotificationService {
       patterns: patterns
     };
   }
+
+  /**
+   * Get suggestion requests for a user (both sent and received)
+   * @param userId User ID
+   * @returns List of suggestion requests
+   */
+  async getSuggestionRequests(userId: Types.ObjectId): Promise<any[]> {
+    const requests = await this.notificationModel.find({
+      $or: [
+        { fromUserId: userId },
+        { toUserId: userId }
+      ],
+      type: 'suggestion_request'
+    }).populate('fromUserId', 'firstName lastName').populate('toUserId', 'firstName lastName').exec();
+
+    return requests.map(request => {
+      const fromUser = request.fromUserId as any;
+      const toUser = request.toUserId as any;
+      
+      return {
+        id: (request._id as any).toString(),
+        fromUserId: fromUser._id.toString(),
+        fromUserName: `${fromUser.firstName} ${fromUser.lastName}`,
+        toUserId: toUser._id.toString(),
+        toUserName: `${toUser.firstName} ${toUser.lastName}`,
+        status: request.status,
+        createdAt: (request as any).createdAt,
+        suggestionCount: request.suggestionCount,
+        isIncoming: toUser._id.toString() === userId.toString(), // True if this is an incoming request
+        isOutgoing: fromUser._id.toString() === userId.toString() // True if this is an outgoing request
+      };
+    });
+  }
+
+  /**
+   * Create a new suggestion request
+   * @param fromUserId Sender user ID
+   * @param toUserId Receiver user ID
+   * @param suggestionCount Number of suggestions
+   * @returns Created suggestion request
+   */
+  async createSuggestionRequest(
+    fromUserId: Types.ObjectId,
+    toUserId: Types.ObjectId,
+    suggestionCount: number
+  ): Promise<any> {
+    // Check if there's already a pending request
+    const existingPendingRequest = await this.notificationModel.findOne({
+      fromUserId,
+      toUserId,
+      type: 'suggestion_request',
+      status: 'pending'
+    }).exec();
+
+    if (existingPendingRequest) {
+      throw new Error('A pending request already exists');
+    }
+
+    // Check if there's a rejected request and delete it to create a fresh one
+    const existingRejectedRequest = await this.notificationModel.findOne({
+      fromUserId,
+      toUserId,
+      type: 'suggestion_request',
+      status: 'rejected'
+    }).exec();
+
+    if (existingRejectedRequest) {
+      // Delete the rejected request to create a fresh one
+      await this.notificationModel.deleteOne({
+        _id: existingRejectedRequest._id
+      }).exec();
+    }
+
+    const request = new this.notificationModel({
+      userId: toUserId, // The user who will receive the notification
+      fromUserId,
+      toUserId,
+      type: 'suggestion_request',
+      status: 'pending',
+      suggestionCount,
+      title: 'Suggestion Access Request',
+      message: `A user wants to see detailed suggestions from your family tree (${suggestionCount} suggestions available)`,
+      read: false
+    });
+
+    return request.save();
+  }
+
+  /**
+   * Respond to a suggestion request
+   * @param requestId Request ID
+   * @param userId User ID (must be the receiver)
+   * @param status Response status ('accepted' or 'rejected')
+   * @returns Updated request
+   */
+  async respondToSuggestionRequest(
+    requestId: string,
+    userId: Types.ObjectId,
+    status: 'accepted' | 'rejected'
+  ): Promise<any> {
+    const request = await this.notificationModel.findOne({
+      _id: requestId,
+      toUserId: userId,
+      type: 'suggestion_request',
+      status: 'pending'
+    }).exec();
+
+    if (!request) {
+      throw new Error('Request not found or already processed');
+    }
+
+    request.status = status;
+    request.read = true;
+    return request.save();
+  }
 }

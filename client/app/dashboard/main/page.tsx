@@ -65,10 +65,12 @@ export default function Dashboard() {
       })
       const familyMembers = (await res.json()).data || []
       
-      // 2. For each member, fetch their medical history
+      // 2. For each member, fetch their medical history and suggestion count
       const allData = await Promise.all(
         familyMembers.map(async (member: any) => {
           let medicalHistory = null
+          let suggestionCount = 0
+          
           try {
             const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
               headers: { Authorization: `Bearer ${token}` },
@@ -77,7 +79,15 @@ export default function Dashboard() {
               medicalHistory = (await medRes.json()).data
             }
           } catch {}
-          return { ...member, medicalHistory }
+          
+          // Fetch suggestion count for this member using the same function as treeview
+          try {
+            // Import the getMemberSuggestionCount function from treeview service
+            const { getMemberSuggestionCount } = await import('../treeview/service/familyService')
+            suggestionCount = await getMemberSuggestionCount(token, member._id)
+          } catch {}
+          
+          return { ...member, medicalHistory, suggestionCount }
         }),
       )
       setAllFamilyData(allData)
@@ -111,11 +121,14 @@ export default function Dashboard() {
       // Calculate max generation
       const maxGeneration = Math.max(...allData.map(member => getGeneration(member)))
 
+      // Calculate total AI suggestions across all members (same as treeview)
+      const totalAISuggestions = allData.reduce((total, member) => total + member.suggestionCount, 0)
+
       setStats({
         familyMembers: allData.length,
         healthRecords: healthRecordsCount,
         generations: maxGeneration,
-        aiSuggestions: 3 // This could be dynamic if you track AI interactions
+        aiSuggestions: totalAISuggestions // Real AI suggestion count from all members
       })
     }
     fetchAllData()
