@@ -254,27 +254,34 @@ export class NotificationController {
       }
       
       // Find similar family members between current user and other users
-      const similarMembers: UserSimilarities[] = [];
-      let totalSuggestionCount = 0;
+      const crossUserSimilarities: any[] = [];
       
       for (const [otherUserId, members] of otherUserMembersByUserId.entries()) {
         const userSimilarities: CrossUserSimilarity[] = [];
+        let userSuggestionCount = 0;
         
         // Compare each current user's member with each other user's member
         for (const currentMember of currentUserMembers) {
           for (const otherMember of members) {
-            // Use the family member similarity service to calculate similarity
-            const { similarity, similarFields } = 
-              this.familyMemberSimilarityService.calculateMemberSimilarity(
-                currentMember, 
-                otherMember
-              );
+            // Only consider exact name matches - BOTH first name AND surname must match
+            const currentFirstName = currentMember.name ? currentMember.name.split(' ')[0].toLowerCase().trim() : '';
+            const currentSurname = currentMember.surname || this.extractSurnameFromName(currentMember.name);
+            const currentSurnameLower = currentSurname ? currentSurname.toLowerCase().trim() : '';
             
-            // If similarity is above threshold and we have at least one similar field
-            if (similarity > 0.7 && similarFields.length > 0) {
+            const otherFirstName = otherMember.name ? otherMember.name.split(' ')[0].toLowerCase().trim() : '';
+            const otherSurname = otherMember.surname || this.extractSurnameFromName(otherMember.name);
+            const otherSurnameLower = otherSurname ? otherSurname.toLowerCase().trim() : '';
+            
+            // Both first name AND surname must match exactly
+            const exactNameMatch = currentFirstName === otherFirstName && 
+                                 currentSurnameLower === otherSurnameLower && 
+                                 currentFirstName !== '' && 
+                                 currentSurnameLower !== '';
+            
+            if (exactNameMatch) {
               // Generate suggestions based on differences
-              const suggestions = await this.generateSuggestions(currentMember, otherMember, similarFields);
-              totalSuggestionCount += suggestions.length;
+              const suggestions = await this.generateSuggestions(currentMember, otherMember, ['fullName']);
+              userSuggestionCount += suggestions.length;
               
               userSimilarities.push({
                 currentMember: {
@@ -295,8 +302,8 @@ export class NotificationController {
                   deathDate: otherMember.deathDate,
                   country: otherMember.country
                 },
-                similarity,
-                similarFields,
+                similarity: 1.0, // Exact match
+                similarFields: ['fullName'],
                 suggestions // Add suggestions to the response
               });
             }
@@ -304,9 +311,20 @@ export class NotificationController {
         }
         
         if (userSimilarities.length > 0) {
-          similarMembers.push({
+          // Get user information for the other user
+          const otherUser = await this.familyMemberModel.findOne({ userId: new Types.ObjectId(otherUserId) })
+            .populate('userId', 'firstName lastName')
+            .exec();
+          
+          const otherUserName = otherUser?.userId && typeof otherUser.userId === 'object' && 'firstName' in otherUser.userId
+            ? `${(otherUser.userId as any).firstName} ${(otherUser.userId as any).lastName}`
+            : 'Unknown User';
+          
+          crossUserSimilarities.push({
             otherUserId,
-            similarities: userSimilarities
+            otherUserName,
+            totalSuggestions: userSuggestionCount,
+            similarMembers: userSimilarities
           });
         }
       }
@@ -314,15 +332,7 @@ export class NotificationController {
       return {
         statusCode: HttpStatus.OK,
         message: 'Cross-user family member similarities retrieved successfully',
-        data: {
-          currentUserCount: currentUserMembers.length,
-          similarMembers,
-          totalSimilarities: similarMembers.reduce(
-            (count, user) => count + user.similarities.length, 
-            0
-          ),
-          totalSuggestions: totalSuggestionCount
-        }
+        data: crossUserSimilarities
       };
     } catch (error) {
       console.error('Error retrieving cross-user similarities:', error);
@@ -341,12 +351,20 @@ export class NotificationController {
   ): Promise<string[]> {
     let suggestions: string[] = [];
     
-    // Now we only compare full normalized names
-    const currentFullName = this.normalizeNameForComparison(currentMember.name);
-    const otherFullName = this.normalizeNameForComparison(otherMember.name);
-
-    // Only generate suggestions if there's an exact name match
-    const exactNameMatch = currentFullName === otherFullName && currentFullName !== '';
+    // Only generate suggestions if BOTH first name AND surname match exactly
+    const currentFirstName = currentMember.name ? currentMember.name.split(' ')[0].toLowerCase().trim() : '';
+    const currentSurname = currentMember.surname || this.extractSurnameFromName(currentMember.name);
+    const currentSurnameLower = currentSurname ? currentSurname.toLowerCase().trim() : '';
+    
+    const otherFirstName = otherMember.name ? otherMember.name.split(' ')[0].toLowerCase().trim() : '';
+    const otherSurname = otherMember.surname || this.extractSurnameFromName(otherMember.name);
+    const otherSurnameLower = otherSurname ? otherSurname.toLowerCase().trim() : '';
+    
+    // Both first name AND surname must match exactly
+    const exactNameMatch = currentFirstName === otherFirstName && 
+                         currentSurnameLower === otherSurnameLower && 
+                         currentFirstName !== '' && 
+                         currentSurnameLower !== '';
     
     if (!exactNameMatch) {
       return suggestions;
@@ -393,12 +411,8 @@ export class NotificationController {
         suggestions.push(
           `Consider updating birth date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different birth date.`
         );
-      } else {
-        const date1Str = date1.toISOString().split('T')[0];
-        suggestions.push(
-          `Confirm birth date ${date1Str} for "${currentMember.name}". Another user has recorded the same birth date.`
-        );
       }
+      // Don't suggest confirming if birth dates already match - follow AI Suggestions algorithm
     } else if (!currentMember.birthDate && otherMember.birthDate) {
       const dateStr = new Date(otherMember.birthDate).toISOString().split('T')[0];
       suggestions.push(
@@ -418,12 +432,8 @@ export class NotificationController {
         suggestions.push(
           `Consider updating death date from ${date1Str} to ${date2Str} for "${currentMember.name}". Another user has recorded a different death date.`
         );
-      } else {
-        const date1Str = date1.toISOString().split('T')[0];
-        suggestions.push(
-          `Confirm death date ${date1Str} for "${currentMember.name}". Another user has recorded the same death date.`
-        );
       }
+      // Don't suggest confirming if death dates already match - follow AI Suggestions algorithm
     } else if (!currentMember.deathDate && otherMember.deathDate) {
       const dateStr = new Date(otherMember.deathDate).toISOString().split('T')[0];
       suggestions.push(
@@ -437,11 +447,8 @@ export class NotificationController {
         suggestions.push(
           `Consider updating country from "${currentMember.country}" to "${otherMember.country}" for "${currentMember.name}". Another user has recorded a different country.`
         );
-      } else {
-        suggestions.push(
-          `Confirm country "${currentMember.country}" for "${currentMember.name}". Another user has recorded the same country.`
-        );
       }
+      // Don't suggest confirming if countries already match - follow AI Suggestions algorithm
     } else if (!currentMember.country && otherMember.country) {
       suggestions.push(
         `Consider adding country "${otherMember.country}" for "${currentMember.name}". Another user has recorded this country.`
@@ -623,9 +630,24 @@ export class NotificationController {
           ? currentMember.partnerId.map(id => id.toString()) 
           : [];
         
+        // Get current member's partner names for name-based filtering (following AI Suggestions algorithm)
+        const currentPartnerNames: string[] = [];
+        if (currentMember.partnerId && Array.isArray(currentMember.partnerId) && currentMember.partnerId.length > 0) {
+          for (const partnerId of currentMember.partnerId) {
+            try {
+              const partner = await this.familyMemberModel.findById(partnerId).exec() as FamilyMemberWithId;
+              if (partner) {
+                currentPartnerNames.push(partner.name.toLowerCase().trim());
+              }
+            } catch (err) {
+              // Skip this partner if there's an error
+            }
+          }
+        }
+        
         // Check each partner in other member that's not in current member
         for (const partnerId of otherMember.partnerId) {
-          // Skip if this partner is already in current member's partners
+          // Skip if this partner is already in current member's partners (by ID)
           if (currentPartnerIds.includes(partnerId.toString())) {
             continue;
           }
@@ -638,7 +660,13 @@ export class NotificationController {
               // Also prevent suggesting the same name (likely the same person)
               const isSameName = partner.name.toLowerCase().trim() === currentMember.name.toLowerCase().trim();
               
-              if (!isSamePerson && !isSameName) {
+              // Check if partner name already exists (following AI Suggestions algorithm)
+              const partnerNameExists = currentPartnerNames.some(existingName => 
+                existingName.includes(partner.name.toLowerCase().trim()) ||
+                partner.name.toLowerCase().trim().includes(existingName)
+              );
+              
+              if (!isSamePerson && !isSameName && !partnerNameExists) {
                 newSuggestions.push(
                   `Consider adding partner "${partner.name}" to "${currentMember.name}". Another user has recorded this partnership.`
                 );
@@ -877,6 +905,83 @@ export class NotificationController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error unmarking suggestions',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Get suggestion requests (both sent and received)
+  @Get('suggestion-requests')
+  async getSuggestionRequests(@Request() req) {
+    try {
+      const userId = req.user.id;
+      const userObjectId = new Types.ObjectId(userId);
+      
+      // Get requests where current user is either sender or receiver
+      const requests = await this.notificationService.getSuggestionRequests(userObjectId);
+      
+      return {
+        success: true,
+        data: requests
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch suggestion requests',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Send a suggestion request
+  @Post('suggestion-requests')
+  async sendSuggestionRequest(@Request() req, @Body() body: { toUserId: string; suggestionCount: number }) {
+    try {
+      const fromUserId = req.user.id;
+      const fromUserObjectId = new Types.ObjectId(fromUserId);
+      const toUserObjectId = new Types.ObjectId(body.toUserId);
+      
+      const request = await this.notificationService.createSuggestionRequest(
+        fromUserObjectId,
+        toUserObjectId,
+        body.suggestionCount
+      );
+      
+      return {
+        success: true,
+        data: request
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to send suggestion request',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Respond to a suggestion request (accept/reject)
+  @Post('suggestion-requests/:requestId/respond')
+  async respondToSuggestionRequest(
+    @Request() req,
+    @Param('requestId') requestId: string,
+    @Body() body: { status: 'accepted' | 'rejected' }
+  ) {
+    try {
+      const userId = req.user.id;
+      const userObjectId = new Types.ObjectId(userId);
+      
+      const request = await this.notificationService.respondToSuggestionRequest(
+        requestId,
+        userObjectId,
+        body.status
+      );
+      
+      return {
+        success: true,
+        data: request
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to respond to suggestion request',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

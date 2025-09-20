@@ -4,13 +4,15 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { TreePine, BarChart3, Heart, LogOut, HelpCircle, Search, User } from "lucide-react"
+import { TreePine, BarChart3, Heart, LogOut, HelpCircle, Search, User, Users, Bell } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { motion } from "framer-motion"
 
 const mainNavItems = [
   { title: "Dashboard", icon: <BarChart3 className="h-5 w-5" />, href: "./main" },
   { title: "My Tree", icon: <TreePine className="h-5 w-5" />, href: "./treeview" },
+  { title: "Cross-User Suggestions", icon: <Users className="h-5 w-5" />, href: "./suggestions/cross-user" },
+  { title: "Notifications", icon: <Bell className="h-5 w-5" />, href: "./notifications" },
   { title: "Search Users", icon: <Search className="h-5 w-5" />, href: "/search" },
   { title: "Health Overview", icon: <Heart className="h-5 w-5" />, href: "./health-overview" },
 ]
@@ -26,6 +28,7 @@ interface SidebarProps {
 
 export function Sidebar({ sidebarOpen }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(0)
   const { user, fetchUserProfile, isAuthenticated, logout } = useAuthStore((state) => state)
   const router = useRouter()
 
@@ -33,8 +36,31 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
     setMounted(true)
     if (isAuthenticated) {
       fetchUserProfile()
+      fetchNotificationCount()
     }
   }, [isAuthenticated, fetchUserProfile])
+
+  const fetchNotificationCount = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      const response = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const pendingCount = data.data?.filter((req: any) => req.status === 'pending' && req.toUserId !== req.fromUserId).length || 0
+        setNotificationCount(pendingCount)
+      }
+    } catch (err) {
+      console.error("Error fetching notification count:", err)
+    }
+  }
 
   const handleLogout = async () => {
     try {
@@ -46,11 +72,45 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
   }
 
   return (
-    <aside
-      className={`fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-gray-900/95 to-gray-950/95 backdrop-blur-xl border-r border-gray-700/50 z-40 transition-all duration-300 ease-in-out ${
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      } ${mounted ? "opacity-100" : "opacity-0"}`}
-    >
+    <>
+      <style jsx>{`
+        .sidebar-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(34, 197, 94, 0.3) rgba(31, 41, 55, 0.8);
+        }
+        
+        .sidebar-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .sidebar-scrollbar::-webkit-scrollbar-track {
+          background: rgba(31, 41, 55, 0.3);
+          border-radius: 3px;
+        }
+        
+        .sidebar-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, rgba(34, 197, 94, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
+          border-radius: 3px;
+          transition: all 0.2s ease;
+        }
+        
+        .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, rgba(34, 197, 94, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+        }
+        
+        .sidebar-scrollbar::-webkit-scrollbar-thumb:active {
+          background: linear-gradient(180deg, rgba(34, 197, 94, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%);
+        }
+        
+        .sidebar-scrollbar::-webkit-scrollbar-corner {
+          background: rgba(31, 41, 55, 0.3);
+        }
+      `}</style>
+      <aside
+        className={`fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-gray-900/95 to-gray-950/95 backdrop-blur-xl border-r border-gray-700/50 z-40 transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        } ${mounted ? "opacity-100" : "opacity-0"}`}
+      >
       <div className="p-6 h-full flex flex-col">
         {/* Logo Section */}
         <motion.div
@@ -94,59 +154,66 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
         </motion.div>
 
         {/* Navigation */}
-        <nav className="space-y-1 mb-6 flex-1">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-3">Main</p>
-            <div className="space-y-1">
-              {mainNavItems.map((item, index) => (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
-                >
-                  <Link href={item.href}>
-                    <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 group">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-blue-500/0 rounded-md group-hover:from-teal-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
-                        <div className="relative">{item.icon}</div>
-                      </div>
-                      <span className="font-medium">{item.title}</span>
-                    </button>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+        <nav className="flex-1 overflow-y-auto sidebar-scrollbar">
+          <div className="space-y-1 pb-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-3">Main</p>
+              <div className="space-y-1">
+                {mainNavItems.map((item, index) => (
+                  <motion.div
+                    key={item.title}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                  >
+                    <Link href={item.href}>
+                      <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 group">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-blue-500/0 rounded-md group-hover:from-teal-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
+                          <div className="relative">{item.icon}</div>
+                          {item.title === "Notifications" && notificationCount > 0 && (
+                            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                              {notificationCount}
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium">{item.title}</span>
+                      </button>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="pt-6"
-          >
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-3">Tools</p>
-            <div className="space-y-1">
-              {toolsNavItems.map((item, index) => (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.7 + index * 0.1 }}
-                >
-                  <Link href={item.href}>
-                    <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 group">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-blue-500/0 rounded-md group-hover:from-teal-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
-                        <div className="relative">{item.icon}</div>
-                      </div>
-                      <span className="font-medium">{item.title}</span>
-                    </button>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="pt-6"
+            >
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-3">Tools</p>
+              <div className="space-y-1">
+                {toolsNavItems.map((item, index) => (
+                  <motion.div
+                    key={item.title}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.7 + index * 0.1 }}
+                  >
+                    <Link href={item.href}>
+                      <button className="flex items-center gap-3 w-full p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 group">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-blue-500/0 rounded-md group-hover:from-teal-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
+                          <div className="relative">{item.icon}</div>
+                        </div>
+                        <span className="font-medium">{item.title}</span>
+                      </button>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </nav>
 
         {/* Logout Section */}
@@ -169,5 +236,6 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
         </motion.div>
       </div>
     </aside>
+    </>
   )
 }

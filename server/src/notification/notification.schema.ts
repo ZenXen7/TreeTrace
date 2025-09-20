@@ -8,14 +8,29 @@ export class Notification {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId; // User who will receive the notification
 
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  fromUserId: Types.ObjectId; // User who sent the notification (for suggestion requests)
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  toUserId: Types.ObjectId; // User who will receive the notification (for suggestion requests)
+
   @Prop({ required: true })
   message: string;
 
-  @Prop({ required: true, enum: ['surname_similarity', 'system', 'user_action'] })
+  @Prop({ required: false })
+  title: string;
+
+  @Prop({ required: true, enum: ['surname_similarity', 'system', 'user_action', 'suggestion_request'] })
   type: string;
 
   @Prop({ default: false })
   read: boolean;
+
+  @Prop({ default: 'pending', enum: ['pending', 'accepted', 'rejected'] })
+  status: string;
+
+  @Prop({ type: Number, required: false })
+  suggestionCount: number;
 
   @Prop({ type: Object, required: false })
   metadata: Record<string, any>; // For storing additional data like similar surnames

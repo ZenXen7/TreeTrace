@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, Calendar, Flag, Briefcase, Info, TreePine, Sparkles } from "lucide-react";
+import { ArrowLeft, User, Calendar, Flag, Briefcase, Info, TreePine, Sparkles, Users, CheckCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import AnimatedNodes from "@/components/animated-nodes";
 
@@ -157,6 +157,7 @@ export default function MemberSuggestionsPage() {
   const [childInfo, setChildInfo] = useState<{name: string, id: string}[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [suggestionRequests, setSuggestionRequests] = useState<any[]>([]);
   
   // Track which fields have been updated
   const [updatedFields, setUpdatedFields] = useState<Record<string, boolean>>({});
@@ -284,8 +285,12 @@ export default function MemberSuggestionsPage() {
             // Extract data from response
             const actualSuggestionsData = suggestionsData.data;
             
-            // Filter out processed suggestions
+            // Filter out processed suggestions and use the same algorithm as treeview
             if (actualSuggestionsData && actualSuggestionsData.similarMembers) {
+              // Use the same getMemberSuggestionCount function as treeview to get the correct filtered count
+              const { getMemberSuggestionCount } = await import('../../treeview/service/familyService');
+              const treeviewFilteredCount = await getMemberSuggestionCount(token, memberId);
+              
               const filteredSimilarMembers = actualSuggestionsData.similarMembers
                 .map((similar: any) => ({
                   ...similar,
@@ -295,16 +300,10 @@ export default function MemberSuggestionsPage() {
                 }))
                 .filter((similar: any) => similar.suggestions && similar.suggestions.length > 0);
               
-              // Count suggestions
-              const filteredSuggestionCount = filteredSimilarMembers.reduce(
-                (count: number, member: { suggestions: string[] }) => count + member.suggestions.length, 
-                0
-              );
-              
-              // Update UI
+              // Update UI with the treeview filtered count
               setSuggestionsData({
                 count: filteredSimilarMembers.length,
-                suggestionCount: filteredSuggestionCount,
+                suggestionCount: treeviewFilteredCount, // Use the same count as treeview
                 similarMembers: filteredSimilarMembers,
                 hasMore: false
               });
@@ -324,6 +323,23 @@ export default function MemberSuggestionsPage() {
             similarMembers: [],
             hasMore: false
           });
+        }
+
+        // Fetch suggestion requests to check for accepted access
+        try {
+          const requestsResponse = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          });
+
+          if (requestsResponse.ok) {
+            const requestsData = await requestsResponse.json();
+            setSuggestionRequests(requestsData.data || []);
+          }
+        } catch (err) {
+          console.error("Error fetching suggestion requests:", err);
         }
       } catch (error) {
         setError(error instanceof Error ? error.message : "An unknown error occurred");
@@ -1094,7 +1110,7 @@ export default function MemberSuggestionsPage() {
         surname: updateData._partnerSurname || memberData.surname || "Unknown",
         gender: partnerGender,
         status: "alive",
-        country: memberData.country || "ph",
+        country: memberData.country || "Philippines",
         occupation: ""
       };
       
@@ -1137,7 +1153,7 @@ export default function MemberSuggestionsPage() {
           surname: updateData._partnerSurname || memberData.surname || "",
           gender: partnerGender,
           status: "alive",
-          country: memberData.country || "ph",
+          country: memberData.country || "Philippines",
           occupation: ""
         };
         
@@ -1244,7 +1260,7 @@ export default function MemberSuggestionsPage() {
             surname: memberData.surname || "",
             gender: childGender,
             status: "alive",
-            country: memberData.country || "ph",
+            country: memberData.country || "Philippines",
             occupation: "",
             _parentId: currentMemberId, // Explicitly set parent ID to establish relationship
             // Set parent fields based on member's gender
@@ -1513,7 +1529,7 @@ export default function MemberSuggestionsPage() {
                 surname: action.data._partnerSurname || memberData.surname || "Unknown",
                 gender: partnerGender,
                 status: "alive",
-                country: memberData.country || "ph",
+                country: memberData.country || "Philippines",
                 occupation: ""
               };
               
@@ -1565,7 +1581,7 @@ export default function MemberSuggestionsPage() {
                   // Get gender from action data 
                   gender: action.data.gender || "",
                   status: "alive",
-                  country: memberData.country || "ph",
+                  country: memberData.country || "Philippines",
                   occupation: "",
                   _parentId: cleanMemberId, // Explicitly set parent ID to establish relationship
                   // Set parent fields based on member's gender
@@ -1872,131 +1888,109 @@ export default function MemberSuggestionsPage() {
   };
 
   const SuggestionCard = ({ similarMember }: { similarMember: any }) => {
-    // Don't render if no suggestions
-    if (!similarMember.suggestions || similarMember.suggestions.length === 0) {
-      return null;
-    }
-    
-    // Filter out any suggestions that have already been applied or that match current member data
-    const filteredSuggestions = similarMember.suggestions.filter(
-      (suggestion: string) => {
-        // Skip suggestions that have already been explicitly applied
-        if (appliedSuggestions.includes(suggestion)) {
-          return false;
-        }
-
-        // Filter out partner suggestions if they already have the suggested partner
-        if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
-          // Extract partner name from suggestion
-          const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
-          if (partnerNameMatch && partnerNameMatch[1] && memberData) {
-            // Check if member already has this partner
-            const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
-            
-            // Check against existing partners
-            if (memberData.partnerId && memberData.partnerId.length > 0) {
-              // Check if any of the known partners match the suggested name
-              if (partnerInfo.some((partner: {name: string, id: string}) => 
-                partner.name.toLowerCase().includes(suggestedPartnerName) ||
-                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
-                return false;
-              }
-            }
-          }
-        }
-        
-        // Filter out child suggestions if the child is already connected to this member
-        if (suggestion.includes("adding child") || suggestion.includes("more children") ||
-            suggestion.includes("adding son") || suggestion.includes("adding daughter")) {
-          // Check if this is a specific child suggestion
-          const childNameMatch = suggestion.match(/(?:child|son|daughter) "([^"]+)"/i);
-          if (childNameMatch && childNameMatch[1] && memberData) {
-            const suggestedChildName = childNameMatch[1].trim().toLowerCase();
-            
-            // Check if member has childId property and has children
-            if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
-              // If we have childInfo with names, use it to check
-              if (childInfo && childInfo.length > 0) {
-                if (childInfo.some((child: {name: string, id: string}) => 
-                  child.name.toLowerCase().includes(suggestedChildName) ||
-                  suggestedChildName.includes(child.name.toLowerCase()))) {
-                  return false;
-                }
-              } else {
-                // If we don't have childInfo, be conservative and filter out all child suggestions
-                // Since we know the member has children but we don't have their details
-                return false;
-              }
-            }
-          }
-        }
-        
-        // Filter out parent suggestions if parent is already connected
-        if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
-          const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
-          if (parentNameMatch && parentNameMatch[2] && memberData) {
-            const parentType = parentNameMatch[1].toLowerCase();
-            const suggestedParentName = parentNameMatch[2].trim().toLowerCase();
-            
-            // If member already has this parent type, filter out the suggestion
-            if ((parentType === 'father' && memberData.fatherId) || 
-                (parentType === 'mother' && memberData.motherId)) {
-              return false;
-            }
-          }
-        }
-
-        // Skip birth date confirmations if birth date is already set to that value
-        if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
-          const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
-          if (dateMatch && dateMatch[1]) {
-            const suggestedDate = dateMatch[1].trim();
-            const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
-            if (suggestedDate === currentDate) {
-              return false;
-            }
-          }
-        }
-
-        // Skip death date confirmations if death date is already set to that value
-        if (suggestion.includes("Confirm death date") && memberData?.deathDate) {
-          const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
-          if (dateMatch && dateMatch[1]) {
-            const suggestedDate = dateMatch[1].trim();
-            const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
-            if (suggestedDate === currentDate) {
-              return false;
-            }
-          }
-        }
-
-        // Skip dead status confirmations if status is already dead
-        if ((suggestion.includes("Confirm dead status") || 
-            suggestion.includes("Consider updating status to \"dead\"")) && 
-            memberData?.status === "dead") {
-          return false;
-        }
-
-        // Skip country confirmations if country is already that value
-        if (suggestion.includes("Confirm country") && memberData?.country) {
-          const countryMatch = suggestion.match(/country "([^"]+)"/i);
-          if (countryMatch && countryMatch[1]) {
-            const suggestedCountry = countryMatch[1].trim().toLowerCase();
-            if (memberData.country.toLowerCase() === suggestedCountry) {
-              return false;
-            }
-          }
-        }
-        
-        // If we get here, this is a valid suggestion
-        return true;
+    // Apply the same filtering logic as treeview to get only relevant suggestions
+    const filteredSuggestions = similarMember.suggestions.filter((suggestion: string) => {
+      // Skip suggestions that have already been explicitly applied
+      if (appliedSuggestions.includes(suggestion)) {
+        return false;
       }
-    );
-    
-    // Don't render if all suggestions have been filtered out
-    if (filteredSuggestions.length === 0) {
+
+      // Filter out partner suggestions if they already have the suggested partner
+      if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
+        const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
+        if (partnerNameMatch && partnerNameMatch[1] && memberData) {
+          const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+          if (memberData.partnerId && memberData.partnerId.length > 0) {
+            if (partnerInfo.some((partner: {name: string, id: string}) => 
+              partner.name.toLowerCase().includes(suggestedPartnerName) ||
+              suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+              return false;
+            }
+          }
+        }
+      }
+      
+      // Filter out child suggestions if the child is already connected to this member
+      if (suggestion.includes("adding child") || suggestion.includes("more children") ||
+          suggestion.includes("adding son") || suggestion.includes("adding daughter")) {
+        const childNameMatch = suggestion.match(/(?:child|son|daughter) "([^"]+)"/i);
+        if (childNameMatch && childNameMatch[1] && memberData) {
+          const suggestedChildName = childNameMatch[1].trim().toLowerCase();
+          if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+            if (childInfo && childInfo.length > 0) {
+              if (childInfo.some((child: {name: string, id: string}) => 
+                child.name.toLowerCase().includes(suggestedChildName) ||
+                suggestedChildName.includes(child.name.toLowerCase()))) {
+                return false;
+              }
+            } else {
+              return false;
+            }
+          }
+        }
+      }
+      
+      // Filter out parent suggestions if parent is already connected
+      if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
+        const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
+        if (parentNameMatch && parentNameMatch[2] && memberData) {
+          const parentType = parentNameMatch[1].toLowerCase();
+          if ((parentType === 'father' && memberData.fatherId) || 
+              (parentType === 'mother' && memberData.motherId)) {
+            return false;
+          }
+        }
+      }
+      
+      // Skip birth date confirmations if birth date is already set to that value
+      if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
+        const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
+        if (dateMatch && dateMatch[1]) {
+          const suggestedDate = dateMatch[1].trim();
+          const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
+          if (suggestedDate === currentDate) return false;
+        }
+      }
+
+      if (suggestion.includes("Confirm death date") && memberData?.deathDate) {
+        const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
+        if (dateMatch && dateMatch[1]) {
+          const suggestedDate = dateMatch[1].trim();
+          const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
+          if (suggestedDate === currentDate) return false;
+        }
+      }
+
+      if ((suggestion.includes("Confirm dead status") || 
+          suggestion.includes("Consider updating status to \"dead\"")) && 
+          memberData?.status === "dead") {
+        return false;
+      }
+
+      if (suggestion.includes("Confirm country") && memberData?.country) {
+        const countryMatch = suggestion.match(/country "([^"]+)"/i);
+        if (countryMatch && countryMatch[1]) {
+          const suggestedCountry = countryMatch[1].trim().toLowerCase();
+          if (memberData.country.toLowerCase() === suggestedCountry) return false;
+        }
+      }
+      
+      return true;
+    });
+
+    // Don't render if no filtered suggestions
+    if (!filteredSuggestions || filteredSuggestions.length === 0) {
       return null;
     }
+    
+    const handleViewCrossUserSuggestions = () => {
+      router.push('/dashboard/suggestions/cross-user');
+    };
+
+    // Check if there's an accepted request for this user
+    const hasAcceptedAccess = suggestionRequests.some(req => 
+      req.toUserId === similarMember.userId && req.status === 'accepted'
+    );
     
     return (
       <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-sm rounded-lg border border-gray-700/50 p-5 mb-4 shadow-lg">
@@ -2014,21 +2008,51 @@ export default function MemberSuggestionsPage() {
             </span>
           )}
         </div>
-        <div className="space-y-3">
-          {filteredSuggestions.map((suggestion: string, idx: number) => (
-            <div key={idx} className="flex items-start space-x-2 bg-gray-800/50 rounded-lg p-3 border border-gray-600/30">
-              <div className="flex-grow">
-                <p className="text-gray-300">{suggestion}</p>
+        {hasAcceptedAccess ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-green-400 mb-3">
+              <CheckCircle className="h-5 w-5" />
+              <span className="text-sm font-medium">Access Granted - Detailed Suggestions Available</span>
+            </div>
+            <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-600/20">
+              <h4 className="text-sm font-semibold text-white mb-3">Detailed Suggestions:</h4>
+              <div className="space-y-3">
+                {filteredSuggestions.map((suggestion: string, index: number) => (
+                  <div key={index} className="flex items-start justify-between gap-3 p-3 bg-gray-700/30 rounded-lg border border-gray-600/20">
+                    <div className="flex items-start gap-2 flex-1">
+                      <span className="text-teal-400 mt-1">•</span>
+                      <span className="text-sm text-gray-300">{suggestion}</span>
+                    </div>
+                    <button
+                      onClick={() => handleApplySuggestion(suggestion)}
+                      className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-xs rounded-md transition-colors whitespace-nowrap"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-600/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-300">
+                <Info className="h-5 w-5 text-blue-400" />
+                <span className="text-sm">
+                  Detailed suggestions are available through cross-user requests
+                </span>
               </div>
               <button
-                onClick={() => handleApplySuggestion(suggestion)}
-                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-3 py-1 rounded-lg transition-all duration-300 text-sm flex-shrink-0 shadow-lg"
+                onClick={handleViewCrossUserSuggestions}
+                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-4 py-2 rounded-lg transition-all duration-300 text-sm shadow-lg flex items-center gap-2"
               >
-                Apply
+                <Users className="h-4 w-4" />
+                View Cross-User Suggestions
               </button>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -2490,98 +2514,8 @@ export default function MemberSuggestionsPage() {
               <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 p-6 border-b border-gray-700/50">
                 <h2 className="text-xl font-bold text-white flex items-center gap-3">
                   {(() => {
-                    // Calculate suggestion count using the same filtering logic as SuggestionCard
-                    const displayCount = suggestionsData.similarMembers.reduce((total, member) => {
-                      const filteredSuggestions = member.suggestions.filter((suggestion: string) => {
-                        // Skip suggestions that have already been explicitly applied
-                        if (appliedSuggestions.includes(suggestion)) {
-                          return false;
-                        }
-
-                        // Filter out partner suggestions if they already have the suggested partner
-                        if (suggestion.includes("adding partner") || suggestion.includes("Consider adding partner")) {
-                          const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
-                          if (partnerNameMatch && partnerNameMatch[1] && memberData) {
-                            const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
-                            if (memberData.partnerId && memberData.partnerId.length > 0) {
-                              if (partnerInfo.some((partner: {name: string, id: string}) => 
-                                partner.name.toLowerCase().includes(suggestedPartnerName) ||
-                                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
-                                return false;
-                              }
-                            }
-                          }
-                        }
-                        
-                        // Filter out child suggestions if the child is already connected to this member
-                        if (suggestion.includes("adding child") || suggestion.includes("more children") ||
-                            suggestion.includes("adding son") || suggestion.includes("adding daughter")) {
-                          const childNameMatch = suggestion.match(/(?:child|son|daughter) "([^"]+)"/i);
-                          if (childNameMatch && childNameMatch[1] && memberData) {
-                            const suggestedChildName = childNameMatch[1].trim().toLowerCase();
-                            if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
-                              if (childInfo && childInfo.length > 0) {
-                                if (childInfo.some((child: {name: string, id: string}) => 
-                                  child.name.toLowerCase().includes(suggestedChildName) ||
-                                  suggestedChildName.includes(child.name.toLowerCase()))) {
-                                  return false;
-                                }
-                              } else {
-                                return false;
-                              }
-                            }
-                          }
-                        }
-                        
-                        // Filter out parent suggestions if parent is already connected
-                        if (suggestion.includes("adding father") || suggestion.includes("adding mother")) {
-                          const parentNameMatch = suggestion.match(/(father|mother) "([^"]+)"/i);
-                          if (parentNameMatch && parentNameMatch[2] && memberData) {
-                            const parentType = parentNameMatch[1].toLowerCase();
-                            if ((parentType === 'father' && memberData.fatherId) || 
-                                (parentType === 'mother' && memberData.motherId)) {
-                              return false;
-                            }
-                          }
-                        }
-                        
-                        // Skip birth date confirmations if birth date is already set to that value
-                        if (suggestion.includes("Confirm birth date") && memberData?.birthDate) {
-                          const dateMatch = suggestion.match(/birth date (\d{4}-\d{2}-\d{2})/i);
-                          if (dateMatch && dateMatch[1]) {
-                            const suggestedDate = dateMatch[1].trim();
-                            const currentDate = new Date(memberData.birthDate).toISOString().split('T')[0];
-                            if (suggestedDate === currentDate) return false;
-                          }
-                        }
-
-                        if (suggestion.includes("Confirm death date") && memberData?.deathDate) {
-                          const dateMatch = suggestion.match(/death date (\d{4}-\d{2}-\d{2})/i);
-                          if (dateMatch && dateMatch[1]) {
-                            const suggestedDate = dateMatch[1].trim();
-                            const currentDate = new Date(memberData.deathDate).toISOString().split('T')[0];
-                            if (suggestedDate === currentDate) return false;
-                          }
-                        }
-
-                        if ((suggestion.includes("Confirm dead status") || 
-                            suggestion.includes("Consider updating status to \"dead\"")) && 
-                            memberData?.status === "dead") {
-                          return false;
-                        }
-
-                        if (suggestion.includes("Confirm country") && memberData?.country) {
-                          const countryMatch = suggestion.match(/country "([^"]+)"/i);
-                          if (countryMatch && countryMatch[1]) {
-                            const suggestedCountry = countryMatch[1].trim().toLowerCase();
-                            if (memberData.country.toLowerCase() === suggestedCountry) return false;
-                          }
-                        }
-                        
-                        return true;
-                      });
-                      return total + filteredSuggestions.length;
-                    }, 0);
+                    // Use the same count as treeview (already calculated and stored in suggestionCount)
+                    const displayCount = suggestionsData.suggestionCount;
                     
                     return (
                       <span className="bg-orange-500 text-white rounded-full min-w-10 h-10 flex items-center justify-center text-base font-bold px-3 border-2 border-white shadow-lg">
