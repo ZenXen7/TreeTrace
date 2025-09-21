@@ -32,6 +32,12 @@ export class Notification {
   @Prop({ type: Number, required: false })
   suggestionCount: number;
 
+  @Prop({ type: Types.ObjectId, ref: 'FamilyMember', required: false })
+  requestedMemberId: Types.ObjectId; // Specific family member this request is for (single-member approval)
+
+  @Prop({ type: Types.ObjectId, ref: 'FamilyMember', required: false })
+  currentMemberId: Types.ObjectId; // The family member from the requesting user's tree that matches the requested member
+
   @Prop({ type: Object, required: false })
   metadata: Record<string, any>; // For storing additional data like similar surnames
 

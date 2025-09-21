@@ -42,6 +42,10 @@ interface CrossUserSimilarity {
   similarity: number;
   similarFields: string[];
   suggestions: string[];
+  actualSuggestionCount: number;
+  hasAccess: boolean;
+  hasPendingRequest: boolean;
+  hasRejectedRequest: boolean;
 }
 
 interface UserSimilarities {
@@ -260,6 +264,27 @@ export class NotificationController {
         const userSimilarities: CrossUserSimilarity[] = [];
         let userSuggestionCount = 0;
         
+        // Get all requests (pending, accepted, rejected) for this user to determine access and status
+        const allRequests = await this.notificationService.getSuggestionRequests(userId);
+        const userRequests = allRequests.filter(req => req.toUserId === otherUserId);
+        
+        // Create maps for different request statuses
+        const memberAccessMap = new Map<string, string>(); // currentMemberId -> requestedMemberId for accepted requests
+        const pendingRequests = new Map<string, string>(); // currentMemberId -> requestedMemberId for pending requests
+        const rejectedRequests = new Map<string, string>(); // currentMemberId -> requestedMemberId for rejected requests
+        
+        userRequests.forEach(req => {
+          if (req.currentMemberId && req.requestedMemberId) {
+            if (req.status === 'accepted') {
+              memberAccessMap.set(req.currentMemberId.toString(), req.requestedMemberId.toString());
+            } else if (req.status === 'pending') {
+              pendingRequests.set(req.currentMemberId.toString(), req.requestedMemberId.toString());
+            } else if (req.status === 'rejected') {
+              rejectedRequests.set(req.currentMemberId.toString(), req.requestedMemberId.toString());
+            }
+          }
+        });
+        
         // Compare each current user's member with each other user's member
         for (const currentMember of currentUserMembers) {
           for (const otherMember of members) {
@@ -281,9 +306,28 @@ export class NotificationController {
             if (exactNameMatch) {
               // Generate suggestions based on differences
               const suggestions = await this.generateSuggestions(currentMember, otherMember, ['fullName']);
-              userSuggestionCount += suggestions.length;
               
-              userSimilarities.push({
+              // Check access status for this specific member pair
+              const hasAccessToMember = memberAccessMap.has(currentMember._id.toString()) && 
+                                       memberAccessMap.get(currentMember._id.toString()) === otherMember._id.toString();
+              const hasPendingRequest = pendingRequests.has(currentMember._id.toString()) && 
+                                        pendingRequests.get(currentMember._id.toString()) === otherMember._id.toString();
+              const hasRejectedRequest = rejectedRequests.has(currentMember._id.toString()) && 
+                                         rejectedRequests.get(currentMember._id.toString()) === otherMember._id.toString();
+              
+              // Only add to similarities if there are actual suggestions
+              if (suggestions.length > 0) {
+                // Show suggestions, but indicate if access is needed
+                // If no access, show placeholder suggestions that indicate potential connections
+                let suggestionsToShow = suggestions;
+                if (!hasAccessToMember) {
+                  // Create placeholder suggestions that indicate potential connections without revealing details
+                  suggestionsToShow = [
+                    `Potential family connections available for "${currentMember.name}". Request access to see detailed suggestions.`
+                  ];
+                }
+                
+                userSimilarities.push({
                 currentMember: {
                   id: currentMember._id.toString(),
                   name: currentMember.name,
@@ -304,8 +348,17 @@ export class NotificationController {
                 },
                 similarity: 1.0, // Exact match
                 similarFields: ['fullName'],
-                suggestions // Add suggestions to the response
-              });
+                suggestions: suggestionsToShow,
+                actualSuggestionCount: suggestions.length, // Include the actual count of suggestions
+                hasAccess: hasAccessToMember,
+                hasPendingRequest: hasPendingRequest,
+                hasRejectedRequest: hasRejectedRequest
+                });
+                
+                // Always count actual suggestions, regardless of access status
+                // This shows the real count of suggestions that would be available if access were granted
+                userSuggestionCount += suggestions.length;
+              }
             }
           }
         }
@@ -370,12 +423,16 @@ export class NotificationController {
       return suggestions;
     }
     
+    // Get current user's family members to check for existing relationships
+    const currentUserMembers = await this.familyMemberModel
+      .find({ userId: currentMember.userId })
+      .exec() as unknown as FamilyMemberWithId[];
     
     // Check for parent relationship suggestions
-    suggestions = await this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions);
+    suggestions = await this.addParentRelationshipSuggestions(currentMember, otherMember, suggestions, currentUserMembers);
     
     // Check for partner relationship suggestions
-    suggestions = await this.addPartnerRelationshipSuggestions(currentMember, otherMember, suggestions);
+    suggestions = await this.addPartnerRelationshipSuggestions(currentMember, otherMember, suggestions, currentUserMembers);
     
     // Status differences
     if (currentMember.status && otherMember.status) {
@@ -389,14 +446,8 @@ export class NotificationController {
             `Verify status of "${currentMember.name}". Another user has recorded this person as alive.`
           );
         }
-      } else {
-        // Even for matching status, suggest confirming
-        if (currentMember.status === 'dead') {
-          suggestions.push(
-            `Confirm dead status for "${currentMember.name}". Another user has also recorded this person as dead.`
-          );
-        }
       }
+      // Don't suggest confirming if status already matches - only suggest when there are actual differences
     }
     
     // Birth date
@@ -491,8 +542,13 @@ export class NotificationController {
                 const hasMotherRelationship = child.motherId && 
                   child.motherId.toString() === currentMember._id.toString();
                 
-                // If the child is already connected as either father or mother, skip it
-                if (hasFatherRelationship || hasMotherRelationship) continue;
+                // Check if a member with the same name as the child already exists in current user's tree
+                const childExistsInCurrentTree = currentUserMembers.some(member => 
+                  member.name.toLowerCase().trim() === child.name.toLowerCase().trim()
+                );
+                
+                // If the child is already connected as either father or mother, OR child exists in current tree, skip it
+                if (hasFatherRelationship || hasMotherRelationship || childExistsInCurrentTree) continue;
                 
                 childrenDetails.push({
                   id: childId,
@@ -514,7 +570,7 @@ export class NotificationController {
               
               // Include the relation in the suggestion to ensure proper gender handling
               suggestions.push(
-                `Consider adding ${relation} "${child.name}" to "${currentMember.name}". Another user has recorded this ${relation} for this person.`
+                `Consider adding ${relation} "${child.name}" to "${currentMember.name}". Another user has recorded this ${relation} for this person. <!--SOURCE_MEMBER_ID:${child.id.toString()}-->`
               );
             }
           } else if (potentiallyMissingChildren.length > 0 && childrenDetails.length === 0) {
@@ -537,7 +593,8 @@ export class NotificationController {
   private async addParentRelationshipSuggestions(
     currentMember: FamilyMemberWithId,
     otherMember: FamilyMemberWithId,
-    suggestions: string[]
+    suggestions: string[],
+    currentUserMembers: FamilyMemberWithId[]
   ): Promise<string[]> {
     const newSuggestions = [...suggestions]; // Create a new array to hold suggestions
     
@@ -556,10 +613,15 @@ export class NotificationController {
                 Array.isArray(father.childId) && 
                 father.childId.some(childId => childId.toString() === currentMember._id.toString());
               
-              // Only suggest if it's not already connected from the other direction
-              if (!fatherHasMemberAsChild) {
+              // Check if a member with the same name as the father already exists in current user's tree
+              const fatherExistsInCurrentTree = currentUserMembers.some(member => 
+                member.name.toLowerCase().trim() === father.name.toLowerCase().trim()
+              );
+              
+              // Only suggest if it's not already connected from the other direction AND father doesn't exist in current tree
+              if (!fatherHasMemberAsChild && !fatherExistsInCurrentTree) {
                 newSuggestions.push(
-                  `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person.`
+                  `Consider adding father "${father.name}" to "${currentMember.name}". Another user has recorded this father for this person. <!--SOURCE_MEMBER_ID:${(father as any)._id.toString()}-->`
                 );
               }
             }
@@ -589,10 +651,15 @@ export class NotificationController {
                 Array.isArray(mother.childId) && 
                 mother.childId.some(childId => childId.toString() === currentMember._id.toString());
               
-              // Only suggest if it's not already connected from the other direction
-              if (!motherHasMemberAsChild) {
+              // Check if a member with the same name as the mother already exists in current user's tree
+              const motherExistsInCurrentTree = currentUserMembers.some(member => 
+                member.name.toLowerCase().trim() === mother.name.toLowerCase().trim()
+              );
+              
+              // Only suggest if it's not already connected from the other direction AND mother doesn't exist in current tree
+              if (!motherHasMemberAsChild && !motherExistsInCurrentTree) {
                 newSuggestions.push(
-                  `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person.`
+                  `Consider adding mother "${mother.name}" to "${currentMember.name}". Another user has recorded this mother for this person. <!--SOURCE_MEMBER_ID:${(mother as any)._id.toString()}-->`
                 );
               }
             }
@@ -618,7 +685,8 @@ export class NotificationController {
   private async addPartnerRelationshipSuggestions(
     currentMember: FamilyMemberWithId,
     otherMember: FamilyMemberWithId,
-    suggestions: string[]
+    suggestions: string[],
+    currentUserMembers: FamilyMemberWithId[]
   ): Promise<string[]> {
     const newSuggestions = [...suggestions]; // Create a new array to hold suggestions
     
@@ -666,9 +734,14 @@ export class NotificationController {
                 partner.name.toLowerCase().trim().includes(existingName)
               );
               
-              if (!isSamePerson && !isSameName && !partnerNameExists) {
+              // Check if a member with the same name as the partner already exists in current user's tree
+              const partnerExistsInCurrentTree = currentUserMembers.some(member => 
+                member.name.toLowerCase().trim() === partner.name.toLowerCase().trim()
+              );
+              
+              if (!isSamePerson && !isSameName && !partnerNameExists && !partnerExistsInCurrentTree) {
                 newSuggestions.push(
-                  `Consider adding partner "${partner.name}" to "${currentMember.name}". Another user has recorded this partnership.`
+                  `Consider adding partner "${partner.name}" to "${currentMember.name}". Another user has recorded this partnership. <!--SOURCE_MEMBER_ID:${(partner as any)._id.toString()}-->`
                 );
               }
             }
@@ -723,6 +796,18 @@ export class NotificationController {
         .find({ userId: { $ne: new Types.ObjectId(userId) } })
         .exec() as unknown as FamilyMemberWithId[];
       
+      // Get accepted requests for this specific member to determine which other members we can show details for
+      const acceptedRequests = await this.notificationService.getSuggestionRequests(new Types.ObjectId(userId));
+      const memberAccessMap = new Map<string, string>(); // currentMemberId -> requestedMemberId for accepted requests
+      
+      acceptedRequests
+        .filter(req => req.status === 'accepted')
+        .forEach(req => {
+          if (req.currentMemberId && req.requestedMemberId) {
+            memberAccessMap.set(req.currentMemberId.toString(), req.requestedMemberId.toString());
+          }
+        });
+      
       let similarityCount = 0;
       let suggestionCount = 0;
       const similarMembers: Array<{
@@ -733,21 +818,32 @@ export class NotificationController {
         similarFields: string[];
         userId: string;
         suggestions: string[];
+        actualSuggestionCount: number;
       }> = [];
-      
-      // Get member's normalized full name
-      const memberFullName = this.normalizeNameForComparison(member.name);
       
       // Process each member from other users
       for (const otherMember of otherUserMembers) {
-        // Get other member's normalized full name
-        const otherFullName = this.normalizeNameForComparison(otherMember.name);
+        // Only consider exact name matches - BOTH first name AND surname must match
+        const currentFirstName = member.name ? member.name.split(' ')[0].toLowerCase().trim() : '';
+        const currentSurname = member.surname || this.extractSurnameFromName(member.name);
+        const currentSurnameLower = currentSurname ? currentSurname.toLowerCase().trim() : '';
         
-        // Check for EXACT full name match (normalized)
-        const exactNameMatch = memberFullName === otherFullName && memberFullName !== '';
+        const otherFirstName = otherMember.name ? otherMember.name.split(' ')[0].toLowerCase().trim() : '';
+        const otherSurname = otherMember.surname || this.extractSurnameFromName(otherMember.name);
+        const otherSurnameLower = otherSurname ? otherSurname.toLowerCase().trim() : '';
+        
+        // Both first name AND surname must match exactly
+        const exactNameMatch = currentFirstName === otherFirstName && 
+                             currentSurnameLower === otherSurnameLower && 
+                             currentFirstName !== '' && 
+                             currentSurnameLower !== '';
         
         if (exactNameMatch) {
           similarityCount++;
+          
+          // Check if we have access to this specific member's details
+          const hasAccessToMember = memberAccessMap.has(member._id.toString()) && 
+                                   memberAccessMap.get(member._id.toString()) === otherMember._id.toString();
           
           // Get similar fields for backward compatibility
           const { similarFields } = this.familyMemberSimilarityService.calculateMemberSimilarity(
@@ -758,10 +854,22 @@ export class NotificationController {
           // Generate suggestions based on differences
           const suggestions = await this.generateSuggestions(member, otherMember, similarFields);
           
-          suggestionCount += suggestions.length;
-          
-          // Only add to similar members list if we have suggestions
+          // Only count actual suggestions, not placeholders
           if (suggestions.length > 0) {
+            suggestionCount += suggestions.length; // Count actual suggestions, not placeholders
+          }
+          
+          // Only add to similar members list if we have actual suggestions
+          if (suggestions.length > 0) {
+            // Create suggestions to show - either full suggestions or placeholder
+            let suggestionsToShow = suggestions;
+            if (!hasAccessToMember) {
+              // Show placeholder suggestions that indicate potential connections without revealing details
+              suggestionsToShow = [
+                `Potential family connections available for "${member.name}". Request access to see detailed suggestions.`
+              ];
+            }
+            
             // Add to similar members list for detailed info
             similarMembers.push({
               memberId: otherMember._id.toString(),
@@ -770,7 +878,8 @@ export class NotificationController {
               similarity: 1.0, // We only use exact matches now, so similarity is always 1.0
               similarFields,
               userId: otherMember.userId.toString(),
-              suggestions
+              suggestions: suggestionsToShow, // Always show suggestions (either full or placeholder)
+              actualSuggestionCount: suggestions.length // Include the actual count of suggestions
             });
           }
         }
@@ -780,6 +889,7 @@ export class NotificationController {
       const responseData = { 
         count: similarityCount,
         suggestionCount,
+        actualSuggestionCount: suggestionCount, // Include actual count for frontend
         similarMembers: similarMembers,
         hasMore: false
       };
@@ -934,16 +1044,20 @@ export class NotificationController {
 
   // Send a suggestion request
   @Post('suggestion-requests')
-  async sendSuggestionRequest(@Request() req, @Body() body: { toUserId: string; suggestionCount: number }) {
+  async sendSuggestionRequest(@Request() req, @Body() body: { toUserId: string; suggestionCount: number; requestedMemberId?: string; currentMemberId?: string }) {
     try {
       const fromUserId = req.user.id;
       const fromUserObjectId = new Types.ObjectId(fromUserId);
       const toUserObjectId = new Types.ObjectId(body.toUserId);
+      const requestedMemberObjectId = body.requestedMemberId ? new Types.ObjectId(body.requestedMemberId) : undefined;
+      const currentMemberObjectId = body.currentMemberId ? new Types.ObjectId(body.currentMemberId) : undefined;
       
       const request = await this.notificationService.createSuggestionRequest(
         fromUserObjectId,
         toUserObjectId,
-        body.suggestionCount
+        body.suggestionCount,
+        requestedMemberObjectId,
+        currentMemberObjectId
       );
       
       return {

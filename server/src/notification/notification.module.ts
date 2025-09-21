@@ -6,6 +6,7 @@ import { FamilyMemberSimilarityService } from './family-member-similarity.servic
 import { FamilyMember, FamilyMemberSchema } from '../family/family-member.schema';
 import { NotificationController } from './notification.controller';
 import { ProcessedSuggestion, ProcessedSuggestionSchema } from './processed-suggestion.schema';
+import { User, UserSchema } from '../user/schemas/user.schema';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ProcessedSuggestion, ProcessedSuggestionSchema } from './processed-sugg
       { name: Notification.name, schema: NotificationSchema },
       { name: FamilyMember.name, schema: FamilyMemberSchema },
       { name: ProcessedSuggestion.name, schema: ProcessedSuggestionSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [NotificationController],

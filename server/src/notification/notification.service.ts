@@ -3,6 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './notification.schema';
 import { ProcessedSuggestion, ProcessedSuggestionDocument } from './processed-suggestion.schema';
+import { FamilyMember, FamilyMemberDocument } from '../family/family-member.schema';
+import { User, UserDocument } from '../user/schemas/user.schema';
 
 @Injectable()
 export class NotificationService {
@@ -11,6 +13,10 @@ export class NotificationService {
     private notificationModel: Model<NotificationDocument>,
     @InjectModel(ProcessedSuggestion.name)
     private processedSuggestionModel: Model<ProcessedSuggestionDocument>,
+    @InjectModel(FamilyMember.name)
+    private familyMemberModel: Model<FamilyMemberDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   /**
@@ -206,9 +212,35 @@ export class NotificationService {
       type: 'suggestion_request'
     }).populate('fromUserId', 'firstName lastName').populate('toUserId', 'firstName lastName').exec();
 
-    return requests.map(request => {
+    // Fetch family member names for each request
+    const requestsWithMemberNames = await Promise.all(requests.map(async (request) => {
       const fromUser = request.fromUserId as any;
       const toUser = request.toUserId as any;
+      
+      let requestedMemberName = 'Unknown Family Member';
+      let currentMemberName = 'Unknown Family Member';
+      
+      if (request.requestedMemberId) {
+        try {
+          const requestedMember = await this.familyMemberModel.findById(request.requestedMemberId).exec();
+          if (requestedMember) {
+            requestedMemberName = `${requestedMember.name} ${requestedMember.surname || ''}`.trim();
+          }
+        } catch (error) {
+          console.error('Error fetching requested member:', error);
+        }
+      }
+      
+      if (request.currentMemberId) {
+        try {
+          const currentMember = await this.familyMemberModel.findById(request.currentMemberId).exec();
+          if (currentMember) {
+            currentMemberName = `${currentMember.name} ${currentMember.surname || ''}`.trim();
+          }
+        } catch (error) {
+          console.error('Error fetching current member:', error);
+        }
+      }
       
       return {
         id: (request._id as any).toString(),
@@ -219,10 +251,18 @@ export class NotificationService {
         status: request.status,
         createdAt: (request as any).createdAt,
         suggestionCount: request.suggestionCount,
+        requestedMemberId: request.requestedMemberId ? request.requestedMemberId.toString() : undefined,
+        currentMemberId: request.currentMemberId ? request.currentMemberId.toString() : undefined,
+        requestedMemberName,
+        currentMemberName,
+        title: request.title,
+        message: request.message,
         isIncoming: toUser._id.toString() === userId.toString(), // True if this is an incoming request
         isOutgoing: fromUser._id.toString() === userId.toString() // True if this is an outgoing request
       };
-    });
+    }));
+
+    return requestsWithMemberNames;
   }
 
   /**
@@ -230,31 +270,39 @@ export class NotificationService {
    * @param fromUserId Sender user ID
    * @param toUserId Receiver user ID
    * @param suggestionCount Number of suggestions
+   * @param requestedMemberId Specific family member this request is for (single-member approval)
+   * @param currentMemberId The family member from the requesting user's tree that matches the requested member
    * @returns Created suggestion request
    */
   async createSuggestionRequest(
     fromUserId: Types.ObjectId,
     toUserId: Types.ObjectId,
-    suggestionCount: number
+    suggestionCount: number,
+    requestedMemberId?: Types.ObjectId,
+    currentMemberId?: Types.ObjectId
   ): Promise<any> {
-    // Check if there's already a pending request
+    // Check if there's already a pending request for this specific member combination
     const existingPendingRequest = await this.notificationModel.findOne({
       fromUserId,
       toUserId,
       type: 'suggestion_request',
-      status: 'pending'
+      status: 'pending',
+      requestedMemberId: requestedMemberId || { $exists: false }, // Handle both specific member requests and legacy bulk requests
+      currentMemberId: currentMemberId || { $exists: false } // Also check for current member ID
     }).exec();
 
     if (existingPendingRequest) {
-      throw new Error('A pending request already exists');
+      throw new Error('A pending request already exists for this member');
     }
 
-    // Check if there's a rejected request and delete it to create a fresh one
+    // Check if there's a rejected request for this specific member combination and delete it to create a fresh one
     const existingRejectedRequest = await this.notificationModel.findOne({
       fromUserId,
       toUserId,
       type: 'suggestion_request',
-      status: 'rejected'
+      status: 'rejected',
+      requestedMemberId: requestedMemberId || { $exists: false }, // Handle both specific member requests and legacy bulk requests
+      currentMemberId: currentMemberId || { $exists: false } // Also check for current member ID
     }).exec();
 
     if (existingRejectedRequest) {
@@ -264,6 +312,43 @@ export class NotificationService {
       }).exec();
     }
 
+    // Fetch family member names for more specific notification messages
+    let requestedMemberName = 'Unknown Family Member';
+    let currentMemberName = 'Unknown Family Member';
+    
+    if (requestedMemberId) {
+      try {
+        const requestedMember = await this.familyMemberModel.findById(requestedMemberId).exec();
+        if (requestedMember) {
+          requestedMemberName = `${requestedMember.name} ${requestedMember.surname || ''}`.trim();
+        }
+      } catch (error) {
+        console.error('Error fetching requested member:', error);
+      }
+    }
+    
+    if (currentMemberId) {
+      try {
+        const currentMember = await this.familyMemberModel.findById(currentMemberId).exec();
+        if (currentMember) {
+          currentMemberName = `${currentMember.name} ${currentMember.surname || ''}`.trim();
+        }
+      } catch (error) {
+        console.error('Error fetching current member:', error);
+      }
+    }
+
+    // Get the requesting user's name for fallback messages
+    let requestingUserName = 'A user';
+    try {
+      const requestingUser = await this.userModel.findById(fromUserId).exec();
+      if (requestingUser) {
+        requestingUserName = `${requestingUser.firstName} ${requestingUser.lastName}`.trim();
+      }
+    } catch (error) {
+      console.error('Error fetching requesting user:', error);
+    }
+
     const request = new this.notificationModel({
       userId: toUserId, // The user who will receive the notification
       fromUserId,
@@ -271,8 +356,12 @@ export class NotificationService {
       type: 'suggestion_request',
       status: 'pending',
       suggestionCount,
-      title: 'Suggestion Access Request',
-      message: `A user wants to see detailed suggestions from your family tree (${suggestionCount} suggestions available)`,
+      requestedMemberId, // Specific family member this request is for
+      currentMemberId, // The family member from the requesting user's tree that matches the requested member
+      title: 'Family Member Access Request',
+      message: requestedMemberId && currentMemberId
+        ? `${requestingUserName} would like to request to see details for ${requestedMemberName}`
+        : `${requestingUserName} wants to see detailed suggestions from your family tree (${suggestionCount} suggestions available)`,
       read: false
     });
 

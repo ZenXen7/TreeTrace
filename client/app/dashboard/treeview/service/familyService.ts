@@ -237,6 +237,51 @@ async function handleAddMember(
       }
 
       await Promise.all(updates);
+      
+      // Mark child suggestions as processed for both parents
+      try {
+        const childName = childData.name || "Unknown";
+        const childPatterns = [
+          `adding child "${childName}"`,
+          `child "${childName}"`,
+          `Consider adding child "${childName}"`,
+          `Consider adding son "${childName}"`,
+          `Consider adding daughter "${childName}"`,
+          `son "${childName}"`,
+          `daughter "${childName}"`
+        ];
+        
+        // Mark suggestions as processed for the parent who added the child
+        await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            memberId: parentId,
+            suggestionText: `adding ${relation} "${childName}"`
+          })
+        });
+        
+        // If there's a partner, also mark suggestions as processed for them
+        if (hasPartner && partnerId) {
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: partnerId,
+              suggestionText: `adding ${relation} "${childName}"`
+            })
+          });
+        }
+      } catch (err) {
+        console.warn("Could not mark child suggestions as processed:", err);
+      }
+      
       await fetchData();
       return;
     }
@@ -277,6 +322,42 @@ async function handleAddMember(
         if (existingParentUpdate) {
           existingParentUpdate.update.partnerId = [fatherId];
         }
+        
+        // Mark father suggestions as processed
+        try {
+          const fatherName = memberData.name || "Unknown";
+          const childName = node.name || "Unknown";
+          const currentNodeId = node._id || node.id;
+          
+          // Mark suggestions as processed for the child
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: currentNodeId,
+              suggestionText: `adding father "${fatherName}"`
+            })
+          });
+          
+          // Mark suggestions as processed for the father
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: fatherId,
+              suggestionText: `adding child "${childName}"`
+            })
+          });
+        } catch (err) {
+          console.warn("Could not mark father suggestions as processed:", err);
+        }
+        
         break;
 
       case "mother":
@@ -295,6 +376,42 @@ async function handleAddMember(
         if (existingParentUpdate) {
           existingParentUpdate.update.partnerId = [motherId];
         }
+        
+        // Mark mother suggestions as processed
+        try {
+          const motherName = memberData.name || "Unknown";
+          const childName = node.name || "Unknown";
+          const currentNodeId = node._id || node.id;
+          
+          // Mark suggestions as processed for the child
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: currentNodeId,
+              suggestionText: `adding mother "${motherName}"`
+            })
+          });
+          
+          // Mark suggestions as processed for the mother
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: motherId,
+              suggestionText: `adding child "${childName}"`
+            })
+          });
+        } catch (err) {
+          console.warn("Could not mark mother suggestions as processed:", err);
+        }
+        
         break;
 
       case "wife":
@@ -330,6 +447,42 @@ async function handleAddMember(
         await updateFamilyMember(token, partnerId, {
           childId: [...existingChildIds, ...nodeChildren.map((child: any) => child._id)]
         });
+        
+        // Mark partner suggestions as processed for both members
+        try {
+          const partnerName = memberData.name || "Unknown";
+          const currentMemberName = node.name || "Unknown";
+          const currentNodeId = node._id || node.id;
+          
+          // Mark suggestions as processed for the current member
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: currentNodeId,
+              suggestionText: `adding partner "${partnerName}"`
+            })
+          });
+          
+          // Mark suggestions as processed for the new partner
+          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              memberId: partnerId,
+              suggestionText: `adding partner "${currentMemberName}"`
+            })
+          });
+        } catch (err) {
+          console.warn("Could not mark partner suggestions as processed:", err);
+        }
+        
         break;
       }
 
@@ -405,7 +558,11 @@ async function deleteFamilyMember(token: string, memberId: string) {
           const childPatterns = [
             `adding child "${memberToDelete.name}"`,
             `child "${memberToDelete.name}"`,
-            `Consider adding child "${memberToDelete.name}"`
+            `Consider adding child "${memberToDelete.name}"`,
+            `Consider adding son "${memberToDelete.name}"`,
+            `Consider adding daughter "${memberToDelete.name}"`,
+            `son "${memberToDelete.name}"`,
+            `daughter "${memberToDelete.name}"`
           ];
           
           await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
@@ -436,7 +593,11 @@ async function deleteFamilyMember(token: string, memberId: string) {
           const childPatterns = [
             `adding child "${memberToDelete.name}"`,
             `child "${memberToDelete.name}"`,
-            `Consider adding child "${memberToDelete.name}"`
+            `Consider adding child "${memberToDelete.name}"`,
+            `Consider adding son "${memberToDelete.name}"`,
+            `Consider adding daughter "${memberToDelete.name}"`,
+            `son "${memberToDelete.name}"`,
+            `daughter "${memberToDelete.name}"`
           ];
           
           await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
@@ -472,6 +633,30 @@ async function deleteFamilyMember(token: string, memberId: string) {
         updateData.motherId = null;
       }
       await updateFamilyMember(token, child._id, updateData);
+      
+      // Unmark parent suggestions for the child so the parent can be suggested again
+      try {
+        const parentType = memberToDelete.gender === "male" ? "father" : "mother";
+        const parentPatterns = [
+          `adding ${parentType} "${memberToDelete.name}"`,
+          `${parentType} "${memberToDelete.name}"`,
+          `Consider adding ${parentType} "${memberToDelete.name}"`
+        ];
+        
+        await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            memberIds: [child._id],
+            patterns: parentPatterns
+          })
+        });
+      } catch (err) {
+        console.warn(`Could not unmark ${parentType} suggestions for child:`, err);
+      }
     }
 
     if (partner) {
@@ -563,7 +748,7 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     });
 
     if (!memberResponse.ok) {
-      return 0;
+      return { filteredCount: 0, actualCount: 0 };
     }
 
     const memberResult = await memberResponse.json();
@@ -596,14 +781,14 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     });
     
     if (!response.ok) {
-      return 0;
+      return { filteredCount: 0, actualCount: 0 };
     }
     
     const result = await response.json();
     const suggestionsData = result.data;
 
     if (!suggestionsData || !suggestionsData.similarMembers) {
-      return 0;
+      return { filteredCount: 0, actualCount: 0 };
     }
     
     // Fetch partner information to filter partner suggestions
@@ -672,10 +857,11 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     
     // Count suggestions using EXACTLY the same logic as the suggestions page
     // This matches the code in client/app/dashboard/suggestions/[memberId]/page.tsx
-    let displayCount = 0;
+    let filteredCount = 0;
+    let actualCount = suggestionsData.actualSuggestionCount || 0; // Get actual count from backend
     
     if (suggestionsData && suggestionsData.similarMembers) {
-      displayCount = suggestionsData.similarMembers.reduce((count: number, member: any) => {
+      filteredCount = suggestionsData.similarMembers.reduce((count: number, member: any) => {
         const validSuggestions = member.suggestions.filter((suggestion: string) => {
           // Skip applied suggestions
           if (appliedSuggestions.includes(suggestion)) return false;
@@ -686,11 +872,17 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
             if (partnerNameMatch && partnerNameMatch[1] && memberData) {
               const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
               
-              // Check against existing partners using partnerInfo, not partnerId
-              if (memberData.partnerId && memberData.partnerId.length > 0 && partnerInfo.length > 0) {
-                if (partnerInfo.some(partner => 
-                  partner.name.toLowerCase().includes(suggestedPartnerName) ||
-                  suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+              // Check against existing partners - if member has partners, filter out partner suggestions
+              if (memberData.partnerId && memberData.partnerId.length > 0) {
+                // If we have partner info, check names
+                if (partnerInfo.length > 0) {
+                  if (partnerInfo.some(partner => 
+                    partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                    suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+                    return false;
+                  }
+                } else {
+                  // No partner info available but member has partners - be conservative and filter out all partner suggestions
                   return false;
                 }
               }
@@ -704,7 +896,9 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
             if (childNameMatch && childNameMatch[1] && memberData) {
               const suggestedChildName = childNameMatch[1].trim().toLowerCase();
               
+              // If member has children, filter out child suggestions
               if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+                // If we have child info, check names
                 if (childInfo && childInfo.length > 0) {
                   if (childInfo.some((child: {name: string, id: string}) => 
                     child.name.toLowerCase().includes(suggestedChildName) ||
@@ -712,7 +906,7 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
                     return false;
                   }
                 } else {
-                  // No child info but member has children, be conservative
+                  // No child info available but member has children - be conservative and filter out all child suggestions
                   return false;
                 }
               }
@@ -775,10 +969,10 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
       }, 0);
     }
     
-    return displayCount;
+    return { filteredCount, actualCount };
   } catch (error) {
     console.error("Error fetching member suggestion count:", error);
-    return 0;
+    return { filteredCount: 0, actualCount: 0 };
   }
 }
 
