@@ -127,6 +127,35 @@ const fetchGenderFromSourceMember = async (sourceMemberId: string): Promise<stri
   return undefined;
 };
 
+// Helper function to fetch surname from source member
+const fetchSurnameFromSourceMember = async (sourceMemberId: string): Promise<string | undefined> => {
+  if (!sourceMemberId) return undefined;
+  
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return undefined;
+    
+    const sourceResponse = await fetch(`http://localhost:3001/family-members/${sourceMemberId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }
+    });
+    
+    if (sourceResponse.ok) {
+      const sourceData = await sourceResponse.json();
+      const sourceMember = sourceData.data || sourceData;
+      if (sourceMember && sourceMember.surname) {
+        return sourceMember.surname.trim();
+      }
+    }
+  } catch (err) {
+    // Could not fetch source member for surname
+  }
+  
+  return undefined;
+};
+
 export default function MemberSuggestionsPage() {
   const router = useRouter();
   const params = useParams();
@@ -289,7 +318,8 @@ export default function MemberSuggestionsPage() {
             if (actualSuggestionsData && actualSuggestionsData.similarMembers) {
               // Use the same getMemberSuggestionCount function as treeview to get the correct filtered count
               const { getMemberSuggestionCount } = await import('../../treeview/service/familyService');
-              const treeviewFilteredCount = await getMemberSuggestionCount(token, memberId);
+              const suggestionCounts = await getMemberSuggestionCount(token, memberId);
+              const treeviewFilteredCount = typeof suggestionCounts === 'object' ? suggestionCounts.filteredCount : suggestionCounts;
               
               const filteredSimilarMembers = actualSuggestionsData.similarMembers
                 .map((similar: any) => ({
@@ -297,12 +327,12 @@ export default function MemberSuggestionsPage() {
                   suggestions: similar.suggestions.filter(
                     (suggestion: string) => !processedSuggestions.includes(suggestion)
                   )
-                }))
-                .filter((similar: any) => similar.suggestions && similar.suggestions.length > 0);
+                }));
+              // Don't filter out members without suggestions - they might have potential suggestions that require access
               
               // Update UI with the treeview filtered count
               setSuggestionsData({
-                count: filteredSimilarMembers.length,
+                count: actualSuggestionsData.count, // Use the original count from backend
                 suggestionCount: treeviewFilteredCount, // Use the same count as treeview
                 similarMembers: filteredSimilarMembers,
                 hasMore: false
@@ -607,8 +637,9 @@ export default function MemberSuggestionsPage() {
 
       }
       
-      // Try different possible formats
-      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      // Try different possible formats - prioritize HTML comment format
+      let sourceMemberMatch = suggestion.match(/<!--SOURCE_MEMBER_ID:(\w+)-->/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
@@ -649,7 +680,8 @@ export default function MemberSuggestionsPage() {
       }
       
       // Try different possible formats to find source member ID
-      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      let sourceMemberMatch = suggestion.match(/<!--SOURCE_MEMBER_ID:(\w+)-->/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
@@ -689,7 +721,8 @@ export default function MemberSuggestionsPage() {
       }
       
       // Try different possible formats to find source member ID
-      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      let sourceMemberMatch = suggestion.match(/<!--SOURCE_MEMBER_ID:(\w+)-->/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
@@ -756,7 +789,8 @@ export default function MemberSuggestionsPage() {
 
       // Try to extract source member ID
       let sourceMemberId: string | undefined;
-      let sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
+      let sourceMemberMatch = suggestion.match(/<!--SOURCE_MEMBER_ID:(\w+)-->/i);
+      if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/similar to member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/from member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/source member (\w+)/i);
       if (!sourceMemberMatch) sourceMemberMatch = suggestion.match(/member ID: (\w+)/i);
@@ -995,7 +1029,24 @@ export default function MemberSuggestionsPage() {
 
 
         // Use surname in this priority: explicit from suggestion, source member, member's own
-        let parentSurname = explicitSurname || validMemberData.surname || "";
+        let parentSurname = explicitSurname || "";
+        
+        // If no explicit surname, try to get it from source member
+        if (!parentSurname && updateData._sourceMemberId) {
+          try {
+            const sourceSurname = await fetchSurnameFromSourceMember(updateData._sourceMemberId);
+            if (sourceSurname) {
+              parentSurname = sourceSurname;
+            }
+          } catch (error) {
+            console.error("Failed to fetch source member surname:", error);
+          }
+        }
+        
+        // Final fallback to current member's surname only if no other option
+        if (!parentSurname) {
+          parentSurname = validMemberData.surname || "";
+        }
 
 
         // Prepare data for the new parent - keeping full name in name field
@@ -1105,9 +1156,28 @@ export default function MemberSuggestionsPage() {
       const relation = partnerGender === 'male' ? 'husband' : 'wife';
       
       // Prepare data for the new partner
+      let partnerSurname = updateData._partnerSurname || "";
+      
+      // If no explicit surname, try to get it from source member
+      if (!partnerSurname && updateData._sourceMemberId) {
+        try {
+          const sourceSurname = await fetchSurnameFromSourceMember(updateData._sourceMemberId);
+          if (sourceSurname) {
+            partnerSurname = sourceSurname;
+          }
+        } catch (error) {
+          console.error("Failed to fetch source member surname:", error);
+        }
+      }
+      
+      // Final fallback to current member's surname only if no other option
+      if (!partnerSurname) {
+        partnerSurname = memberData.surname || "Unknown";
+      }
+      
       const partnerData = {
         name: updateData._partnerName || "Unknown",
-        surname: updateData._partnerSurname || memberData.surname || "Unknown",
+        surname: partnerSurname,
         gender: partnerGender,
         status: "alive",
         country: memberData.country || "Philippines",
@@ -1147,10 +1217,29 @@ export default function MemberSuggestionsPage() {
         const relation = partnerGender === 'male' ? 'husband' : 'wife';
         
         // Prepare data for the new partner
+        let partnerSurname = updateData._partnerSurname || "";
+        
+        // If no explicit surname, try to get it from source member
+        if (!partnerSurname && updateData._sourceMemberId) {
+          try {
+            const sourceSurname = await fetchSurnameFromSourceMember(updateData._sourceMemberId);
+            if (sourceSurname) {
+              partnerSurname = sourceSurname;
+            }
+          } catch (error) {
+            console.error("Failed to fetch source member surname:", error);
+          }
+        }
+        
+        // Final fallback to current member's surname only if no other option
+        if (!partnerSurname) {
+          partnerSurname = memberData.surname || "";
+        }
+        
         const partnerData = {
           // Keep full name intact without splitting
           name: updateData._partnerName || "Unknown Partner",
-          surname: updateData._partnerSurname || memberData.surname || "",
+          surname: partnerSurname,
           gender: partnerGender,
           status: "alive",
           country: memberData.country || "Philippines",
@@ -1257,7 +1346,7 @@ export default function MemberSuggestionsPage() {
             motherId?: string;
           } = {
             name: childName,
-            surname: memberData.surname || "",
+            surname: "", // Will be set below based on source member
             gender: childGender,
             status: "alive",
             country: memberData.country || "Philippines",
@@ -1267,6 +1356,23 @@ export default function MemberSuggestionsPage() {
             fatherId: memberData.gender === "male" ? currentMemberId : undefined,
             motherId: memberData.gender === "female" ? currentMemberId : undefined
           };
+          
+          // Set child surname based on source member if available
+          if (updateData._sourceMemberId) {
+            try {
+              const sourceSurname = await fetchSurnameFromSourceMember(updateData._sourceMemberId);
+              if (sourceSurname) {
+                childData.surname = sourceSurname;
+              }
+            } catch (error) {
+              console.error("Failed to fetch source member surname for child:", error);
+            }
+          }
+          
+          // Final fallback to current member's surname if no source surname
+          if (!childData.surname) {
+            childData.surname = memberData.surname || "";
+          }
           
           // Check if there's a partner to set as the other parent
           if (memberData.gender === "male" && memberData.partnerId && memberData.partnerId.length > 0) {
@@ -1524,9 +1630,28 @@ export default function MemberSuggestionsPage() {
               const relation = partnerGender === 'male' ? 'husband' : 'wife';
               
               // Prepare data for the new partner
+              let partnerSurname = action.data._partnerSurname || "";
+              
+              // If no explicit surname, try to get it from source member
+              if (!partnerSurname && action.data._sourceMemberId) {
+                try {
+                  const sourceSurname = await fetchSurnameFromSourceMember(action.data._sourceMemberId);
+                  if (sourceSurname) {
+                    partnerSurname = sourceSurname;
+                  }
+                } catch (error) {
+                  console.error("Failed to fetch source member surname:", error);
+                }
+              }
+              
+              // Final fallback to current member's surname only if no other option
+              if (!partnerSurname) {
+                partnerSurname = memberData.surname || "Unknown";
+              }
+              
               const partnerData = {
                 name: action.data._partnerName || "Unknown",
-                surname: action.data._partnerSurname || memberData.surname || "Unknown",
+                surname: partnerSurname,
                 gender: partnerGender,
                 status: "alive",
                 country: memberData.country || "Philippines",
@@ -1577,7 +1702,7 @@ export default function MemberSuggestionsPage() {
                 // Create basic child data
                 const childData = {
                   name: childName,
-                  surname: memberData.surname || "",
+                  surname: "", // Will be set from source member if available
                   // Get gender from action data 
                   gender: action.data.gender || "",
                   status: "alive",
@@ -1621,6 +1746,11 @@ export default function MemberSuggestionsPage() {
                   } catch (error) {
                     // Error fetching additional data from source member
                   }
+                }
+                
+                // Final fallback to current member's surname if no source surname
+                if (!childData.surname) {
+                  childData.surname = memberData.surname || "";
                 }
                 
                 // Check if there's a partner to set as the other parent
@@ -1809,12 +1939,18 @@ export default function MemberSuggestionsPage() {
       // Check if this is a child suggestion (to also mark it for the partner)
       const isChildSuggestion = suggestionText.includes("adding child") || 
                                suggestionText.includes("adding children") ||
-                               suggestionText.match(/child "[^"]+"/i);
+                               suggestionText.includes("adding son") ||
+                               suggestionText.includes("adding daughter") ||
+                               suggestionText.match(/child "[^"]+"/i) ||
+                               suggestionText.match(/son "[^"]+"/i) ||
+                               suggestionText.match(/daughter "[^"]+"/i);
       
       // Extract the specific child name if this is a child suggestion
       let childName = "";
       if (isChildSuggestion) {
-        const childNameMatch = suggestionText.match(/child "([^"]+)"/i);
+        const childNameMatch = suggestionText.match(/child "([^"]+)"/i) ||
+                              suggestionText.match(/son "([^"]+)"/i) ||
+                              suggestionText.match(/daughter "([^"]+)"/i);
         if (childNameMatch && childNameMatch[1]) {
           childName = childNameMatch[1].trim();
         }
@@ -1856,7 +1992,10 @@ export default function MemberSuggestionsPage() {
                   for (const partnerSuggestion of similar.suggestions) {
                     // Check if this suggestion mentions the same child
                     if (partnerSuggestion.includes(childName) && 
-                        (partnerSuggestion.includes("adding child") || partnerSuggestion.includes("adding children"))) {
+                        (partnerSuggestion.includes("adding child") || 
+                         partnerSuggestion.includes("adding children") ||
+                         partnerSuggestion.includes("adding son") ||
+                         partnerSuggestion.includes("adding daughter"))) {
                       // Mark this suggestion as processed for the partner
                       await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
                         method: "POST",
@@ -1887,6 +2026,11 @@ export default function MemberSuggestionsPage() {
     }
   };
 
+  // Helper function to clean suggestion text by removing HTML comments
+  const cleanSuggestionText = (suggestion: string): string => {
+    return suggestion.replace(/<!--SOURCE_MEMBER_ID:\w+-->/gi, '').trim();
+  };
+
   const SuggestionCard = ({ similarMember }: { similarMember: any }) => {
     // Apply the same filtering logic as treeview to get only relevant suggestions
     const filteredSuggestions = similarMember.suggestions.filter((suggestion: string) => {
@@ -1900,10 +2044,18 @@ export default function MemberSuggestionsPage() {
         const partnerNameMatch = suggestion.match(/partner "([^"]+)"/i);
         if (partnerNameMatch && partnerNameMatch[1] && memberData) {
           const suggestedPartnerName = partnerNameMatch[1].trim().toLowerCase();
+          
+          // Check against existing partners - if member has partners, filter out partner suggestions
           if (memberData.partnerId && memberData.partnerId.length > 0) {
-            if (partnerInfo.some((partner: {name: string, id: string}) => 
-              partner.name.toLowerCase().includes(suggestedPartnerName) ||
-              suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+            // If we have partner info, check names
+            if (partnerInfo.length > 0) {
+              if (partnerInfo.some((partner: {name: string, id: string}) => 
+                partner.name.toLowerCase().includes(suggestedPartnerName) ||
+                suggestedPartnerName.includes(partner.name.toLowerCase()))) {
+                return false;
+              }
+            } else {
+              // No partner info available but member has partners - be conservative and filter out all partner suggestions
               return false;
             }
           }
@@ -1916,7 +2068,10 @@ export default function MemberSuggestionsPage() {
         const childNameMatch = suggestion.match(/(?:child|son|daughter) "([^"]+)"/i);
         if (childNameMatch && childNameMatch[1] && memberData) {
           const suggestedChildName = childNameMatch[1].trim().toLowerCase();
+          
+          // If member has children, filter out child suggestions
           if (memberData.childId && Array.isArray(memberData.childId) && memberData.childId.length > 0) {
+            // If we have child info, check names
             if (childInfo && childInfo.length > 0) {
               if (childInfo.some((child: {name: string, id: string}) => 
                 child.name.toLowerCase().includes(suggestedChildName) ||
@@ -1924,6 +2079,7 @@ export default function MemberSuggestionsPage() {
                 return false;
               }
             } else {
+              // No child info available but member has children - be conservative and filter out all child suggestions
               return false;
             }
           }
@@ -1978,8 +2134,8 @@ export default function MemberSuggestionsPage() {
       return true;
     });
 
-    // Don't render if no filtered suggestions
-    if (!filteredSuggestions || filteredSuggestions.length === 0) {
+    // Don't render if there are no suggestions at all (not even potential ones)
+    if (!similarMember.suggestions || similarMember.suggestions.length === 0) {
       return null;
     }
     
@@ -1987,9 +2143,16 @@ export default function MemberSuggestionsPage() {
       router.push('/dashboard/suggestions/cross-user');
     };
 
-    // Check if there's an accepted request for this user
+    const handleRequestAccess = (similarMember: any) => {
+      // Redirect to cross-user page where users can properly request access
+      router.push('/dashboard/suggestions/cross-user');
+    };
+
+    // Check if there's an accepted request for this specific member
     const hasAcceptedAccess = suggestionRequests.some(req => 
-      req.toUserId === similarMember.userId && req.status === 'accepted'
+      req.toUserId === similarMember.userId && 
+      req.status === 'accepted' && 
+      req.currentMemberId === memberId
     );
     
     return (
@@ -1997,7 +2160,7 @@ export default function MemberSuggestionsPage() {
         <h3 className="text-lg font-semibold mb-3 text-white flex items-center">
           <span className="flex-grow">Suggestions from similar member</span>
           <span className="text-sm bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full px-3 py-1">
-            {filteredSuggestions.length} suggestion{filteredSuggestions.length !== 1 ? 's' : ''}
+            {hasAcceptedAccess ? filteredSuggestions.length : (similarMember.actualSuggestionCount || similarMember.suggestions.length)} suggestion{(hasAcceptedAccess ? filteredSuggestions.length : (similarMember.actualSuggestionCount || similarMember.suggestions.length)) !== 1 ? 's' : ''}
           </span>
         </h3>
         <div className="text-sm text-gray-400 mb-3">
@@ -2021,7 +2184,7 @@ export default function MemberSuggestionsPage() {
                   <div key={index} className="flex items-start justify-between gap-3 p-3 bg-gray-700/30 rounded-lg border border-gray-600/20">
                     <div className="flex items-start gap-2 flex-1">
                       <span className="text-teal-400 mt-1">•</span>
-                      <span className="text-sm text-gray-300">{suggestion}</span>
+                      <span className="text-sm text-gray-300">{cleanSuggestionText(suggestion)}</span>
                     </div>
                     <button
                       onClick={() => handleApplySuggestion(suggestion)}
@@ -2036,20 +2199,30 @@ export default function MemberSuggestionsPage() {
           </div>
         ) : (
           <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-600/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-gray-300">
-                <Info className="h-5 w-5 text-blue-400" />
-                <span className="text-sm">
-                  Detailed suggestions are available through cross-user requests
-                </span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-blue-400 mb-3">
+                <Info className="h-5 w-5" />
+                <span className="text-sm font-medium">Access Required - Potential Connections Available</span>
               </div>
-              <button
-                onClick={handleViewCrossUserSuggestions}
-                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-4 py-2 rounded-lg transition-all duration-300 text-sm shadow-lg flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                View Cross-User Suggestions
-              </button>
+              
+              {/* Show placeholder suggestions with request access buttons */}
+              <div className="space-y-2">
+                {similarMember.suggestions.map((suggestion: string, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg border border-gray-600/20">
+                    <div className="flex items-start gap-2 flex-1">
+                      <span className="text-blue-400 mt-1">•</span>
+                      <span className="text-sm text-gray-300">{cleanSuggestionText(suggestion)}</span>
+                    </div>
+                    <button
+                      onClick={() => handleRequestAccess(similarMember)}
+                      className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white px-3 py-1 rounded-md transition-all duration-300 text-xs shadow-lg flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Users className="h-3 w-3" />
+                      Go to Cross-User Page
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -2441,8 +2614,7 @@ export default function MemberSuggestionsPage() {
                           ? childrenData._childrenNames[0] 
                           : "Child";
                         
-                        // Determine surname to display - if no explicit surname, use member's surname
-                        const displaySurname = childrenData.surname || memberData.surname || "";
+                        // Don't display surname in UI - just show the name
                         
                         return (
                           <div key={field} className="flex justify-between items-center p-3 bg-yellow-950/40 rounded-lg border border-yellow-800/30">
@@ -2454,7 +2626,7 @@ export default function MemberSuggestionsPage() {
                                 </span>
                               </div>
                               <div className="text-yellow-100">
-                                {childName}{displaySurname ? ` ${displaySurname}` : ""}
+                                {childName}
                               </div>
                             </div>
                           </div>
@@ -2514,8 +2686,8 @@ export default function MemberSuggestionsPage() {
               <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 p-6 border-b border-gray-700/50">
                 <h2 className="text-xl font-bold text-white flex items-center gap-3">
                   {(() => {
-                    // Use the same count as treeview (already calculated and stored in suggestionCount)
-                    const displayCount = suggestionsData.suggestionCount;
+                    // Use the actual suggestion count from backend (shows real count regardless of access status)
+                    const displayCount = (suggestionsData as any).actualSuggestionCount || suggestionsData.suggestionCount;
                     
                     return (
                       <span className="bg-orange-500 text-white rounded-full min-w-10 h-10 flex items-center justify-center text-base font-bold px-3 border-2 border-white shadow-lg">

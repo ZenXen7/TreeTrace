@@ -17,6 +17,7 @@ interface SuggestionRequest {
   suggestionCount: number;
   isIncoming: boolean;
   isOutgoing: boolean;
+  message?: string;
 }
 
 export default function NotificationsPage() {
@@ -260,7 +261,7 @@ export default function NotificationsPage() {
 
                     <div className="mb-4">
                       <p className="text-gray-300 mb-2">
-                        <strong>{request.fromUserName}</strong> wants to see detailed suggestions from your family tree.
+                        {request.message || `${request.fromUserName} wants to see detailed suggestions from your family tree.`}
                       </p>
                       <p className="text-sm text-gray-400">
                         Request sent on {formatDate(request.createdAt)}
@@ -325,10 +326,10 @@ export default function NotificationsPage() {
                           <h3 className="text-lg font-semibold text-white">
                             Request to {request.toUserName}
                           </h3>
-                          <p className="text-gray-400 text-sm">
-                            {request.suggestionCount} suggestions available
+                          <p className="text-gray-300 text-sm mb-1">
+                            {request.message || `${request.suggestionCount} suggestions available`}
                           </p>
-                          <p className="text-gray-500 text-xs mt-1">
+                          <p className="text-gray-500 text-xs">
                             Sent on {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString()}
                           </p>
                         </div>
@@ -385,8 +386,11 @@ export default function NotificationsPage() {
                           <h3 className="text-lg font-semibold text-white">
                             {request.status === 'accepted' ? 'Accepted' : 'Rejected'} Request
                           </h3>
-                          <p className="text-sm text-gray-400">
-                            {request.status === 'accepted' ? 'From' : 'To'} {request.status === 'accepted' ? request.fromUserName : request.toUserName}
+                          <p className="text-sm text-gray-300 mb-1">
+                            {request.message || `${request.status === 'accepted' ? 'From' : 'To'} ${request.status === 'accepted' ? request.fromUserName : request.toUserName}`}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString()}
                           </p>
                         </div>
                       </div>

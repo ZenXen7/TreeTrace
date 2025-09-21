@@ -515,13 +515,15 @@ function Familytree(props: {
             return
           }
 
-          // Get all nodes that have suggestions
+          // Get all nodes that should show badges (including those with 0 suggestions)
           const nodesWithSuggestions = nodes.filter(
-            (node: any) =>
-              (node.actualSuggestionCount && node.actualSuggestionCount > 0) ||
-              (node.hasSimilarityMatch === true &&
-                (node.suggestionCount === undefined || Number.parseInt(node.suggestionCount) > 0)) ||
-              (node.tags && node.tags.includes("suggestion")),
+            (node: any) => {
+              // Always show badges for nodes that have similarity matches or suggestion-related tags
+              return node.hasSimilarityMatch === true || 
+                     (node.tags && node.tags.includes("suggestion")) ||
+                     node.actualSuggestionCount !== undefined ||
+                     (node.suggestionCount !== undefined && node.suggestionCount !== "");
+            }
           )
 
           // Removed performance-impacting log
@@ -596,12 +598,7 @@ function Familytree(props: {
                       ? Number.parseInt(node.suggestionCount)
                       : 0
 
-                // Only add the badge if there are actually suggestions to show
-                if (actualCount <= 0) {
-                  // Removed performance-impacting log
-                  return // Skip adding badge for nodes with 0 suggestions
-                }
-
+                // Always show the badge with the correct count (including 0)
                 badgeLink.textContent = actualCount.toString()
 
                 // Add a click event just to ensure it works even if href doesn't
@@ -1214,11 +1211,13 @@ export default function TreeViewPage() {
         // Fetch suggestion counts for each member
         let totalSuggestionsCount = 0
         const processedDataPromises = strictFiltered.map(async (member: any) => {
-          // Use the fixed getMemberSuggestionCount function which now exactly matches the suggestions page logic
-          const filteredSuggestionCount = await getMemberSuggestionCount(token, member._id)
+          // Use the fixed getMemberSuggestionCount function which now returns both filtered and actual counts
+          const suggestionCounts = await getMemberSuggestionCount(token, member._id)
+          const filteredSuggestionCount = typeof suggestionCounts === 'object' ? suggestionCounts.filteredCount : suggestionCounts
+          const actualSuggestionCount = typeof suggestionCounts === 'object' ? suggestionCounts.actualCount : suggestionCounts
 
-          // Add this member's filtered count to the total
-          totalSuggestionsCount += filteredSuggestionCount
+          // Add this member's actual count to the total (show real count regardless of access status)
+          totalSuggestionsCount += actualSuggestionCount
 
           // Format dates properly for display and edit form
           const formattedBirthDate = member.birthDate ? new Date(member.birthDate).toISOString().split("T")[0] : ""
@@ -1253,9 +1252,9 @@ export default function TreeViewPage() {
             occupation: member.occupation || "",
             tags: Array.isArray(member.tags) ? member.tags.join(", ") : "",
             imageUrl,
-            // Use the filtered count that exactly matches the suggestions page
-            suggestionCount: filteredSuggestionCount.toString(),
-            actualSuggestionCount: filteredSuggestionCount, // Using same count for both fields
+            // Use the actual count for display (shows real count regardless of access status)
+            suggestionCount: actualSuggestionCount.toString(),
+            actualSuggestionCount: actualSuggestionCount,
           }
         })
 

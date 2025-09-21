@@ -84,7 +84,8 @@ export default function Dashboard() {
           try {
             // Import the getMemberSuggestionCount function from treeview service
             const { getMemberSuggestionCount } = await import('../treeview/service/familyService')
-            suggestionCount = await getMemberSuggestionCount(token, member._id)
+            const suggestionCounts = await getMemberSuggestionCount(token, member._id)
+            suggestionCount = typeof suggestionCounts === 'object' ? suggestionCounts.filteredCount : suggestionCounts
           } catch {}
           
           return { ...member, medicalHistory, suggestionCount }
@@ -122,7 +123,7 @@ export default function Dashboard() {
       const maxGeneration = Math.max(...allData.map(member => getGeneration(member)))
 
       // Calculate total AI suggestions across all members (same as treeview)
-      const totalAISuggestions = allData.reduce((total, member) => total + member.suggestionCount, 0)
+      const totalAISuggestions = allData.reduce((total, member) => total + (member.suggestionCount || 0), 0)
 
       setStats({
         familyMembers: allData.length,
