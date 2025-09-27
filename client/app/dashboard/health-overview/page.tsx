@@ -65,8 +65,6 @@ export default function HealthOverviewPage() {
   const [sortAsc, setSortAsc] = useState(true)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
   const [allFamilyData, setAllFamilyData] = useState<any[]>([])
-  const [showReportModal, setShowReportModal] = useState(false)
-  const [reportPrompt, setReportPrompt] = useState("")
   const [reportDraft, setReportDraft] = useState("")
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
@@ -260,7 +258,55 @@ export default function HealthOverviewPage() {
     setReportError(null)
     try {
       const ai = AIService.getInstance()
-      const prompt = `${reportPrompt}
+      const prompt = `Generate a comprehensive family health report based on the provided family data. This report should be detailed and thorough, covering all aspects of the family's health patterns.
+
+      Please analyze the following aspects in detail:
+
+      FAMILY HEALTH OVERVIEW:
+      Provide a comprehensive summary of the family's overall health status, including total members, age distribution, and general health patterns.
+
+      HEALTH CONDITIONS ANALYSIS:
+      - List all identified health conditions across the family
+      - Identify which conditions appear most frequently
+      - Analyze patterns by generation (are certain conditions more common in older vs younger generations?)
+      - Highlight any conditions that appear in multiple family members
+      - Note any potential hereditary patterns
+
+      BLOOD TYPE DISTRIBUTION:
+      - Analyze blood type distribution across the family
+      - Identify the most common blood type
+      - Note any rare blood types present
+      - Discuss implications for blood transfusions and organ donations
+
+      GENERATIONAL HEALTH PATTERNS:
+      - Compare health conditions across different generations
+      - Identify trends in health conditions over time
+      - Note any conditions that appear to skip generations
+      - Highlight any generational health improvements or concerns
+
+      FAMILY RELATIONSHIP HEALTH CORRELATIONS:
+      - Analyze health patterns between parents and children
+      - Look for conditions that appear in both parents and children
+      - Identify any conditions that appear to be inherited from specific parental lines
+      - Note any conditions that appear in siblings
+
+      RISK ASSESSMENT:
+      - Identify family members who may be at higher risk for certain conditions
+      - Highlight any concerning patterns that warrant medical attention
+      - Suggest areas where family members should be particularly vigilant
+      - Note any conditions that may require genetic counseling
+
+      RECOMMENDATIONS:
+      - Provide specific health recommendations for the family
+      - Suggest screening tests that family members should consider
+      - Recommend lifestyle changes that could benefit the family
+      - Suggest when family members should consult healthcare providers
+
+      PREVENTIVE MEASURES:
+      - Identify preventive measures family members can take
+      - Suggest regular health monitoring for at-risk individuals
+      - Recommend family health education topics
+      - Suggest genetic testing considerations
 
       Please follow these formatting guidelines strictly:
       1. Keep paragraphs short and concise (max 4-5 lines)
@@ -271,6 +317,8 @@ export default function HealthOverviewPage() {
       6. Maintain consistent spacing throughout the document
       7. Do NOT use any markdown, bold, or special formatting
       8. Keep content aligned and avoid large gaps between text
+      9. Be very detailed and thorough in your analysis
+      10. Include specific names and relationships when discussing patterns
 
       Format sections like this:
       SECTION TITLE:
@@ -280,7 +328,7 @@ export default function HealthOverviewPage() {
       - List item one
       - List item two
 
-      Please provide the report following these guidelines.`
+      Please provide a comprehensive and detailed report following these guidelines.`
 
       const draft = await ai.askGemini(prompt, allFamilyData)
       setReportDraft(draft)
@@ -674,11 +722,39 @@ export default function HealthOverviewPage() {
                   </button>
 
                   <button
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                    onClick={() => setShowReportModal(true)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-white text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl ${
+                      reportLoading
+                        ? "bg-gray-600 cursor-not-allowed opacity-70"
+                        : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600"
+                    }`}
+                    onClick={handleGenerateReport}
+                    disabled={reportLoading}
                   >
-                    <FileText className="h-4 w-4" />
-                    Generate Report
+                    {reportLoading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4" />
+                        Generate Report
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -866,21 +942,120 @@ export default function HealthOverviewPage() {
                 <FileText className="w-6 h-6 text-teal-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Health Reports</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Comprehensive Health Reports</h3>
                 <p className="text-gray-300 mb-4">
-                  Generate custom health reports to analyze patterns, identify potential hereditary risks, and gain
-                  insights into your family's health history.
+                  Generate detailed health reports that analyze patterns, identify potential hereditary risks, and provide
+                  comprehensive insights into your family's health history with specific recommendations.
                 </p>
                 <button
-                  className="group px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
-                  onClick={() => setShowReportModal(true)}
+                  className={`group px-6 py-3 text-white rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center gap-2 ${
+                    reportLoading
+                      ? "bg-gray-600 cursor-not-allowed opacity-70"
+                      : "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600"
+                  }`}
+                  onClick={handleGenerateReport}
+                  disabled={reportLoading}
                 >
-                  <FileText className="w-5 h-5 group-hover:animate-pulse" />
-                  Create Custom Health Report
+                  {reportLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Generating Report...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-5 h-5 group-hover:animate-pulse" />
+                      Create Comprehensive Health Report
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </motion.div>
+
+          {/* Report Display Section */}
+          {(reportDraft || reportError) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="rounded-xl bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-sm border border-gray-700/50 overflow-hidden mb-8 shadow-2xl"
+            >
+              <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 p-6 border-b border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <FileText className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Generated Health Report</h2>
+                      <p className="text-sm text-gray-400">Comprehensive family health analysis</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {reportDraft && (
+                      <button
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                        onClick={handleGenerateReport}
+                        disabled={reportLoading}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Regenerate
+                      </button>
+                    )}
+                    {reportDraft && (
+                      <button
+                        className="px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                        onClick={exportReportAsPDF}
+                      >
+                        <Download className="h-4 w-4" />
+                        Export PDF
+                      </button>
+                    )}
+                    <button
+                      className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-800/50"
+                      onClick={() => {
+                        setReportDraft("")
+                        setReportError(null)
+                      }}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {reportError && (
+                  <div className="mb-6 p-4 bg-red-900/30 border border-red-800/50 rounded-lg text-red-300 text-sm">
+                    <div className="flex items-start">
+                      <AlertTriangle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                      <span>{reportError}</span>
+                    </div>
+                  </div>
+                )}
+
+                {reportDraft && (
+                  <div className="bg-gray-800/80 p-6 rounded-lg text-white whitespace-pre-wrap max-h-96 overflow-y-auto border border-gray-700/50 shadow-inner">
+                    {reportDraft}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
         </div>
       </motion.div>
 
@@ -893,147 +1068,6 @@ export default function HealthOverviewPage() {
       />
       <AIChatToggle onClick={() => setIsAIChatOpen(!isAIChatOpen)} isOpen={isAIChatOpen} />
 
-      {/* Report Modal */}
-      {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/30">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl p-8 max-w-2xl w-full relative border border-gray-700/50"
-          >
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-teal-400 transition-colors p-2 rounded-full hover:bg-gray-800/50"
-              onClick={() => setShowReportModal(false)}
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-teal-500/20 rounded-lg">
-                <FileText className="w-6 h-6 text-teal-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-white">Generate Health Report</h2>
-            </div>
-
-            <div className="mb-6">
-              <label className="block mb-2 text-gray-300 text-sm font-medium">
-                Describe the report you want to generate:
-              </label>
-              <textarea
-                className="w-full p-4 rounded-lg bg-gray-800/80 text-white border border-gray-700/50 focus:border-teal-500 focus:ring focus:ring-teal-500/20 transition-all mb-2 placeholder-gray-500 shadow-inner"
-                rows={3}
-                value={reportPrompt}
-                onChange={(e) => setReportPrompt(e.target.value)}
-                placeholder="e.g. Summarize all members with hypertension and their generations."
-              />
-              <p className="text-xs text-gray-500">Be specific about what health information you want to analyze.</p>
-            </div>
-
-            <div className="flex gap-3 mb-6">
-              <button
-                className={`
-                  flex-1 px-4 py-3 rounded-lg text-white transition-all flex items-center justify-center gap-2
-                  ${
-                    reportLoading || !reportPrompt.trim()
-                      ? "bg-gray-700 cursor-not-allowed opacity-70"
-                      : "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 shadow-lg hover:shadow-xl"
-                  }
-                `}
-                onClick={handleGenerateReport}
-                disabled={reportLoading || !reportPrompt.trim()}
-              >
-                {reportLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-5 h-5" />
-                    Generate Draft
-                  </>
-                )}
-              </button>
-
-              <button
-                className="px-4 py-3 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700/50 flex items-center gap-2"
-                onClick={() => {
-                  setReportPrompt("")
-                  setReportDraft("")
-                }}
-                disabled={reportLoading}
-              >
-                <X className="w-4 h-4" />
-                Clear
-              </button>
-            </div>
-
-            {reportError && (
-              <div className="mb-6 p-4 bg-red-900/30 border border-red-800/50 rounded-lg text-red-300 text-sm">
-                <div className="flex items-start">
-                  <AlertTriangle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>{reportError}</span>
-                </div>
-              </div>
-            )}
-
-            {reportDraft && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mt-6"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <FileText className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white">Draft Report</h3>
-                </div>
-
-                <div className="bg-gray-800/80 p-5 rounded-lg text-white whitespace-pre-wrap max-h-80 overflow-y-auto border border-gray-700/50 shadow-inner mb-6">
-                  {reportDraft}
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    className="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg transition-colors shadow-lg flex items-center gap-2"
-                    onClick={handleGenerateReport}
-                    disabled={reportLoading}
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Regenerate
-                  </button>
-
-                  <button
-                    className="px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg transition-colors shadow-lg flex items-center gap-2"
-                    onClick={exportReportAsPDF}
-                  >
-                    <Download className="w-4 h-4" />
-                    Export as PDF
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-        </div>
-      )}
     </>
   )
 }
