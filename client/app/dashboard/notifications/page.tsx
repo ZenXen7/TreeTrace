@@ -39,7 +39,7 @@ export default function NotificationsPage() {
         return;
       }
 
-      const response = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/suggestion-requests`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -67,7 +67,7 @@ export default function NotificationsPage() {
 
       setRespondingToRequests(prev => new Set(prev).add(requestId));
 
-      const response = await fetch(`http://localhost:3001/notifications/suggestion-requests/${requestId}/respond`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/suggestion-requests/${requestId}/respond`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

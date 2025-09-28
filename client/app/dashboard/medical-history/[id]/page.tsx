@@ -130,7 +130,7 @@ export default function MedicalHistoryPage(props: { params: any }) {
         }
 
         // Fetch member details
-        const memberResponse = await fetch(`http://localhost:3001/family-members/${memberId}`, {
+        const memberResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${memberId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

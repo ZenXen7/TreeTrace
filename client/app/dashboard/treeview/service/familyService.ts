@@ -1,5 +1,5 @@
-const API_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:3001/family-members";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "${API_BASE_URL}";
+const API_URL = `${API_BASE_URL}/family-members`;
 
 async function fetchFamilyMembers(token: string) {
   const response = await fetch(API_URL, {
@@ -92,7 +92,7 @@ async function addFamilyMember(token: string, memberData: any) {
     try {
       const newMemberId = result.data._id;
       
-      const checkResponse = await fetch(`http://localhost:3001/notifications/check-similar-family-members/${newMemberId}`, {
+      const checkResponse = await fetch(`${API_BASE_URL}/notifications/check-similar-family-members/${newMemberId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -252,7 +252,7 @@ async function handleAddMember(
         ];
         
         // Mark suggestions as processed for the parent who added the child
-        await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+        await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -266,7 +266,7 @@ async function handleAddMember(
         
         // If there's a partner, also mark suggestions as processed for them
         if (hasPartner && partnerId) {
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -330,7 +330,7 @@ async function handleAddMember(
           const currentNodeId = node._id || node.id;
           
           // Mark suggestions as processed for the child
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -343,7 +343,7 @@ async function handleAddMember(
           });
           
           // Mark suggestions as processed for the father
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -384,7 +384,7 @@ async function handleAddMember(
           const currentNodeId = node._id || node.id;
           
           // Mark suggestions as processed for the child
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -397,7 +397,7 @@ async function handleAddMember(
           });
           
           // Mark suggestions as processed for the mother
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -455,7 +455,7 @@ async function handleAddMember(
           const currentNodeId = node._id || node.id;
           
           // Mark suggestions as processed for the current member
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -468,7 +468,7 @@ async function handleAddMember(
           });
           
           // Mark suggestions as processed for the new partner
-          await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+          await fetch(`${API_BASE_URL}/notifications/mark-suggestion-processed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -565,7 +565,7 @@ async function deleteFamilyMember(token: string, memberId: string) {
             `daughter "${memberToDelete.name}"`
           ];
           
-          await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+          await fetch(`${API_BASE_URL}/notifications/unmark-suggestions`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -600,7 +600,7 @@ async function deleteFamilyMember(token: string, memberId: string) {
             `daughter "${memberToDelete.name}"`
           ];
           
-          await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+          await fetch(`${API_BASE_URL}/notifications/unmark-suggestions`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -635,15 +635,15 @@ async function deleteFamilyMember(token: string, memberId: string) {
       await updateFamilyMember(token, child._id, updateData);
       
       // Unmark parent suggestions for the child so the parent can be suggested again
+      const parentType = memberToDelete.gender === "male" ? "father" : "mother";
       try {
-        const parentType = memberToDelete.gender === "male" ? "father" : "mother";
         const parentPatterns = [
           `adding ${parentType} "${memberToDelete.name}"`,
           `${parentType} "${memberToDelete.name}"`,
           `Consider adding ${parentType} "${memberToDelete.name}"`
         ];
         
-        await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+        await fetch(`${API_BASE_URL}/notifications/unmark-suggestions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -676,7 +676,7 @@ async function deleteFamilyMember(token: string, memberId: string) {
         ];
 
         // Remove processed suggestions that match these patterns
-        await fetch(`http://localhost:3001/notifications/unmark-suggestions`, {
+        await fetch(`${API_BASE_URL}/notifications/unmark-suggestions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -716,7 +716,7 @@ async function deleteFamilyMember(token: string, memberId: string) {
 // New function to get surname similarities count for a specific family member
 async function getSurnameSimilaritiesCount(token: string, memberId: string) {
   try {
-    const response = await fetch(`http://localhost:3001/notifications/member-similarities/${memberId}`, {
+    const response = await fetch(`${API_BASE_URL}/notifications/member-similarities/${memberId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -739,7 +739,7 @@ async function getSurnameSimilaritiesCount(token: string, memberId: string) {
 async function getMemberSuggestionCount(token: string, memberId: string) {
   try {
     // First fetch member data to filter suggestions properly
-    const memberResponse = await fetch(`http://localhost:3001/family-members/${memberId}`, {
+    const memberResponse = await fetch(`${API_BASE_URL}/family-members/${memberId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -757,7 +757,7 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     // Debug log for member being processed
 
     // Fetch any applied suggestions
-    const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${memberId}`, {
+    const processedResponse = await fetch(`${API_BASE_URL}/notifications/processed-suggestions/${memberId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -772,7 +772,7 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     }
 
     // Get all suggestions for this member
-    const response = await fetch(`http://localhost:3001/notifications/member-similarities/${memberId}`, {
+    const response = await fetch(`${API_BASE_URL}/notifications/member-similarities/${memberId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -796,7 +796,7 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     if (memberData.partnerId && memberData.partnerId.length > 0) {
       try {
         const partnerPromises = memberData.partnerId.map(async (partnerId: string) => {
-          const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+          const partnerResponse = await fetch(`${API_BASE_URL}/family-members/${partnerId}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -828,7 +828,7 @@ async function getMemberSuggestionCount(token: string, memberId: string) {
     if (memberData.childId && memberData.childId.length > 0) {
       try {
         const childPromises = memberData.childId.map(async (childId: string) => {
-          const childResponse = await fetch(`http://localhost:3001/family-members/${childId}`, {
+          const childResponse = await fetch(`${API_BASE_URL}/family-members/${childId}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",

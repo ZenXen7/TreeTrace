@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -60,7 +62,7 @@ export default function Dashboard() {
       const token = localStorage.getItem("token")
       if (!token) return
       // 1. Fetch all family members
-      const res = await fetch("http://localhost:3001/family-members", {
+      const res = await fetch(`${API_BASE_URL}/family-members`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const familyMembers = (await res.json()).data || []
@@ -72,7 +74,7 @@ export default function Dashboard() {
           let suggestionCount = 0
           
           try {
-            const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
+            const medRes = await fetch(`${API_BASE_URL}/medical-history/family-member/${member._id}`, {
               headers: { Authorization: `Bearer ${token}` },
             })
             if (medRes.ok) {

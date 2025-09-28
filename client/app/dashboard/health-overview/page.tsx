@@ -81,7 +81,7 @@ export default function HealthOverviewPage() {
       const token = localStorage.getItem("token")
       if (!token) return
       // 1. Fetch all family members
-      const res = await fetch("http://localhost:3001/family-members", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const familyMembers = (await res.json()).data || []
@@ -90,7 +90,7 @@ export default function HealthOverviewPage() {
         familyMembers.map(async (member: any) => {
           let medicalHistory = null
           try {
-            const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
+            const medRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/medical-history/family-member/${member._id}`, {
               headers: { Authorization: `Bearer ${token}` },
             })
             if (medRes.ok) {
@@ -111,7 +111,7 @@ export default function HealthOverviewPage() {
       const token = localStorage.getItem("token")
       if (!token) return
       try {
-        const res = await fetch("http://localhost:3001/family-members", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         const data = await res.json()
@@ -120,7 +120,7 @@ export default function HealthOverviewPage() {
           let medicalConditions: string[] = []
           let bloodType: string | undefined = undefined
           try {
-            const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
+            const medRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/medical-history/family-member/${member._id}`, {
               headers: { Authorization: `Bearer ${token}` },
             })
             if (medRes.ok) {
