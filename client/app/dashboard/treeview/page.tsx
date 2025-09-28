@@ -325,38 +325,6 @@ function Familytree(props: {
           surname: 80,
         }, // Give higher priority to exact name matches
 
-        // Custom search method for more precise full name matching
-        searchMethod: (query, data, searchFields, searchFieldsWeight) => {
-          // Convert search query to lowercase for case-insensitive matching
-          const searchQuery = query.toLowerCase()
-          const results = []
-
-          // First try exact full name match (name + surname)
-          for (let i = 0; i < data.length; i++) {
-            const node = data[i]
-            // Create a full name from name and surname fields
-            const fullName = `${node.name || ""} ${node.surname || ""}`.toLowerCase().trim()
-
-            // If we have an exact full name match, only return this result
-            if (fullName === searchQuery) {
-              return [node]
-            }
-
-            // Check if full name contains the search query
-            if (fullName.includes(searchQuery)) {
-              results.push(node)
-            }
-            // Also check individual fields
-            else if (
-              (node.name && node.name.toLowerCase().includes(searchQuery)) ||
-              (node.surname && node.surname.toLowerCase().includes(searchQuery))
-            ) {
-              results.push(node)
-            }
-          }
-
-          return results
-        },
 
         filterBy: [],
 
@@ -426,21 +394,8 @@ function Familytree(props: {
         layout: FamilyTree.layout.normal,
         // scaleInitial: FamilyTree.match.boundary,
         // enableSearch: true,
-        enableDragDrop: true,
-        enablePan: true,
-        enableZoom: true,
         // Smoother and slightly slower animations for better visual experience
         anim: { func: FamilyTree.anim.outBack, duration: 300 },
-        // Improved connectors with better styling
-        connectors: {
-          type: "curved",
-          style: {
-            "stroke-width": "1.5",
-            stroke: "#6B7280",
-            "stroke-dasharray": "none",
-            "stroke-opacity": "0.8",
-          },
-        },
       })
 
       // Cast the family object to any to avoid TypeScript errors
@@ -452,7 +407,7 @@ function Familytree(props: {
       })
 
       // Add event listener to remove the avatar from edit forms
-      familyAny.editUI.on("show", (sender, args) => {
+      familyAny.editUI.on("show", (sender: any, args: any) => {
         setTimeout(() => {
           // Hide avatar elements in the edit form
           const avatarElement = document.querySelector(".bft-edit-form-avatar")
@@ -650,7 +605,7 @@ function Familytree(props: {
             }
 
             // Make the badge clickable
-            newBadge.style.cursor = "pointer"
+            ;(newBadge as HTMLElement).style.cursor = "pointer"
 
             // Add click event listener to the new badge
             newBadge.addEventListener("click", (e) => {
@@ -664,7 +619,7 @@ function Familytree(props: {
       })
 
       // Add event listener for node click instead of relying on template placeholders
-      familyAny.on("click", (sender, args) => {
+      familyAny.on("click", (sender: any, args: any) => {
         // If a family member is clicked directly (not a suggestion badge), normal behavior applies
         if (!args.event || !args.event.target) {
           return true // Allow default behavior if no event target
@@ -695,7 +650,7 @@ function Familytree(props: {
         return false
       })
 
-      familyAny.editUI.on("save", (sender, editedData) => {
+      familyAny.editUI.on("save", (sender: any, editedData: any) => {
         ;(async () => {
           try {
             const token = localStorage.getItem("token")
@@ -728,7 +683,7 @@ function Familytree(props: {
             // Explicitly trigger the check for similar family members
             try {
               const response = await fetch(
-                `http://localhost:3001/notifications/check-similar-family-members/${resolvedId}`,
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/check-similar-family-members/${resolvedId}`,
                 {
                   method: "POST",
                   headers: {
@@ -898,7 +853,7 @@ function Familytree(props: {
       //   // img_0: "imageUrl"
       // }
 
-      familyAny.nodeCircleMenuUI.on("show", (sender, args) => {
+      familyAny.nodeCircleMenuUI.on("show", (sender: any, args: any) => {
         var node = family.getNode(args.nodeId)
         delete args.menu.father
         delete args.menu.mother
@@ -975,7 +930,7 @@ function Familytree(props: {
         }
       })
 
-      familyAny.nodeCircleMenuUI.on("click", async (sender, args): Promise<boolean | void> => {
+      familyAny.nodeCircleMenuUI.on("click", async (sender: any, args: any): Promise<boolean | void> => {
         const node = family.getNode(args.nodeId) as any
         const token = localStorage.getItem("token")
         if (!token) return
@@ -1124,7 +1079,7 @@ export default function TreeViewPage() {
       const token = localStorage.getItem("token")
       if (!token) return
       // 1. Fetch all family members
-      const res = await fetch("http://localhost:3001/family-members", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const familyMembers = (await res.json()).data || []
@@ -1133,7 +1088,7 @@ export default function TreeViewPage() {
         familyMembers.map(async (member: any) => {
           let medicalHistory = null
           try {
-            const medRes = await fetch(`http://localhost:3001/medical-history/family-member/${member._id}`, {
+            const medRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/medical-history/family-member/${member._id}`, {
               headers: { Authorization: `Bearer ${token}` },
             })
             if (medRes.ok) {

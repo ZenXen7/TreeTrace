@@ -87,7 +87,7 @@ export default function CrossUserSuggestionsPage() {
         return;
       }
 
-      const response = await fetch("http://localhost:3001/notifications/cross-user-similarities", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/cross-user-similarities`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -120,7 +120,7 @@ export default function CrossUserSuggestionsPage() {
               
               // For the UI, we still need the filtered suggestions array
               // Fetch member data to apply proper filtering
-              const memberDataResponse = await fetch(`http://localhost:3001/family-members/${member.currentMember.id}`, {
+              const memberDataResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${member.currentMember.id}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               
@@ -131,7 +131,7 @@ export default function CrossUserSuggestionsPage() {
               }
               
               // Fetch applied suggestions
-              const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${member.currentMember.id}`, {
+              const processedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/processed-suggestions/${member.currentMember.id}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               
@@ -146,7 +146,7 @@ export default function CrossUserSuggestionsPage() {
               if (memberData && memberData.partnerId && memberData.partnerId.length > 0) {
                 try {
                   const partnerPromises = memberData.partnerId.map(async (partnerId: string) => {
-                    const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+                    const partnerResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${partnerId}`, {
                       headers: { Authorization: `Bearer ${token}` },
                     });
                     
@@ -172,7 +172,7 @@ export default function CrossUserSuggestionsPage() {
               if (memberData && memberData.childId && memberData.childId.length > 0) {
                 try {
                   const childPromises = memberData.childId.map(async (childId: string) => {
-                    const childResponse = await fetch(`http://localhost:3001/family-members/${childId}`, {
+                    const childResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${childId}`, {
                       headers: { Authorization: `Bearer ${token}` },
                     });
                     
@@ -196,7 +196,7 @@ export default function CrossUserSuggestionsPage() {
               // Fetch the actual suggestions for this member (same as getMemberSuggestionCount does)
               let actualSuggestions: string[] = [];
               try {
-                const suggestionsResponse = await fetch(`http://localhost:3001/notifications/member-similarities/${member.currentMember.id}`, {
+                const suggestionsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/member-similarities/${member.currentMember.id}`, {
                   headers: { Authorization: `Bearer ${token}` },
                 });
                 
@@ -354,7 +354,7 @@ export default function CrossUserSuggestionsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/suggestion-requests`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -427,7 +427,7 @@ export default function CrossUserSuggestionsPage() {
         return [...filtered, tempRequest];
       });
 
-      const response = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/suggestion-requests`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

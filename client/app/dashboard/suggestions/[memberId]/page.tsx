@@ -105,7 +105,7 @@ const fetchGenderFromSourceMember = async (sourceMemberId: string): Promise<stri
     const token = localStorage.getItem("token");
     if (!token) return undefined;
     
-    const sourceResponse = await fetch(`http://localhost:3001/family-members/${sourceMemberId}`, {
+    const sourceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${sourceMemberId}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -135,7 +135,7 @@ const fetchSurnameFromSourceMember = async (sourceMemberId: string): Promise<str
     const token = localStorage.getItem("token");
     if (!token) return undefined;
     
-    const sourceResponse = await fetch(`http://localhost:3001/family-members/${sourceMemberId}`, {
+    const sourceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${sourceMemberId}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -211,7 +211,7 @@ export default function MemberSuggestionsPage() {
         }
         
         // Fetch member data
-        const response = await makeApiCall(`http://localhost:3001/family-members/${memberId}`);
+        const response = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${memberId}`);
         
         const extractedMember = response?.data || response;
         
@@ -226,7 +226,7 @@ export default function MemberSuggestionsPage() {
         if (extractedMember.partnerId && extractedMember.partnerId.length > 0) {
           try {
             const partnerPromises = extractedMember.partnerId.map(async (partnerId: string) => {
-              const partnerResponse = await fetch(`http://localhost:3001/family-members/${partnerId}`, {
+              const partnerResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${partnerId}`, {
                 headers: {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json"
@@ -252,7 +252,7 @@ export default function MemberSuggestionsPage() {
             if (extractedMember.childId && extractedMember.childId.length > 0) {
               
               const childPromises = extractedMember.childId.map(async (childId: string) => {
-                const childResponse = await makeApiCall(`http://localhost:3001/family-members/${childId}`);
+                const childResponse = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${childId}`);
                 return {
                   id: childId,
                   name: childResponse?.name || "Unknown Child"
@@ -272,7 +272,7 @@ export default function MemberSuggestionsPage() {
         // Step 2: Get processed suggestions
         let processedSuggestions = [];
         try {
-          const processedResponse = await fetch(`http://localhost:3001/notifications/processed-suggestions/${memberId}`, {
+          const processedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/processed-suggestions/${memberId}`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json"
@@ -291,7 +291,7 @@ export default function MemberSuggestionsPage() {
         
         // Step 3: Get member similarities (suggestions)
         try {
-          const suggestionsResponse = await fetch(`http://localhost:3001/notifications/member-similarities/${memberId}`, {
+          const suggestionsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/member-similarities/${memberId}`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json"
@@ -357,7 +357,7 @@ export default function MemberSuggestionsPage() {
 
         // Fetch suggestion requests to check for accepted access
         try {
-          const requestsResponse = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+          const requestsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/suggestion-requests`, {
             headers: {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"
@@ -959,7 +959,7 @@ export default function MemberSuggestionsPage() {
         let validMemberData: MemberData;
         
         try {
-          const freshMemberResponse = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
+          const freshMemberResponse = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${cleanMemberId}`);
 
           
           // Extract the actual member data from the response structure
@@ -1072,7 +1072,7 @@ export default function MemberSuggestionsPage() {
         if (updateData._sourceMemberId) {
           try {
 
-            const sourceResponse = await makeApiCall(`http://localhost:3001/family-members/${updateData._sourceMemberId}`);
+            const sourceResponse = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${updateData._sourceMemberId}`);
             
             if (sourceResponse && (sourceResponse.data || sourceResponse)) {
               const sourceData = sourceResponse.data || sourceResponse;
@@ -1199,7 +1199,7 @@ export default function MemberSuggestionsPage() {
       const refreshFunction = async () => {
         try {
           // Re-fetch the member data
-          const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${memberData._id}`);
+          const refreshedMemberData = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${memberData._id}`);
           setMemberData(refreshedMemberData);
         } catch (refreshError) {
 
@@ -1295,7 +1295,7 @@ export default function MemberSuggestionsPage() {
       const refreshFunction = async () => {
         try {
           // Re-fetch the member data
-          const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${memberData._id}`);
+          const refreshedMemberData = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${memberData._id}`);
           setMemberData(refreshedMemberData);
         } catch (refreshError) {
 
@@ -1568,7 +1568,7 @@ export default function MemberSuggestionsPage() {
       
       // First apply regular changes if any
       if (Object.keys(regularChanges).length > 0) {
-        const result = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`, {
+        const result = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${cleanMemberId}`, {
           method: "PATCH",
           body: JSON.stringify(regularChanges)
         });
@@ -1596,7 +1596,7 @@ export default function MemberSuggestionsPage() {
             const refreshFunction = async () => {
               try {
                 // Re-fetch the member data
-                const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
+                const refreshedMemberData = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${cleanMemberId}`);
                 setMemberData(refreshedMemberData);
               } catch (refreshError) {
                 // Error refreshing member data
@@ -1719,7 +1719,7 @@ export default function MemberSuggestionsPage() {
                   try {
                     const token = localStorage.getItem("token");
                     if (token) {
-                      const sourceMemberResponse = await fetch(`http://localhost:3001/family-members/${action.data._sourceMemberId}`, {
+                      const sourceMemberResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${action.data._sourceMemberId}`, {
                         method: "GET",
                         headers: {
                           "Content-Type": "application/json",
@@ -1839,7 +1839,7 @@ export default function MemberSuggestionsPage() {
       });
       
       // Explicitly fetch the latest member data to ensure we have the most up-to-date information
-      const refreshedMemberData = await makeApiCall(`http://localhost:3001/family-members/${cleanMemberId}`);
+      const refreshedMemberData = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/family-members/${cleanMemberId}`);
       
       // Update the member data with the refreshed data
       setMemberData(refreshedMemberData);
@@ -1861,8 +1861,8 @@ export default function MemberSuggestionsPage() {
       
       // Also refresh the suggestions data
       try {
-        const refreshedSuggestions = await makeApiCall(`http://localhost:3001/notifications/member-similarities/${cleanMemberId}`);
-        const processedSuggestions = await makeApiCall(`http://localhost:3001/notifications/processed-suggestions/${cleanMemberId}`);
+        const refreshedSuggestions = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/member-similarities/${cleanMemberId}`);
+        const processedSuggestions = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/processed-suggestions/${cleanMemberId}`);
         
         if (refreshedSuggestions && refreshedSuggestions.data && processedSuggestions && processedSuggestions.data) {
           // Filter out processed suggestions
@@ -1958,7 +1958,7 @@ export default function MemberSuggestionsPage() {
       
       // Only mark this specific child suggestion as processed
       // This way other child suggestions will still appear
-      const response = await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/mark-suggestion-processed`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1983,7 +1983,7 @@ export default function MemberSuggestionsPage() {
           // For each partner, find and mark similar suggestions as processed
           for (const partnerId of memberData.partnerId) {
             // Make an API call to get partner's suggestions
-            const partnerSuggestions = await makeApiCall(`http://localhost:3001/notifications/member-similarities/${partnerId}`);
+            const partnerSuggestions = await makeApiCall(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/member-similarities/${partnerId}`);
             
             if (partnerSuggestions && partnerSuggestions.similarMembers) {
               // Look for matching child suggestions
@@ -1997,7 +1997,7 @@ export default function MemberSuggestionsPage() {
                          partnerSuggestion.includes("adding son") ||
                          partnerSuggestion.includes("adding daughter"))) {
                       // Mark this suggestion as processed for the partner
-                      await fetch(`http://localhost:3001/notifications/mark-suggestion-processed`, {
+                      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/mark-suggestion-processed`, {
                         method: "POST",
                         headers: {
                           Authorization: `Bearer ${token}`,
