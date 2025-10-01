@@ -60,12 +60,32 @@ interface CreateFamilyMemberDto {
   childId?: string[];
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 interface TreeState {
   familyMembers: FamilyMember[];
   currentFamilyTree: FamilyTreeNode | null;
   isLoading: boolean;
   error: string | null;
-  fetchAllFamilyMembers: () => Promise<void>;
+  pagination: PaginationInfo | null;
+  searchQuery: string;
+  filters: {
+    gender?: string;
+    country?: string;
+    status?: string;
+  };
+  fetchAllFamilyMembers: (options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filters?: any;
+    append?: boolean;
+  }) => Promise<void>;
   getFamilyTree: (id: string) => Promise<void>;
   getPublicFamilyTree: (userId: string) => Promise<void>;
   createFamilyMember: (member: CreateFamilyMemberDto) => Promise<void>;
@@ -73,31 +93,61 @@ interface TreeState {
   deleteFamilyMember: (id: string) => Promise<void>;
   generatePublicLink: (treeId: string) => string;
   clearError: () => void;
+  setFilters: (filters: Partial<TreeState['filters']>) => void;
+  setSearchQuery: (query: string) => void;
 }
 
-const useTreeStore = create<TreeState>((set) => ({
+const useTreeStore = create<TreeState>((set, get) => ({
   // State
   familyMembers: [],
   currentFamilyTree: null,
   isLoading: false,
   error: null,
+  pagination: null,
+  searchQuery: '',
+  filters: {},
 
   // Actions
-  fetchAllFamilyMembers: async () => {
+  fetchAllFamilyMembers: async (options = {}) => {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      filters = {},
+      append = false
+    } = options;
+
     set({ isLoading: true, error: null });
+
     try {
-      const response = await api.get("/family-members");
-      set({ 
-        familyMembers: response.data.data, 
-        isLoading: false 
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
       });
-      toast.success("Family members loaded successfully");
+
+      if (search) params.append('search', search);
+      if (filters.gender && filters.gender !== 'all') params.append('gender', filters.gender);
+      if (filters.country && filters.country !== 'all') params.append('country', filters.country);
+      if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+
+      const response = await api.get(`/family-members?${params}`);
+
+      set({
+        familyMembers: append ? [...get().familyMembers, ...response.data.data] : response.data.data,
+        pagination: response.data.pagination,
+        isLoading: false
+      });
+
+      if (!append) {
+        toast.success("Family members loaded successfully");
+      }
     } catch (error: unknown) {
       const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || "Failed to fetch family members";
       toast.error(errorMessage);
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -243,7 +293,13 @@ const useTreeStore = create<TreeState>((set) => ({
     return `${baseUrl}/public-tree/${treeId}`;
   },
 
-  clearError: () => set({ error: null })
+  clearError: () => set({ error: null }),
+
+  setFilters: (newFilters) => set((state) => ({
+    filters: { ...state.filters, ...newFilters }
+  })),
+
+  setSearchQuery: (query) => set({ searchQuery: query })
 }));
 
 export default useTreeStore;

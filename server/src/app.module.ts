@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './auth/auth.module';
 import { FamilyModule } from './family/family.module';
 import { MedicalModule } from './medical/medical.module';
+import { CacheModule } from '@nestjs/cache-manager';
 // import { NotificationModule } from './notification/notification.module';
 
 @Module({
@@ -13,6 +14,11 @@ import { MedicalModule } from './medical/medical.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300, // 5 minutes default TTL
+      max: 1000, // Maximum number of items in cache
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

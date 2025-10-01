@@ -40,12 +40,8 @@ export class FamilyController {
         userId,
         createFamilyMemberDto,
       );
-      
-      // Explicitly trigger the similarity check after creation
-      await this.familyService.checkForSimilarFamilyMembers(
-        (familyMember as any)._id.toString(), 
-        userId
-      );
+
+      // Similarity check is now handled asynchronously in the service
       
       return {
         statusCode: HttpStatus.CREATED,
@@ -66,24 +62,44 @@ export class FamilyController {
   async findAll(@Request() req) {
     try {
       const userId = req.user.id;
-      
-      // Extract filter parameters from query
-      const { gender, country, status } = req.query;
-      const filters = {};
-      
+
+      // Extract pagination and filter parameters from query
+      const {
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        gender,
+        country,
+        status,
+        search
+      } = req.query;
+
+      const filters: any = {};
+
       // Add filters if they exist
-      if (gender && gender !== 'all') filters['gender'] = gender;
-      if (country && country !== 'all') filters['country'] = country;
-      if (status && status !== 'all') filters['status'] = status;
-      
-      // Pass filters to service method
-      const familyMembers = await this.familyService.findAll(userId, filters);
-      
-      // Don't throw an error if no members found, just return empty array
+      if (gender && gender !== 'all') filters.gender = gender;
+      if (country && country !== 'all') filters.country = country;
+      if (status && status !== 'all') filters.status = status;
+      if (search) filters.$text = { $search: search };
+
+      // Pass pagination and filters to service method
+      const result = await this.familyService.findAllWithPagination(
+        userId,
+        filters,
+        {
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
+          sortBy: sortBy as string,
+          sortOrder: sortOrder as 'asc' | 'desc'
+        }
+      );
+
       return {
         statusCode: HttpStatus.OK,
-        message: familyMembers.length > 0 ? 'Family members found' : 'No family members match the filters',
-        data: familyMembers,
+        message: result.data.length > 0 ? 'Family members found' : 'No family members match the filters',
+        data: result.data,
+        pagination: result.pagination,
       };
     } catch (error) {
       console.error('Error in findAll:', error);
@@ -167,9 +183,8 @@ export class FamilyController {
         id,
         updateFamilyMemberDto,
       );
-      
-      // Explicitly trigger the similarity check after updating
-      await this.familyService.checkForSimilarFamilyMembers(id, req.user.id);
+
+      // Similarity check is now handled asynchronously in the service
       
       return {
         statusCode: HttpStatus.OK,

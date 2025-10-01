@@ -56,6 +56,21 @@ export class FamilyMember {
 
 export const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMember);
 
+// Add performance-optimized indexes
+FamilyMemberSchema.index({ userId: 1 }); // For finding all members by user
+FamilyMemberSchema.index({ userId: 1, name: 1 }); // For user-specific name searches
+FamilyMemberSchema.index({ userId: 1, surname: 1 }); // For surname-based queries
+FamilyMemberSchema.index({ userId: 1, status: 1 }); // For status filtering
+FamilyMemberSchema.index({ userId: 1, gender: 1 }); // For gender filtering
+FamilyMemberSchema.index({ userId: 1, country: 1 }); // For country filtering
+FamilyMemberSchema.index({ fatherId: 1 }); // For family tree queries
+FamilyMemberSchema.index({ motherId: 1 }); // For family tree queries
+FamilyMemberSchema.index({ partnerId: 1 }); // For partner relationships
+FamilyMemberSchema.index({ childId: 1 }); // For reverse parent-child relationships
+FamilyMemberSchema.index({ name: 'text', surname: 'text' }); // For text search capabilities
+FamilyMemberSchema.index({ createdAt: -1 }); // For recent members queries
+FamilyMemberSchema.index({ updatedAt: -1 }); // For recently updated members
+
 FamilyMemberSchema.methods.updateDetails = async function(): Promise<void> {
   await this.save();
 };
