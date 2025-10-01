@@ -45,7 +45,7 @@ export function Sidebar({ sidebarOpen }: SidebarProps) {
       const token = localStorage.getItem("token")
       if (!token) return
 
-      const response = await fetch("http://localhost:3001/notifications/suggestion-requests", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/suggestion-requests`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"

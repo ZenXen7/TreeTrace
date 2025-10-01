@@ -5,7 +5,7 @@
 // Get medical history for a family member
 export async function getMedicalHistory(token: string, familyMemberId: string) {
   try {
-    const response = await fetch(`http://localhost:3001/medical-history/family-member/${familyMemberId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/medical-history/family-member/${familyMemberId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -113,7 +113,7 @@ export async function saveMedicalHistory(token: string, medicalData: any) {
     }
 
     // Determine if this is a new record or an update
-    let url = "http://localhost:3001/medical-history"
+    let url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/medical-history`
     let method = "POST"
 
     if (apiData._id) {
