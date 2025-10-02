@@ -88,25 +88,8 @@ async function addFamilyMember(token: string, memberData: any) {
 
     const result = await response.json();
     
-    // Explicitly check for similar family members
-    try {
-      const newMemberId = result.data._id;
-      
-      const checkResponse = await fetch(`${API_BASE_URL}/notifications/check-similar-family-members/${newMemberId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (checkResponse.ok) {
-      } else {
-        console.error("Failed to check for similar family members for new member:", await checkResponse.text());
-      }
-    } catch (checkError) {
-      console.error("Error checking for similar family members:", checkError);
-    }
+    // PERFORMANCE: Removed automatic similarity check - now on-demand only
+    // Similarity analysis is triggered manually via "Find Similarities" button
     
     return result;
   } catch (error) {

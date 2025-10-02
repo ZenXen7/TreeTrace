@@ -41,11 +41,11 @@ export class FamilyController {
         createFamilyMemberDto,
       );
       
-      // Explicitly trigger the similarity check after creation
-      await this.familyService.checkForSimilarFamilyMembers(
-        (familyMember as any)._id.toString(), 
-        userId
-      );
+      // PERFORMANCE: Removed automatic similarity check - now on-demand only
+      // await this.familyService.checkForSimilarFamilyMembers(
+      //   (familyMember as any)._id.toString(), 
+      //   userId
+      // );
       
       return {
         statusCode: HttpStatus.CREATED,
