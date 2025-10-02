@@ -212,11 +212,18 @@ export class NotificationController {
   async analyzeCrossUserSimilarities(@Request() req) {
     try {
       const userId = req.user.id;
-      await this.familyMemberSimilarityService.analyzeFamilyTreeForSimilarMembers(userId);
+      const userObjectId = new Types.ObjectId(userId);
+      
+      // Run comprehensive similarity analysis for all family members
+      await this.familyMemberSimilarityService.analyzeSimilaritiesAcrossUsers(userObjectId);
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Cross-user family member similarity analysis completed successfully',
+        message: 'Similarity analysis completed for all family members',
+        data: {
+          timestamp: new Date(),
+          message: 'All family members have been analyzed for similarities'
+        }
       };
     } catch (error) {
       throw new HttpException(

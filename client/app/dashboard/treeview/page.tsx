@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import FamilyTree from "@balkangraph/familytree.js"
 import { motion } from "framer-motion"
 import {
@@ -1073,6 +1073,7 @@ export default function TreeViewPage() {
   const { generatePublicLink } = useTreeStore()
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
   const [allFamilyData, setAllFamilyData] = useState<any[]>([])
+  const [isAnalyzingSimilarities, setIsAnalyzingSimilarities] = useState(false)
 
   useEffect(() => {
     async function fetchAllData() {
@@ -1118,17 +1119,8 @@ export default function TreeViewPage() {
     setLoading(true)
   }
 
-  // Update the useEffect for filters to ensure they trigger properly
-  useEffect(() => {
-    fetchData()
-  }, [activeFilters])
-
-  // When data changes, increment treeKey to force Familytree remount
-  useEffect(() => {
-    setTreeKey((prev) => prev + 1)
-  }, [data])
-
-  async function fetchData() {
+  // PERFORMANCE: Memoize fetchData with useCallback to prevent unnecessary re-renders
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -1273,12 +1265,17 @@ export default function TreeViewPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeFilters]) // Dependencies: re-run when filters change
 
-  // Add an effect that listens to activeFilters changes
+  // Update the useEffect for filters to ensure they trigger properly
   useEffect(() => {
     fetchData()
-  }, [activeFilters]) // Re-fetch data when filters change
+  }, [fetchData])
+
+  // When data changes, increment treeKey to force Familytree remount
+  useEffect(() => {
+    setTreeKey((prev) => prev + 1)
+  }, [data])
 
   // Keep the existing useEffect for initial data load
   useEffect(() => {
@@ -1304,14 +1301,16 @@ export default function TreeViewPage() {
     }
   }, [])
 
-  const nodeBinding = {
+  // PERFORMANCE: Memoize node binding to prevent unnecessary re-renders
+  const nodeBinding = useMemo(() => ({
     field_0: "name",
     field_1: "surname",
     field_4: "birthDate",
-    field_9: "suggestionCount", // Keep suggestion count binding
-  }
+    field_9: "suggestionCount",
+  }), [])
 
-  const handleShareTree = async () => {
+  // PERFORMANCE: Use useCallback to memoize event handlers
+  const handleShareTree = useCallback(async () => {
     try {
       if (!data || data.length === 0) {
         toast.error("No family tree data available to share")
@@ -1323,7 +1322,44 @@ export default function TreeViewPage() {
     } catch (error) {
       toast.error("Failed to copy link")
     }
-  }
+  }, [data, generatePublicLink])
+
+  const handleFindSimilarities = useCallback(async () => {
+    try {
+      setIsAnalyzingSimilarities(true)
+      const token = localStorage.getItem("token")
+      if (!token) {
+        toast.error("No authentication token found")
+        return
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/notifications/analyze-cross-user-similarities`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error("Failed to analyze similarities")
+      }
+
+      const result = await response.json()
+      toast.success("✅ Similarity analysis completed! Check your suggestions page for new connections.")
+      
+      // Refresh the data to get updated suggestion counts
+      await fetchData()
+    } catch (error) {
+      console.error("Error analyzing similarities:", error)
+      toast.error("Failed to analyze similarities. Please try again.")
+    } finally {
+      setIsAnalyzingSimilarities(false)
+    }
+  }, [fetchData])
 
   return (
     <motion.div
@@ -1506,6 +1542,27 @@ export default function TreeViewPage() {
                     Health Overview
                   </button>
                 </Link>
+
+                <button
+                  onClick={handleFindSimilarities}
+                  disabled={isAnalyzingSimilarities || loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAnalyzingSimilarities ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-4 w-4" />
+                      Find Similarities
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

@@ -66,8 +66,8 @@ export class FamilyService {
     const createdFamilyMember = new this.familyMemberModel(memberData);
     const savedMember = await createdFamilyMember.save() as FamilyMemberWithId;
     
-    // Run cross-user similarity analysis
-    await this.familyMemberSimilarityService.analyzeSimilaritiesAcrossUsers(userObjectId);
+    // PERFORMANCE: Removed automatic similarity analysis - now on-demand only
+    // await this.familyMemberSimilarityService.analyzeSimilaritiesAcrossUsers(userObjectId);
     
     return savedMember;
   }
@@ -85,8 +85,9 @@ export class FamilyService {
       query[key] = filters[key];
     });
     
-    // Fetch all family members matching the query
-    const results = await this.familyMemberModel.find(query).exec();
+    // PERFORMANCE: Use lean() to return plain JavaScript objects instead of Mongoose documents
+    // This significantly reduces memory overhead and increases query speed
+    const results = await this.familyMemberModel.find(query).lean().exec();
     
     return results;
   }
@@ -96,9 +97,10 @@ export class FamilyService {
       // Convert string userId to ObjectId if it's not already
       const userObjectId = new Types.ObjectId(userId.toString());
       
-      // Fetch all family members for this user
+      // PERFORMANCE: Use lean() to return plain JavaScript objects
       const results = await this.familyMemberModel
         .find({ userId: userObjectId })
+        .lean()
         .exec();
       
       return results;
@@ -166,8 +168,8 @@ export class FamilyService {
 
       await session.commitTransaction();
       
-      // Run cross-user similarity analysis after update
-      await this.familyMemberSimilarityService.analyzeSimilaritiesAcrossUsers(updatedFamilyMember.userId);
+      // PERFORMANCE: Removed automatic similarity analysis - now on-demand only
+      // await this.familyMemberSimilarityService.analyzeSimilaritiesAcrossUsers(updatedFamilyMember.userId);
       
       return updatedFamilyMember;
     } catch (error) {
