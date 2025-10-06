@@ -22,7 +22,9 @@ export class MedicalController {
 
   @Post()
   async create(@Request() req, @Body() createMedicalHistoryDto: CreateMedicalHistoryDto) {
-    const userId = new Types.ObjectId(req.user.userId);
+    const userId = new Types.ObjectId(req.user.id);
+
+    
     const createdMedicalHistory = await this.medicalService.create(userId, createMedicalHistoryDto);
     
     return {
@@ -34,7 +36,7 @@ export class MedicalController {
 
   @Get(':id')
   async findOne(@Request() req, @Param('id') id: string) {
-    const userId = new Types.ObjectId(req.user.userId);
+    const userId = new Types.ObjectId(req.user.id);
     const medicalHistory = await this.medicalService.findOne(userId, id);
     
     return {
@@ -45,7 +47,7 @@ export class MedicalController {
 
   @Get('family-member/:familyMemberId')
   async findByFamilyMemberId(@Request() req, @Param('familyMemberId') familyMemberId: string) {
-    const userId = new Types.ObjectId(req.user.userId);
+    const userId = new Types.ObjectId(req.user.id);
     const medicalHistory = await this.medicalService.findByFamilyMemberId(userId, familyMemberId);
     
 
@@ -62,7 +64,7 @@ export class MedicalController {
     @Param('id') id: string,
     @Body() updateMedicalHistoryDto: UpdateMedicalHistoryDto,
   ) {
-    const userId = new Types.ObjectId(req.user.userId);
+    const userId = new Types.ObjectId(req.user.id);
     const updatedMedicalHistory = await this.medicalService.update(userId, id, updateMedicalHistoryDto);
     
     return {
@@ -74,7 +76,7 @@ export class MedicalController {
 
   @Delete(':id')
   async remove(@Request() req, @Param('id') id: string) {
-    const userId = new Types.ObjectId(req.user.userId);
+    const userId = new Types.ObjectId(req.user.id);
     const result = await this.medicalService.remove(userId, id);
     
     return {

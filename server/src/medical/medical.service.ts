@@ -22,6 +22,13 @@ export class MedicalService {
     }
     
 
+    if (!familyMember.userId) {
+      throw new ForbiddenException('Family member has no owner assigned');
+    }
+    
+    if (familyMember.userId.toString() !== userId.toString()) {
+      throw new ForbiddenException('This family member does not belong to your tree');
+    }
     const healthConditionsMap = new Map<string, boolean>();
     Object.entries(createMedicalHistoryDto.healthConditions).forEach(([key, value]) => {
       healthConditionsMap.set(key, value);
@@ -53,6 +60,9 @@ export class MedicalService {
       throw new NotFoundException('Medical history record not found');
     }
     
+    if (medicalHistory.userId.toString() !== userId.toString()) {
+      throw new ForbiddenException('You do not have permission to access this medical record');
+    } 
     return medicalHistory;
   }
 
@@ -66,6 +76,10 @@ export class MedicalService {
       throw new NotFoundException('Family member not found');
     }
     
+    if (familyMember.userId && familyMember.userId.toString() !== userId.toString()) {
+      throw new ForbiddenException('This family member does not belong to your tree');
+    }
+    
     // Find the medical history for this family member
     const medicalHistory = await this.medicalHistoryModel.findOne({ familyMemberId }).exec();
     
@@ -77,9 +91,7 @@ export class MedicalService {
     return medicalHistory;
   }
 
-  /**
-   * Update a medical history record
-   */
+
   async update(userId: Types.ObjectId, id: string, updateMedicalHistoryDto: UpdateMedicalHistoryDto): Promise<MedicalHistory> {
     const medicalHistory = await this.medicalHistoryModel.findById(id).exec();
     
@@ -87,9 +99,13 @@ export class MedicalService {
       throw new NotFoundException('Medical history record not found');
     }
     
-    // Handle healthConditions update if provided
+    if (medicalHistory.userId.toString() !== userId.toString()) {
+      throw new ForbiddenException('You do not have permission to update this medical record');
+    }
+    
+
     if (updateMedicalHistoryDto.healthConditions) {
-      // Convert from object to Map
+
       const healthConditionsMap = medicalHistory.healthConditions || new Map<string, boolean>();
       Object.entries(updateMedicalHistoryDto.healthConditions).forEach(([key, value]) => {
         healthConditionsMap.set(key, value);
@@ -97,7 +113,7 @@ export class MedicalService {
       medicalHistory.healthConditions = healthConditionsMap;
     }
 
-    // Update other fields if provided
+
     if (updateMedicalHistoryDto.allergies !== undefined) {
       medicalHistory.allergies = updateMedicalHistoryDto.allergies;
     }
@@ -136,6 +152,10 @@ export class MedicalService {
       throw new NotFoundException('Medical history record not found');
     }
     
+    // SECURITY: Verify the medical record belongs to the user's tree
+    if (medicalHistory.userId.toString() !== userId.toString()) {
+      throw new ForbiddenException('You do not have permission to delete this medical record');
+    }
     await this.medicalHistoryModel.findByIdAndDelete(id).exec();
     return { deleted: true };
   }

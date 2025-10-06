@@ -121,8 +121,6 @@ export async function saveMedicalHistory(token: string, medicalData: any) {
       method = "PATCH"
     }
 
-    console.log("Sending medical data:", apiData) // Debug log
-
     const response = await fetch(url, {
       method,
       headers: {
