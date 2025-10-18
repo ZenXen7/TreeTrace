@@ -4,20 +4,32 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { configure } from '@vendia/serverless-express';
 import * as dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
-let cachedServer: any;
+let cachedApp: any;
 
 // Create a minimal test module
-import { Module } from '@nestjs/common';
+import { Module, Controller, Get } from '@nestjs/common';
+
+@Controller()
+class TestController {
+  @Get()
+  getHello() {
+    return { message: 'Hello from TreeTrace API!' };
+  }
+  
+  @Get('health')
+  getHealth() {
+    return { status: 'OK', timestamp: new Date().toISOString() };
+  }
+}
 
 @Module({
   imports: [],
-  controllers: [],
+  controllers: [TestController],
   providers: [],
 })
 class TestModule {}
@@ -57,8 +69,7 @@ async function bootstrap() {
     await app.init();
     console.log('Application initialized successfully');
 
-    const expressApp = app.getHttpAdapter().getInstance();
-    return configure({ app: expressApp });
+    return app;
   } catch (error) {
     console.error('Error during bootstrap:', error);
     console.error('Error stack:', error.stack);
@@ -70,14 +81,15 @@ export default async function handler(req: any, res: any) {
   try {
     console.log('Handler called with method:', req.method, 'path:', req.path);
     
-    if (!cachedServer) {
-      console.log('Creating cached server...');
-      cachedServer = await bootstrap();
-      console.log('Cached server created');
+    if (!cachedApp) {
+      console.log('Creating cached app...');
+      cachedApp = await bootstrap();
+      console.log('Cached app created');
     }
     
-    console.log('Calling cached server...');
-    return cachedServer(req, res);
+    console.log('Processing request...');
+    const expressApp = cachedApp.getHttpAdapter().getInstance();
+    return expressApp(req, res);
   } catch (error) {
     console.error('Handler error:', error);
     console.error('Handler error stack:', error.stack);
