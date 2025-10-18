@@ -48,6 +48,15 @@ async function bootstrap() {
       next();
     });
     
+    // Add a simple root endpoint
+    app.use('/', (req, res) => {
+      res.json({ 
+        message: 'TreeTrace API is running!',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+      });
+    });
+    
     // Add a simple health check endpoint that doesn't require database
     app.use('/health', (req, res) => {
       res.json({ 
