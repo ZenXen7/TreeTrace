@@ -48,15 +48,6 @@ async function bootstrap() {
       next();
     });
     
-    // Add a simple root endpoint
-    app.use('/', (req, res) => {
-      res.json({ 
-        message: 'TreeTrace API is running!',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
-      });
-    });
-    
     // Add a simple health check endpoint that doesn't require database
     app.use('/health', (req, res) => {
       res.json({ 
@@ -68,6 +59,19 @@ async function bootstrap() {
           client_url: process.env.CLIENT_URL
         }
       });
+    });
+    
+    // Add a simple root endpoint that only responds to GET requests
+    app.use('/', (req, res, next) => {
+      if (req.method === 'GET' && req.path === '/') {
+        res.json({ 
+          message: 'TreeTrace API is running!',
+          timestamp: new Date().toISOString(),
+          version: '1.0.0'
+        });
+      } else {
+        next();
+      }
     });
     
     console.log('Initializing application...');
