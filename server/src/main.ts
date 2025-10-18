@@ -5,13 +5,12 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { configure } from '@vendia/serverless-express';
 import * as dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
-let cachedServer: any;
+let cachedApp: any;
 
 async function bootstrap() {
   try {
@@ -32,7 +31,7 @@ async function bootstrap() {
     });
 
     app.enableCors({
-      origin: true, // Allow all origins temporarily for debugging
+      origin: process.env.CLIENT_URL || 'https://tree-trace-rzni.vercel.app',
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -45,8 +44,7 @@ async function bootstrap() {
     await app.init();
     console.log('Application initialized successfully');
 
-    const expressApp = app.getHttpAdapter().getInstance();
-    return configure({ app: expressApp });
+    return app;
   } catch (error) {
     console.error('Error during bootstrap:', error);
     throw error;
@@ -55,18 +53,22 @@ async function bootstrap() {
 
 export default async function handler(req: any, res: any) {
   try {
-    if (!cachedServer) {
-      console.log('Creating cached server...');
-      cachedServer = await bootstrap();
-      console.log('Cached server created');
+    if (!cachedApp) {
+      console.log('Creating cached app...');
+      cachedApp = await bootstrap();
+      console.log('Cached app created');
     }
-    return cachedServer(req, res);
+    
+    const expressApp = cachedApp.getHttpAdapter().getInstance();
+    return expressApp(req, res);
   } catch (error) {
     console.error('Handler error:', error);
-    res.status(500).json({ 
-      error: 'Internal Server Error', 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Internal Server Error', 
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
   }
 }
