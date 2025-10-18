@@ -5,60 +5,35 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import express from 'express';
+import * as express from 'express';
 import serverlessExpress from '@vendia/serverless-express';
 
 const expressApp = express();
 let cachedServer: any;
 
 async function bootstrap() {
-  try {
-    console.log('Starting NestJS application...');
-    console.log('Environment variables:', {
-      MONGODB_URI: process.env.MONGODB_URI ? 'Set' : 'Not set',
-      JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not set',
-      CLIENT_URL: process.env.CLIENT_URL || 'Not set',
-    });
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressApp),
+  );
 
-    const app = await NestFactory.create(
-      AppModule,
-      new ExpressAdapter(expressApp),
-    );
+  app.enableCors({
+    origin: true, // Allow all origins temporarily for debugging
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Set-Cookie'],
+  });
 
-    app.enableCors({
-      origin: [
-        process.env.CLIENT_URL || 'http://localhost:3000',
-        'https://tree-trace-rzni.vercel.app',
-        'https://tree-trace.vercel.app',
-      ],
-      credentials: true,
-      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    });
+  app.useGlobalPipes(new ValidationPipe());
+  await app.init();
 
-    app.useGlobalPipes(new ValidationPipe());
-    await app.init();
-
-    console.log('NestJS application initialized successfully');
-    return serverlessExpress({ app: expressApp });
-  } catch (error) {
-    console.error('Error during bootstrap:', error);
-    throw error;
-  }
+  return serverlessExpress({ app: expressApp });
 }
 
-export default async function handler(req: any, res: any) {
-  try {
-    if (!cachedServer) {
-      console.log('Creating new server instance...');
-      cachedServer = await bootstrap();
-    }
-    return cachedServer(req, res);
-  } catch (error: any) {
-    console.error('Handler error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message,
-    });
+export default async function handler(req, res) {
+  if (!cachedServer) {
+    cachedServer = await bootstrap();
   }
+  return cachedServer(req, res);
 }

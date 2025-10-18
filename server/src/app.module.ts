@@ -17,29 +17,21 @@ import { MedicalModule } from './medical/medical.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const uri = configService.get<string>('MONGODB_URI');
-        if (!uri) {
-          throw new Error('MONGODB_URI environment variable is not defined');
-        }
-        console.log('Connecting to MongoDB...');
+        const uri = await Promise.resolve(
+          configService.get<string>('MONGODB_URI'),
+        );
         return { uri };
       },
       inject: [ConfigService],
     }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const secret = configService.get<string>('JWT_SECRET');
-        if (!secret) {
-          throw new Error('JWT_SECRET environment variable is not defined');
-        }
-        return {
-          secret,
-          signOptions: {
-            expiresIn: configService.get<string>('JWT_EXPIRES_IN', '24h'),
-          },
-        };
-      },
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '24h'),
+        },
+      }),
       inject: [ConfigService],
     }),
     UserModule,
