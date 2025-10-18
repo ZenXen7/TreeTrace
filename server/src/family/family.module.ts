@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { FamilyMember, FamilyMemberSchema } from './family-member.schema';
 import { FamilyService } from './family.service';
 import { FamilyController } from './family.controller';
-import { UserModule } from 'src/user/user.module';
-import { User, UserSchema } from 'src/user/schemas/user.schema';
+import { UserModule } from '../user/user.module';
+import { User, UserSchema } from '../user/schemas/user.schema';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({

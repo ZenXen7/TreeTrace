@@ -12,7 +12,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { FamilyService, FamilyTreeNode } from './family.service';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 import { Model, Types } from 'mongoose';

@@ -11,9 +11,9 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserPayload, LoginResponse } from './interfaces/user.interface';
 import { UserDocument } from '../user/schemas/user.schema';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 import { JwtPayload } from './jwt/jwt-payload.interface';
-import { FamilyService } from 'src/family/family.service';
+import { FamilyService } from '../family/family.service';
 import { Types } from 'mongoose';
 
 @Injectable()
