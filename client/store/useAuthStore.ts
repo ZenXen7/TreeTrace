@@ -133,6 +133,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         password: credentials.password,
       });
 
+      console.log('Login response:', response.data); // Debug log
+
       const { access_token, user } = response.data.data;
 
       safeLocalStorage.setItem("token", access_token);
@@ -153,6 +155,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         loginSuccess: true,
       });
     } catch (error: any) {
+      console.error('Login error:', error); // Debug log
+      console.error('Error response:', error.response?.data); // Debug log
       const errorMessage =
         error.response?.data?.message || "Invalid email or password";
       set({ loginSuccess: false });
