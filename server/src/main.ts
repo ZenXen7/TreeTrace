@@ -34,11 +34,32 @@ async function bootstrap() {
       origin: process.env.CLIENT_URL || 'https://tree-trace-rzni.vercel.app',
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
       exposedHeaders: ['Set-Cookie'],
+      preflightContinue: false,
+      optionsSuccessStatus: 200,
     });
 
     app.useGlobalPipes(new ValidationPipe());
+    
+    // Add request logging middleware
+    app.use((req, res, next) => {
+      console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+      next();
+    });
+    
+    // Add a simple health check endpoint that doesn't require database
+    app.use('/health', (req, res) => {
+      res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        env: {
+          mongodb_set: !!process.env.MONGODB_URI,
+          jwt_secret_set: !!process.env.JWT_SECRET,
+          client_url: process.env.CLIENT_URL
+        }
+      });
+    });
     
     console.log('Initializing application...');
     await app.init();
