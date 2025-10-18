@@ -135,6 +135,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       console.log('Login response:', response.data); // Debug log
 
+      // Check if response has the expected structure
+      if (!response.data.data) {
+        console.error('Unexpected response structure:', response.data);
+        throw new Error('Invalid response format from server');
+      }
+
       const { access_token, user } = response.data.data;
 
       safeLocalStorage.setItem("token", access_token);
