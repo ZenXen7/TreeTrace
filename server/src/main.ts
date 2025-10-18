@@ -17,7 +17,7 @@ async function bootstrap() {
     console.log('Environment variables:', {
       MONGODB_URI: process.env.MONGODB_URI ? 'Set' : 'Not set',
       JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not set',
-      CLIENT_URL: process.env.CLIENT_URL || 'Not set'
+      CLIENT_URL: process.env.CLIENT_URL || 'Not set',
     });
 
     const app = await NestFactory.create(
@@ -29,7 +29,7 @@ async function bootstrap() {
       origin: [
         process.env.CLIENT_URL || 'http://localhost:3000',
         'https://tree-trace-rzni.vercel.app',
-        'https://tree-trace.vercel.app'
+        'https://tree-trace.vercel.app',
       ],
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -56,9 +56,9 @@ export default async function handler(req: any, res: any) {
     return cachedServer(req, res);
   } catch (error: any) {
     console.error('Handler error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
-      message: error.message 
+      message: error.message,
     });
   }
 }
