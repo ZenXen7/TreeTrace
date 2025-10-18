@@ -12,31 +12,53 @@ const expressApp = express();
 let cachedServer: any;
 
 async function bootstrap() {
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(expressApp),
-  );
+  try {
+    console.log('Starting NestJS application...');
+    console.log('Environment variables:', {
+      MONGODB_URI: process.env.MONGODB_URI ? 'Set' : 'Not set',
+      JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not set',
+      CLIENT_URL: process.env.CLIENT_URL || 'Not set'
+    });
 
-  app.enableCors({
-    origin: [
-      process.env.CLIENT_URL || 'http://localhost:3000',
-      'https://tree-trace-rzni.vercel.app',
-      'https://tree-trace.vercel.app'
-    ],
-    credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
+    const app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressApp),
+    );
 
-  app.useGlobalPipes(new ValidationPipe());
-  await app.init();
+    app.enableCors({
+      origin: [
+        process.env.CLIENT_URL || 'http://localhost:3000',
+        'https://tree-trace-rzni.vercel.app',
+        'https://tree-trace.vercel.app'
+      ],
+      credentials: true,
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
 
-  return serverlessExpress({ app: expressApp });
+    app.useGlobalPipes(new ValidationPipe());
+    await app.init();
+
+    console.log('NestJS application initialized successfully');
+    return serverlessExpress({ app: expressApp });
+  } catch (error) {
+    console.error('Error during bootstrap:', error);
+    throw error;
+  }
 }
 
 export default async function handler(req, res) {
-  if (!cachedServer) {
-    cachedServer = await bootstrap();
+  try {
+    if (!cachedServer) {
+      console.log('Creating new server instance...');
+      cachedServer = await bootstrap();
+    }
+    return cachedServer(req, res);
+  } catch (error) {
+    console.error('Handler error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
   }
-  return cachedServer(req, res);
 }
