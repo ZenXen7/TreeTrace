@@ -1,9 +1,15 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs18.x",
+      "handler": "dist/main.handler"
+    }
+  },
   "builds": [
     { "src": "dist/main.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "dist/main.js" }
+    { "src": "/(.*)", "dest": "dist/main.handler" }
   ]
 }
