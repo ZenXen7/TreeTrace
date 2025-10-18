@@ -31,11 +31,7 @@ async function bootstrap() {
     });
 
     app.enableCors({
-      origin: [
-        process.env.CLIENT_URL || 'https://tree-trace-rzni.vercel.app',
-        'http://localhost:3000',
-        'http://localhost:3001'
-      ],
+      origin: true, // Allow all origins temporarily
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
