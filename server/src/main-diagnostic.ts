@@ -16,6 +16,16 @@ import { Module, Controller, Get, Post, Body } from '@nestjs/common';
 
 @Controller('auth')
 class TestAuthController {
+  @Get('login')
+  async loginGet() {
+    return {
+      statusCode: 200,
+      message: 'Login endpoint available - use POST method',
+      method: 'POST',
+      endpoint: '/auth/login'
+    };
+  }
+
   @Post('login')
   async login(@Body() body: any) {
     console.log('Login attempt:', body);
@@ -26,6 +36,16 @@ class TestAuthController {
         access_token: 'test-token',
         user: { id: 'test-user', email: body.email }
       }
+    };
+  }
+
+  @Get('register')
+  async registerGet() {
+    return {
+      statusCode: 200,
+      message: 'Register endpoint available - use POST method',
+      method: 'POST',
+      endpoint: '/auth/register'
     };
   }
 
