@@ -1,12 +1,12 @@
 {
   "version": 2,
   "builds": [
-    { "src": "src/main.ts", "use": "@vercel/node" }
+    { "src": "src/main-diagnostic.ts", "use": "@vercel/node" }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "src/main.ts",
+      "dest": "src/main-diagnostic.ts",
       "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       "headers": {
         "Access-Control-Allow-Origin": "https://tree-trace-rzni.vercel.app",
