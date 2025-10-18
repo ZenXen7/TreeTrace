@@ -6,7 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import * as express from 'express';
-import serverlessExpress from '@vendia/serverless-express';
+import { configure } from '@vendia/serverless-express';
 
 const expressApp = express();
 let cachedServer: any;
@@ -28,7 +28,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   await app.init();
 
-  return serverlessExpress({ app: expressApp });
+  return configure({ app: expressApp });
 }
 
 export default async function handler(req, res) {
